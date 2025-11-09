@@ -1,9 +1,9 @@
 use chrono::{Local, NaiveDate};
 use clap::{Parser, Subcommand};
-use serde::{Serialize, Deserialize};
-use std::{fs, path::PathBuf};
 use directories::BaseDirs;
 use edit::edit;
+use serde::{Deserialize, Serialize};
+use std::{fs, path::PathBuf};
 
 #[derive(Parser)]
 #[command(name = "fini", version, about = "A CLI todo list tool with links")]
@@ -83,9 +83,21 @@ fn write_data(path: &PathBuf, data: Vec<TodoItem>) {
 
 fn get_data_path() -> PathBuf {
     let data_dir = BaseDirs::new()
-    .map(|b| b.data_dir().to_path_buf())
-    .unwrap_or_else(|| PathBuf::from("."));
+        .map(|b| b.data_dir().to_path_buf())
+        .unwrap_or_else(|| PathBuf::from("."));
     data_dir.join("fini_data.json")
+}
+
+fn print_archived_item(item: &TodoItem) {
+    // TODO: group by date
+    if let Some(date) = &item.active_date {
+        println!("✔ {} {}", date.format("%Y-%m-%d"), item.title);
+    } else {
+        println!("✔ {}", item.title);
+    }
+    if let Some(link) = &item.link {
+        println!("     🔗 {link}");
+    }
 }
 
 fn print_item(item: &TodoItem, index: usize) {
@@ -101,14 +113,15 @@ fn print_item(item: &TodoItem, index: usize) {
     }
 }
 
-fn get_incomplete_items(items: &[TodoItem]) -> Vec<&TodoItem> {
-    items.iter()
+fn get_visible_items(items: &[TodoItem]) -> Vec<&TodoItem> {
+    items
+        .iter()
         .filter(|i| matches!(i.status, Status::Todo | Status::InProgress | Status::Done))
         .collect()
 }
 
-fn get_task_by_index<'a>(index: usize, incomplete: &[&'a TodoItem]) -> Option<&'a TodoItem> {
-    incomplete.get(index - 1).copied()
+fn get_task_by_index<'a>(index: usize, visible: &[&'a TodoItem]) -> Option<&'a TodoItem> {
+    visible.get(index - 1).copied()
 }
 
 fn get_next_id(items: &[TodoItem]) -> usize {
@@ -119,7 +132,7 @@ fn main() {
     let cli = Cli::parse();
     let data_path = get_data_path();
     let mut items = read_data(&data_path);
-    let incomplete = get_incomplete_items(&items);
+    let visible = get_visible_items(&items);
 
     match cli.command {
         Commands::Add { title } => {
@@ -137,16 +150,23 @@ fn main() {
             println!("Added task: {}", title);
         }
         Commands::List => {
-            if incomplete.is_empty() {
+            if visible.is_empty() {
                 println!("No tasks");
             } else {
-                for (index, item) in incomplete.iter().enumerate() {
+                for (index, item) in visible.iter().enumerate() {
                     print_item(item, index + 1);
                 }
             }
         }
+        Commands::Archive => {
+            for item in items {
+                if item.status == Status::Archived {
+                    print_archived_item(&item);
+                }
+            }
+        }
         Commands::Edit { index } => {
-            if let Some(item) = get_task_by_index(index, &incomplete) {
+            if let Some(item) = get_task_by_index(index, &visible) {
                 let item_id = item.id;
                 let current_title = item.title.clone();
 
@@ -181,7 +201,7 @@ fn main() {
             eprintln!("⚠️ No task found with index {index}");
         }
         Commands::Work { index } => {
-            if let Some(item) = get_task_by_index(index, &incomplete) {
+            if let Some(item) = get_task_by_index(index, &visible) {
                 let item_id = item.id;
                 let title = item.title.clone();
                 if let Some(item) = items.iter_mut().find(|t| t.id == item_id) {
@@ -202,7 +222,7 @@ fn main() {
             eprintln!("⚠️ No task found with index {index}");
         }
         Commands::Done { index } => {
-            if let Some(item) = get_task_by_index(index, &incomplete) {
+            if let Some(item) = get_task_by_index(index, &visible) {
                 let item_id = item.id;
                 let title = item.title.clone();
                 if let Some(item) = items.iter_mut().find(|t| t.id == item_id) {
@@ -223,17 +243,44 @@ fn main() {
             eprintln!("⚠️ No task found with index {index}");
         }
         Commands::Delete { index } => {
-            if let Some(item) = get_task_by_index(index, &incomplete) {
+            if let Some(item) = get_task_by_index(index, &visible) {
                 let item_id = item.id;
                 let title = item.title.clone();
-                if let Some(item) = items.iter_mut().find(|t| t.id == item_id) {
-                    items.retain(|i| i.id != item_id);
-                    write_data(&data_path, items);
-                    println!("Deleted task: {}", title);
-                    return;
-                }
+                items.retain(|i| i.id != item_id);
+                write_data(&data_path, items);
+                println!("Deleted task: {}", title);
+                return;
             }
             eprintln!("⚠️ No task found with index {index}");
+        }
+        Commands::Clear => {
+            let mut copies: Vec<TodoItem> = vec![];
+            let mut next_id = get_next_id(&items);
+            for item in items.iter_mut() {
+                match item.status {
+                    Status::Done => item.status = Status::Archived,
+                    Status::InProgress => {
+                        let copy = TodoItem {
+                            id: next_id,
+                            title: item.title.clone(),
+                            link: item.link.clone(),
+                            status: Status::Archived,
+                            active_date: item.active_date,
+                        };
+                        next_id += 1;
+                        copies.push(copy);
+                    }
+                    _ => {}
+                }
+            }
+            items.extend(copies);
+            write_data(&data_path, items);
+            println!("Archived completed tasks");
+        }
+        Commands::Cycle => {
+            items.retain(|i| i.status != Status::Archived);
+            write_data(&data_path, items);
+            println!("Deleted archived tasks");
         }
     }
 }
