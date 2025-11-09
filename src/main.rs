@@ -222,6 +222,18 @@ fn main() {
             }
             eprintln!("⚠️ No task found with index {index}");
         }
-        _ => eprintln!("TODO")
+        Commands::Delete { index } => {
+            if let Some(item) = get_task_by_index(index, &incomplete) {
+                let item_id = item.id;
+                let title = item.title.clone();
+                if let Some(item) = items.iter_mut().find(|t| t.id == item_id) {
+                    items.retain(|i| i.id != item_id);
+                    write_data(&data_path, items);
+                    println!("Deleted task: {}", title);
+                    return;
+                }
+            }
+            eprintln!("⚠️ No task found with index {index}");
+        }
     }
 }
