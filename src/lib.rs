@@ -22,27 +22,32 @@ enum Status {
 }
 
 impl TodoItem {
-    pub fn print_archived_item(&self) {
+    pub fn print_with_date(&self) {
         if let Some(date) = &self.active_date {
-            println!("✔ {} {}", date.format("%Y-%m-%d"), self.title);
+            println!("{} {} {}", self.get_status(), date.format("%Y-%m-%d"), self.title);
         } else {
-            println!("✔ {}", self.title);
+            println!("{} {}", self.get_status(), self.title);
         }
-        if let Some(link) = &self.link {
+        self.print_link();
+    }
+
+    pub fn print_with_index(&self, index: usize) {
+        println!("{:>3}. {} {}", index, self.get_status(), &self.title);
+        self.print_link();
+    }
+
+    fn print_link(&self) {
+        if let Some(link) = &&self.link {
             println!("     🔗 {link}");
         }
     }
 
-    pub fn print_item(&self, index: usize) {
-        let status = match &self.status {
+    fn get_status(&self) -> &str {
+        match &self.status {
             Status::Todo => "☐",
             Status::InProgress => "…",
             Status::Done => "✔",
             Status::Archived => "✔",
-        };
-        println!("{:>3}. {} {}", index, status, &self.title);
-        if let Some(link) = &&self.link {
-            println!("     🔗 {link}");
         }
     }
 }
@@ -110,7 +115,7 @@ impl Actions {
             println!("No tasks");
         } else {
             for (index, item) in visible.iter().enumerate() {
-                item.print_item(index + 1);
+                item.print_with_index(index + 1);
             }
         }
     }
@@ -120,7 +125,7 @@ impl Actions {
         let items = read_data(&data_path);
         for item in items {
             if item.status == Status::Archived {
-                item.print_archived_item();
+                item.print_with_date();
             }
         }
     }
