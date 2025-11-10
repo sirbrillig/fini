@@ -116,7 +116,7 @@ impl Actions {
         loop {
             Actions::list();
             let commands = vec![
-                "quit", "list", "add", "check", "begin", "clear", "delete", "cycle", "archived",
+                "quit", "list", "add", "check", "begin", "clear", "delete", "cycle", "list-archived",
             ];
             let answer = Select::new("Select a command:", commands)
                 .prompt()
@@ -124,7 +124,7 @@ impl Actions {
             match answer {
                 "quit" => break,
                 "list" => Actions::list(),
-                "archived" => Actions::archived(),
+                "list-archived" => Actions::archived(),
                 "clear" => {
                     let confirm_answer =
                         Confirm::new("Are you sure you want to archive all complete tasks?")
