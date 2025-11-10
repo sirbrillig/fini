@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::{fmt, fs, path::PathBuf};
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct TodoItem {
+pub struct TaskItem {
     id: usize,
     title: String,
     status: Status,
@@ -23,13 +23,13 @@ enum Status {
     Archived,
 }
 
-impl fmt::Display for TodoItem {
+impl fmt::Display for TaskItem {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} {}", self.get_status(), self.title)
     }
 }
 
-impl TodoItem {
+impl TaskItem {
     pub fn print_with_date(&self) {
         if let Some(date) = &self.active_date {
             println!(
@@ -65,7 +65,7 @@ impl TodoItem {
     }
 }
 
-fn read_data(path: &PathBuf) -> Vec<TodoItem> {
+fn read_data(path: &PathBuf) -> Vec<TaskItem> {
     if let Ok(data) = fs::read_to_string(path) {
         serde_json::from_str(&data).unwrap_or_default()
     } else {
@@ -73,7 +73,7 @@ fn read_data(path: &PathBuf) -> Vec<TodoItem> {
     }
 }
 
-fn write_data(path: &PathBuf, data: Vec<TodoItem>) {
+fn write_data(path: &PathBuf, data: Vec<TaskItem>) {
     // TODO: write this in a way that is extra safe in case the write fails
     let json = serde_json::to_string_pretty(&data).unwrap();
     fs::write(path, json).expect("Failed to write data file");
@@ -86,14 +86,14 @@ fn get_data_path() -> PathBuf {
     data_dir.join("fini_data.json")
 }
 
-fn sort_visible_items(items: &[TodoItem]) -> Vec<&TodoItem> {
+fn sort_visible_items(items: &[TaskItem]) -> Vec<&TaskItem> {
     items
         .iter()
         .filter(|i| matches!(i.status, Status::Todo | Status::InProgress | Status::Done))
         .collect()
 }
 
-pub fn get_visible_items() -> Vec<TodoItem> {
+pub fn get_visible_items() -> Vec<TaskItem> {
     let data_path = get_data_path();
     let items = read_data(&data_path);
     items
@@ -102,11 +102,11 @@ pub fn get_visible_items() -> Vec<TodoItem> {
         .collect()
 }
 
-pub fn get_task_id_by_index(index: usize, visible: &[TodoItem]) -> Option<usize> {
+pub fn get_task_id_by_index(index: usize, visible: &[TaskItem]) -> Option<usize> {
     visible.get(index - 1).map(|i| i.id)
 }
 
-fn get_next_id(items: &[TodoItem]) -> usize {
+fn get_next_id(items: &[TaskItem]) -> usize {
     items.iter().map(|t| t.id).max().unwrap_or(0) + 1
 }
 
@@ -202,7 +202,7 @@ impl Actions {
         let data_path = get_data_path();
         let mut items = read_data(&data_path);
         let id = get_next_id(&items);
-        let item = TodoItem {
+        let item = TaskItem {
             id,
             title: title.clone(),
             link: None,
@@ -219,7 +219,7 @@ impl Actions {
         let data_path = get_data_path();
         let mut items = read_data(&data_path);
         let id = get_next_id(&items);
-        let item = TodoItem {
+        let item = TaskItem {
             id,
             title: title.clone(),
             link: Some(link),
@@ -380,13 +380,13 @@ impl Actions {
     pub fn clear() {
         let data_path = get_data_path();
         let mut items = read_data(&data_path);
-        let mut copies: Vec<TodoItem> = vec![];
+        let mut copies: Vec<TaskItem> = vec![];
         let mut next_id = get_next_id(&items);
         for item in items.iter_mut() {
             match item.status {
                 Status::Done => item.status = Status::Archived,
                 Status::InProgress => {
-                    let copy = TodoItem {
+                    let copy = TaskItem {
                         id: next_id,
                         title: item.title.clone(),
                         link: item.link.clone(),
