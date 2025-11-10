@@ -1,9 +1,9 @@
 use chrono::{Local, NaiveDate};
 use directories::BaseDirs;
 use edit::edit;
-use inquire::Select;
+use inquire::{Confirm, Select, Text};
 use serde::{Deserialize, Serialize};
-use std::{fs, path::PathBuf};
+use std::{fmt, fs, path::PathBuf};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TodoItem {
@@ -20,6 +20,12 @@ enum Status {
     InProgress,
     Done,
     Archived,
+}
+
+impl fmt::Display for TodoItem {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} {}", self.get_status(), self.title)
+    }
 }
 
 impl TodoItem {
@@ -79,15 +85,24 @@ fn get_data_path() -> PathBuf {
     data_dir.join("fini_data.json")
 }
 
-fn get_visible_items(items: &[TodoItem]) -> Vec<&TodoItem> {
+fn sort_visible_items(items: &[TodoItem]) -> Vec<&TodoItem> {
     items
         .iter()
         .filter(|i| matches!(i.status, Status::Todo | Status::InProgress | Status::Done))
         .collect()
 }
 
-fn get_task_by_index<'a>(index: usize, visible: &[&'a TodoItem]) -> Option<&'a TodoItem> {
-    visible.get(index - 1).copied()
+pub fn get_visible_items() -> Vec<TodoItem> {
+    let data_path = get_data_path();
+    let items = read_data(&data_path);
+    items
+        .into_iter()
+        .filter(|i| matches!(i.status, Status::Todo | Status::InProgress | Status::Done))
+        .collect()
+}
+
+pub fn get_task_id_by_index(index: usize, visible: Vec<TodoItem>) -> Option<usize> {
+    visible.get(index - 1).map(|i| i.id)
 }
 
 fn get_next_id(items: &[TodoItem]) -> usize {
@@ -99,14 +114,76 @@ pub struct Actions {}
 impl Actions {
     pub fn interactive() {
         loop {
-            let commands = vec!["quit", "list"];
+            Actions::list();
+            let commands = vec![
+                "quit", "list", "add", "check", "begin", "clear", "delete", "cycle", "archived",
+            ];
             let answer = Select::new("Select a command:", commands)
                 .prompt()
-                .expect("Failed to get user input");
+                .unwrap_or("");
             match answer {
                 "quit" => break,
                 "list" => Actions::list(),
-                _ => eprintln!("Unknown command"),
+                "archived" => Actions::archived(),
+                "clear" => {
+                    let confirm_answer =
+                        Confirm::new("Are you sure you want to archive all complete tasks?")
+                            .with_default(false)
+                            .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
+                            .prompt();
+                    if confirm_answer.is_ok_and(|x| x) {
+                        Actions::clear();
+                    }
+                }
+                "cycle" => {
+                    let confirm_answer =
+                        Confirm::new("Are you sure you want to delete all archived tasks?")
+                            .with_default(false)
+                            .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
+                            .prompt();
+                    if confirm_answer.is_ok_and(|x| x) {
+                        Actions::cycle();
+                    }
+                }
+                "add" => {
+                    let title = Text::new("Enter task:").prompt();
+                    let link = Text::new("(Optional) Enter link:").prompt();
+                    if let (Ok(title), Ok(link)) = (title, link) {
+                        if link.is_empty() {
+                            Actions::add(title);
+                        } else {
+                            Actions::add_with_link(title, link);
+                        }
+                        continue;
+                    }
+                    println!("An error happened when asking for the task.");
+                }
+                "check" => {
+                    let data_path = get_data_path();
+                    let items = read_data(&data_path);
+                    let visible = sort_visible_items(&items);
+                    if let Ok(selection) = Select::new("Select task to complete", visible).prompt()
+                    {
+                        Actions::done(selection.id);
+                    }
+                }
+                "delete" => {
+                    let data_path = get_data_path();
+                    let items = read_data(&data_path);
+                    let visible = sort_visible_items(&items);
+                    if let Ok(selection) = Select::new("Select task to delete", visible).prompt() {
+                        Actions::delete(selection.id);
+                    }
+                }
+                "begin" => {
+                    let data_path = get_data_path();
+                    let items = read_data(&data_path);
+                    let visible = sort_visible_items(&items);
+                    if let Ok(selection) = Select::new("Select task to start", visible).prompt() {
+                        Actions::work(selection.id);
+                    }
+                }
+                _ => println!("Unknown command"),
             }
         }
     }
@@ -127,10 +204,36 @@ impl Actions {
         println!("Added task: {}", title);
     }
 
+    pub fn add_with_link(title: String, link: String) {
+        let data_path = get_data_path();
+        let mut items = read_data(&data_path);
+        let id = get_next_id(&items);
+        let item = TodoItem {
+            id,
+            title: title.clone(),
+            link: Some(link),
+            status: Status::Todo,
+            active_date: None,
+        };
+        items.push(item);
+        write_data(&data_path, items);
+        println!("Added task: {}", title);
+    }
+
+    pub fn link(id: usize, link: String) {
+        let data_path = get_data_path();
+        let mut items = read_data(&data_path);
+        if let Some(item) = items.iter_mut().find(|t| t.id == id) {
+            item.link = Some(link);
+            println!("Added link to task: {}", item.title);
+        }
+        write_data(&data_path, items);
+    }
+
     pub fn list() {
         let data_path = get_data_path();
         let items = read_data(&data_path);
-        let visible = get_visible_items(&items);
+        let visible = sort_visible_items(&items);
         if visible.is_empty() {
             println!("No tasks");
         } else {
@@ -150,11 +253,10 @@ impl Actions {
         }
     }
 
-    pub fn edit(index: usize) {
+    pub fn edit(id: usize) {
         let data_path = get_data_path();
         let mut items = read_data(&data_path);
-        let visible = get_visible_items(&items);
-        if let Some(item) = get_task_by_index(index, &visible) {
+        if let Some(item) = items.iter_mut().find(|t| t.id == id) {
             let item_id = item.id;
             let current_title = item.title.clone();
 
@@ -186,72 +288,62 @@ impl Actions {
                 }
             }
         }
-        eprintln!("⚠️ No task found with index {index}");
+        eprintln!("⚠️ No task found with id {id}");
     }
 
-    pub fn work(index: usize) {
+    pub fn work(id: usize) {
         let data_path = get_data_path();
         let mut items = read_data(&data_path);
-        let visible = get_visible_items(&items);
-        if let Some(item) = get_task_by_index(index, &visible) {
-            let item_id = item.id;
+        if let Some(item) = items.iter_mut().find(|t| t.id == id) {
             let title = item.title.clone();
-            if let Some(item) = items.iter_mut().find(|t| t.id == item_id) {
-                if item.status == Status::InProgress {
-                    item.status = Status::Todo;
-                    item.active_date = None;
-                    write_data(&data_path, items);
-                    println!("Moved task back to todo: {}", title);
-                } else {
-                    item.status = Status::InProgress;
-                    item.active_date = Some(Local::now().date_naive());
-                    write_data(&data_path, items);
-                    println!("Started task: {}", title);
-                }
-                return;
+            if item.status == Status::InProgress {
+                item.status = Status::Todo;
+                item.active_date = None;
+                write_data(&data_path, items);
+                println!("Moved task back to todo: {}", title);
+            } else {
+                item.status = Status::InProgress;
+                item.active_date = Some(Local::now().date_naive());
+                write_data(&data_path, items);
+                println!("Started task: {}", title);
             }
+            return;
         }
-        eprintln!("⚠️ No task found with index {index}");
+        eprintln!("⚠️ No task found with id {id}");
     }
 
-    pub fn done(index: usize) {
+    pub fn done(id: usize) {
         let data_path = get_data_path();
         let mut items = read_data(&data_path);
-        let visible = get_visible_items(&items);
-        if let Some(item) = get_task_by_index(index, &visible) {
-            let item_id = item.id;
+        if let Some(item) = items.iter_mut().find(|t| t.id == id) {
             let title = item.title.clone();
-            if let Some(item) = items.iter_mut().find(|t| t.id == item_id) {
-                if item.status == Status::Done {
-                    item.status = Status::Todo;
-                    item.active_date = None;
-                    write_data(&data_path, items);
-                    println!("Moved task back to todo: {}", title);
-                } else {
-                    item.status = Status::Done;
-                    item.active_date = Some(Local::now().date_naive());
-                    write_data(&data_path, items);
-                    println!("Completed task: {}", title);
-                }
-                return;
+            if item.status == Status::Done {
+                item.status = Status::Todo;
+                item.active_date = None;
+                write_data(&data_path, items);
+                println!("Moved task back to todo: {}", title);
+            } else {
+                item.status = Status::Done;
+                item.active_date = Some(Local::now().date_naive());
+                write_data(&data_path, items);
+                println!("Completed task: {}", title);
             }
+            return;
         }
-        eprintln!("⚠️ No task found with index {index}");
+        eprintln!("⚠️ No task found with id {id}");
     }
 
-    pub fn delete(index: usize) {
+    pub fn delete(id: usize) {
         let data_path = get_data_path();
         let mut items = read_data(&data_path);
-        let visible = get_visible_items(&items);
-        if let Some(item) = get_task_by_index(index, &visible) {
-            let item_id = item.id;
+        if let Some(item) = items.iter_mut().find(|t| t.id == id) {
             let title = item.title.clone();
-            items.retain(|i| i.id != item_id);
+            items.retain(|i| i.id != id);
             write_data(&data_path, items);
             println!("Deleted task: {}", title);
             return;
         }
-        eprintln!("⚠️ No task found with index {index}");
+        eprintln!("⚠️ No task found with id {id}");
     }
 
     pub fn clear() {

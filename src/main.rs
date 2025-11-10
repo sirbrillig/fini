@@ -1,8 +1,8 @@
 use clap::{Parser, Subcommand};
-use fini::Actions;
+use fini::{get_task_id_by_index, get_visible_items, Actions};
 
 #[derive(Parser)]
-#[command(name = "fini", version, about = "A CLI todo list tool with links")]
+#[command(name = "fini", version, about = "An interactive CLI todo list tool with links")]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -14,7 +14,6 @@ enum Commands {
     Add {
         /// The task title
         title: Vec<String>,
-        // TODO: figure out a good UX for adding a link
     },
     /// List all current tasks
     List,
@@ -54,10 +53,38 @@ fn main() {
         Commands::Add { title } => Actions::add(title.join(" ")),
         Commands::List => Actions::list(),
         Commands::Archive => Actions::archived(),
-        Commands::Edit { index } => Actions::edit(index),
-        Commands::Work { index } => Actions::work(index),
-        Commands::Done { index } => Actions::done(index),
-        Commands::Delete { index } => Actions::delete(index),
+        Commands::Edit { index } => {
+            let visible = get_visible_items();
+            if let Some(id) = get_task_id_by_index(index, visible) {
+                Actions::edit(id);
+            } else {
+                eprintln!("⚠️ No task found with index {index}");
+            }
+        }
+        Commands::Work { index } => {
+            let visible = get_visible_items();
+            if let Some(id) = get_task_id_by_index(index, visible) {
+                Actions::work(id);
+            } else {
+                eprintln!("⚠️ No task found with index {index}");
+            }
+        },
+        Commands::Done { index } => {
+            let visible = get_visible_items();
+            if let Some(id) = get_task_id_by_index(index, visible) {
+                Actions::done(id);
+            } else {
+                eprintln!("⚠️ No task found with index {index}");
+            }
+        },
+        Commands::Delete { index } => {
+            let visible = get_visible_items();
+            if let Some(id) = get_task_id_by_index(index, visible) {
+                Actions::delete(id);
+            } else {
+                eprintln!("⚠️ No task found with index {index}");
+            }
+        },
         Commands::Clear => Actions::clear(),
         Commands::Cycle => Actions::cycle(),
         Commands::Interactive => Actions::interactive(),
