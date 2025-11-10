@@ -7,6 +7,7 @@ edition = "2024"
 arboard = "3.6.1"
 chrono = { version = "0.4.42", features = ["serde"] }
 clap = { version = "4.5.51", features = ["derive"] }
+colored = "2.1.0"
 directories = "6.0.0"
 edit = "0.1.5"
 inquire = { version = "0.9.1", features = ["editor"] }

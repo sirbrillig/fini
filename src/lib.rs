@@ -1,5 +1,6 @@
 use arboard::Clipboard;
 use chrono::{Local, NaiveDate};
+use colored::Colorize;
 use directories::BaseDirs;
 use edit::edit;
 use inquire::{Confirm, Select, Text};
@@ -55,22 +56,22 @@ impl TaskItem {
     }
 
     pub fn print_with_index(&self, index: usize) {
-        println!("{:>3}. {} {}", index, self.get_status(), &self.title);
+        println!("{:>3}. {}\t{}", index, self.get_status(), &self.title);
         self.print_link();
     }
 
     fn print_link(&self) {
         if let Some(link) = &&self.link {
-            println!("     {link}");
+            println!("\t  {}", link.dimmed());
         }
     }
 
-    fn get_status(&self) -> &str {
+    fn get_status(&self) -> String {
         match &self.status {
-            Status::Todo => "☐",
-            Status::InProgress => "…",
-            Status::Done => "✔",
-            Status::Archived => "✔",
+            Status::Todo => "☐".purple().to_string(),
+            Status::InProgress => "…".yellow().to_string(),
+            Status::Done => "✔".green().to_string(),
+            Status::Archived => "✔".green().to_string(),
         }
     }
 }
