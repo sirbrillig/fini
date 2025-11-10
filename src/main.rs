@@ -16,28 +16,34 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     /// Add a new task
+    #[command(alias = "a")]
     Add {
         /// The task title
         title: Vec<String>,
     },
     /// List all current tasks
+    #[command(alias = "l")]
     List,
     /// Toggle a task as in-progress
+    #[command(aliases=["w", "begin", "b"])]
     Work {
         /// The index of the task to toggle
         index: usize,
     },
     /// Edit a task
+    #[command(alias = "e")]
     Edit {
         /// The index of the task to edit
         index: usize,
     },
     /// Toggle a task as done
+    #[command(aliases=["check", "c"])]
     Done {
         /// The index of the task to toggle
         index: usize,
     },
     /// Delete a task entirely
+    #[command(alias = "d")]
     Delete {
         /// The index of the task to delete
         index: usize,
@@ -45,15 +51,17 @@ enum Commands {
     /// Archive done tasks (archives a copy of in-progress tasks)
     Clear,
     /// Copy tasks to the clipboard
+    #[command(alias = "y")]
     Copy {
         /// The indices of the tasks to copy
         indices: Vec<usize>,
     },
     /// List all archived tasks
-    Archive,
+    Archived,
     /// Delete archived tasks
     Cycle,
     /// Enter interactive mode
+    #[command(alias = "i")]
     Interactive,
 }
 
