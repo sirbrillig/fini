@@ -86,7 +86,7 @@ fn main() {
             Actions::copy(ids);
         }
         Commands::List => Actions::list(),
-        Commands::Archive => Actions::archived(),
+        Commands::Archived => Actions::archived(),
         Commands::Edit { index } => {
             let visible = get_visible_items();
             if let Some(id) = get_task_id_by_index(index, &visible) {
