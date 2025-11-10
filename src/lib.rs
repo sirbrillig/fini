@@ -61,7 +61,7 @@ impl TaskItem {
 
     fn print_link(&self) {
         if let Some(link) = &&self.link {
-            println!("     🔗 {link}");
+            println!("     {link}");
         }
     }
 
