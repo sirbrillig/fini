@@ -32,6 +32,14 @@ impl fmt::Display for TaskItem {
 }
 
 impl TaskItem {
+    pub fn get_copy_text(&self) -> String {
+        let mut text = self.title.clone();
+        if let Some(link) = &self.link {
+            text.push_str(&format!(" {}", link));
+        }
+        text
+    }
+
     pub fn print_with_date(&self) {
         if let Some(date) = &self.active_date {
             println!(
@@ -371,8 +379,7 @@ impl Actions {
             .iter()
             .filter_map(|i| {
                 if ids.contains(&i.id) {
-                    // TODO: add better formatting than just title
-                    return Some(i.title.clone());
+                    return Some(i.get_copy_text());
                 }
                 None
             })
