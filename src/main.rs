@@ -1,5 +1,6 @@
 use clap::{Parser, Subcommand};
 use fini::{get_task_id_by_index, get_visible_items, Actions};
+use inquire::Text;
 
 #[derive(Parser)]
 #[command(name = "fini", version, about = "An interactive CLI todo list tool with links")]
@@ -50,7 +51,13 @@ enum Commands {
 fn main() {
     let cli = Cli::parse();
     match cli.command {
-        Commands::Add { title } => Actions::add(title.join(" ")),
+        Commands::Add { title } => {
+            let id = Actions::add(title.join(" "));
+            let link = Text::new("(Optional) Enter link:").prompt();
+            if let Ok(link) = link {
+                Actions::link(id, link);
+            }
+        },
         Commands::List => Actions::list(),
         Commands::Archive => Actions::archived(),
         Commands::Edit { index } => {

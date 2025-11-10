@@ -147,6 +147,7 @@ impl Actions {
                 }
                 "add" => {
                     let title = Text::new("Enter task:").prompt();
+                    // TODO: if title is missing, stop immediately
                     let link = Text::new("(Optional) Enter link:").prompt();
                     if let (Ok(title), Ok(link)) = (title, link) {
                         if link.is_empty() {
@@ -188,7 +189,7 @@ impl Actions {
         }
     }
 
-    pub fn add(title: String) {
+    pub fn add(title: String) -> usize {
         let data_path = get_data_path();
         let mut items = read_data(&data_path);
         let id = get_next_id(&items);
@@ -202,6 +203,7 @@ impl Actions {
         items.push(item);
         write_data(&data_path, items);
         println!("Added task: {}", title);
+        id
     }
 
     pub fn add_with_link(title: String, link: String) {
