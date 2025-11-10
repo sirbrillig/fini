@@ -44,37 +44,22 @@ enum Commands {
     Archive,
     /// Delete archived tasks
     Cycle,
+    /// Enter interactive mode
+    Interactive,
 }
 
 fn main() {
     let cli = Cli::parse();
     match cli.command {
-        Commands::Add { title } => {
-            Actions::add(title.join(" "));
-        }
-        Commands::List => {
-            Actions::list();
-        }
-        Commands::Archive => {
-            Actions::archived();
-        }
-        Commands::Edit { index } => {
-            Actions::edit(index);
-        }
-        Commands::Work { index } => {
-            Actions::work(index);
-        }
-        Commands::Done { index } => {
-            Actions::done(index);
-        }
-        Commands::Delete { index } => {
-            Actions::delete(index);
-        }
-        Commands::Clear => {
-            Actions::clear();
-        }
-        Commands::Cycle => {
-            Actions::cycle();
-        }
+        Commands::Add { title } => Actions::add(title.join(" ")),
+        Commands::List => Actions::list(),
+        Commands::Archive => Actions::archived(),
+        Commands::Edit { index } => Actions::edit(index),
+        Commands::Work { index } => Actions::work(index),
+        Commands::Done { index } => Actions::done(index),
+        Commands::Delete { index } => Actions::delete(index),
+        Commands::Clear => Actions::clear(),
+        Commands::Cycle => Actions::cycle(),
+        Commands::Interactive => Actions::interactive(),
     }
 }

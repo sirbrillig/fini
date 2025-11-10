@@ -1,6 +1,7 @@
 use chrono::{Local, NaiveDate};
 use directories::BaseDirs;
 use edit::edit;
+use inquire::Select;
 use serde::{Deserialize, Serialize};
 use std::{fs, path::PathBuf};
 
@@ -24,7 +25,12 @@ enum Status {
 impl TodoItem {
     pub fn print_with_date(&self) {
         if let Some(date) = &self.active_date {
-            println!("{} {} {}", self.get_status(), date.format("%Y-%m-%d"), self.title);
+            println!(
+                "{} {} {}",
+                self.get_status(),
+                date.format("%Y-%m-%d"),
+                self.title
+            );
         } else {
             println!("{} {}", self.get_status(), self.title);
         }
@@ -91,6 +97,20 @@ fn get_next_id(items: &[TodoItem]) -> usize {
 pub struct Actions {}
 
 impl Actions {
+    pub fn interactive() {
+        loop {
+            let commands = vec!["quit", "list"];
+            let answer = Select::new("Select a command:", commands)
+                .prompt()
+                .expect("Failed to get user input");
+            match answer {
+                "quit" => break,
+                "list" => Actions::list(),
+                _ => eprintln!("Unknown command"),
+            }
+        }
+    }
+
     pub fn add(title: String) {
         let data_path = get_data_path();
         let mut items = read_data(&data_path);
