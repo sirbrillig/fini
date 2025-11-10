@@ -1,3 +1,4 @@
+use arboard::Clipboard;
 use chrono::{Local, NaiveDate};
 use directories::BaseDirs;
 use edit::edit;
@@ -101,7 +102,7 @@ pub fn get_visible_items() -> Vec<TodoItem> {
         .collect()
 }
 
-pub fn get_task_id_by_index(index: usize, visible: Vec<TodoItem>) -> Option<usize> {
+pub fn get_task_id_by_index(index: usize, visible: &[TodoItem]) -> Option<usize> {
     visible.get(index - 1).map(|i| i.id)
 }
 
@@ -116,7 +117,15 @@ impl Actions {
         loop {
             Actions::list();
             let commands = vec![
-                "quit", "list", "add", "check", "begin", "clear", "delete", "cycle", "list-archived",
+                "quit",
+                "list",
+                "add",
+                "check",
+                "begin",
+                "clear",
+                "delete",
+                "cycle",
+                "list-archived",
             ];
             let answer = Select::new("Select a command:", commands)
                 .prompt()
@@ -346,6 +355,26 @@ impl Actions {
             return;
         }
         eprintln!("⚠️ No task found with id {id}");
+    }
+
+    pub fn copy(ids: Vec<usize>) {
+        let mut clipboard = Clipboard::new().expect("Failed to access clipboard");
+        let data_path = get_data_path();
+        let items = read_data(&data_path);
+        let text_lines: Vec<String> = items
+            .iter()
+            .filter_map(|i| {
+                if ids.contains(&i.id) {
+                    // TODO: add better formatting than just title
+                    return Some(i.title.clone());
+                }
+                None
+            })
+            .collect();
+        let text = text_lines.join("\n");
+        clipboard
+            .set_text(text)
+            .expect("Failed to save text to clipboard");
     }
 
     pub fn clear() {
