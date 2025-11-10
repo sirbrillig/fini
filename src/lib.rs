@@ -4,7 +4,9 @@ use directories::BaseDirs;
 use edit::edit;
 use inquire::{Confirm, Select, Text};
 use serde::{Deserialize, Serialize};
-use std::{fmt, fs, path::PathBuf};
+use tempfile::NamedTempFile;
+use std::{fmt, fs, path::{Path, PathBuf}};
+use std::io::Write;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TaskItem {
@@ -73,10 +75,14 @@ fn read_data(path: &PathBuf) -> Vec<TaskItem> {
     }
 }
 
-fn write_data(path: &PathBuf, data: Vec<TaskItem>) {
-    // TODO: write this in a way that is extra safe in case the write fails
-    let json = serde_json::to_string_pretty(&data).unwrap();
-    fs::write(path, json).expect("Failed to write data file");
+fn write_data(path: &PathBuf, data: Vec<TaskItem>) -> std::io::Result<()> {
+    let dir = path.parent().unwrap_or_else(|| Path::new("."));
+    let mut tmp = NamedTempFile::new_in(dir)?;
+    serde_json::to_writer_pretty(&mut tmp, &data)?;
+    tmp.as_file_mut().flush()?;
+    tmp.as_file().sync_all()?;
+    tmp.persist(path)?;
+    Ok(())
 }
 
 fn get_data_path() -> PathBuf {
@@ -210,7 +216,7 @@ impl Actions {
             active_date: None,
         };
         items.push(item);
-        write_data(&data_path, items);
+        write_data(&data_path, items).expect("Failed to write file!");
         println!("Added task: {}", title);
         id
     }
@@ -227,7 +233,7 @@ impl Actions {
             active_date: None,
         };
         items.push(item);
-        write_data(&data_path, items);
+        write_data(&data_path, items).expect("Failed to write file!");
         println!("Added task: {}", title);
     }
 
@@ -238,7 +244,7 @@ impl Actions {
             item.link = Some(link);
             println!("Added link to task: {}", item.title);
         }
-        write_data(&data_path, items);
+        write_data(&data_path, items).expect("Failed to write file!");
     }
 
     pub fn list() {
@@ -288,7 +294,7 @@ impl Actions {
                     // Update the task
                     if let Some(item) = items.iter_mut().find(|t| t.id == item_id) {
                         item.title = new_title.clone();
-                        write_data(&data_path, items);
+                        write_data(&data_path, items).expect("Failed to write file!");
                         println!("Updated task: {}", new_title);
                         return;
                     }
@@ -310,12 +316,12 @@ impl Actions {
             if item.status == Status::InProgress {
                 item.status = Status::Todo;
                 item.active_date = None;
-                write_data(&data_path, items);
+                write_data(&data_path, items).expect("Failed to write file!");
                 println!("Moved task back to todo: {}", title);
             } else {
                 item.status = Status::InProgress;
                 item.active_date = Some(Local::now().date_naive());
-                write_data(&data_path, items);
+                write_data(&data_path, items).expect("Failed to write file!");
                 println!("Started task: {}", title);
             }
             return;
@@ -331,12 +337,12 @@ impl Actions {
             if item.status == Status::Done {
                 item.status = Status::Todo;
                 item.active_date = None;
-                write_data(&data_path, items);
+                write_data(&data_path, items).expect("Failed to write file!");
                 println!("Moved task back to todo: {}", title);
             } else {
                 item.status = Status::Done;
                 item.active_date = Some(Local::now().date_naive());
-                write_data(&data_path, items);
+                write_data(&data_path, items).expect("Failed to write file!");
                 println!("Completed task: {}", title);
             }
             return;
@@ -350,7 +356,7 @@ impl Actions {
         if let Some(item) = items.iter_mut().find(|t| t.id == id) {
             let title = item.title.clone();
             items.retain(|i| i.id != id);
-            write_data(&data_path, items);
+            write_data(&data_path, items).expect("Failed to write file!");
             println!("Deleted task: {}", title);
             return;
         }
@@ -400,7 +406,7 @@ impl Actions {
             }
         }
         items.extend(copies);
-        write_data(&data_path, items);
+        write_data(&data_path, items).expect("Failed to write file!");
         println!("Archived completed tasks");
     }
 
@@ -408,7 +414,7 @@ impl Actions {
         let data_path = get_data_path();
         let mut items = read_data(&data_path);
         items.retain(|i| i.status != Status::Archived);
-        write_data(&data_path, items);
+        write_data(&data_path, items).expect("Failed to write file!");
         println!("Deleted archived tasks");
     }
 }
