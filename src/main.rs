@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand};
 use fini::{get_task_id_by_index, get_visible_items, Actions};
-use inquire::Text;
+use inquire::{Confirm, Text};
 
 #[derive(Parser)]
 #[command(
@@ -119,8 +119,26 @@ fn main() {
                 eprintln!("⚠️ No task found with index {index}");
             }
         }
-        Commands::Clear => Actions::clear(),
-        Commands::Cycle => Actions::cycle(),
+        Commands::Clear => {
+            let confirm_answer =
+                Confirm::new("Are you sure you want to archive all complete tasks?")
+                    .with_default(false)
+                    .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
+                    .prompt();
+            if confirm_answer.is_ok_and(|x| x) {
+                Actions::clear();
+            }
+        }
+        Commands::Cycle => {
+            let confirm_answer =
+                Confirm::new("Are you sure you want to delete all archived tasks?")
+                    .with_default(false)
+                    .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
+                    .prompt();
+            if confirm_answer.is_ok_and(|x| x) {
+                Actions::cycle();
+            }
+        }
         Commands::Interactive => Actions::interactive(),
     }
 }
