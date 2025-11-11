@@ -39,8 +39,8 @@ enum Commands {
     /// Toggle a task as done
     #[command(aliases=["check", "c"])]
     Done {
-        /// The index of the task to toggle
-        index: usize,
+        /// The indices of the tasks to toggle
+        indices: Vec<usize>,
     },
     /// Delete a task entirely
     #[command(alias = "d")]
@@ -103,13 +103,15 @@ fn main() {
                 eprintln!("⚠️ No task found with index {index}");
             }
         }
-        Commands::Done { index } => {
+        Commands::Done { indices } => {
             let visible = get_visible_items();
-            if let Some(id) = get_task_id_by_index(index, &visible) {
-                Actions::done(id);
-            } else {
-                eprintln!("⚠️ No task found with index {index}");
-            }
+            let mut ids: Vec<usize> = vec![];
+            indices.iter().for_each(|index| {
+                if let Some(id) = get_task_id_by_index(*index, &visible) {
+                    ids.push(id);
+                }
+            });
+            Actions::done(ids);
         }
         Commands::Delete { index } => {
             let visible = get_visible_items();

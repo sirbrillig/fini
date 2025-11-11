@@ -204,8 +204,7 @@ impl Actions {
                     let data_path = get_data_path();
                     let items = read_data(&data_path);
                     let visible = sort_visible_items(&items);
-                    if let Ok(selection) = Select::new("Select task to edit", visible).prompt()
-                    {
+                    if let Ok(selection) = Select::new("Select task to edit", visible).prompt() {
                         Actions::edit(selection.id);
                     }
                 }
@@ -213,9 +212,9 @@ impl Actions {
                     let data_path = get_data_path();
                     let items = read_data(&data_path);
                     let visible = sort_visible_items(&items);
-                    if let Ok(selection) = Select::new("Select task to complete", visible).prompt()
+                    if let Ok(selections) = MultiSelect::new("Select task to complete", visible).prompt()
                     {
-                        Actions::done(selection.id);
+                        Actions::done(selections.iter().map(|i| i.id).collect());
                     }
                 }
                 "delete" => {
@@ -369,11 +368,10 @@ impl Actions {
                         }
                     }
 
-                    let confirm_answer =
-                        Confirm::new("Do you want to edit the link?")
-                            .with_default(false)
-                            .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
-                            .prompt();
+                    let confirm_answer = Confirm::new("Do you want to edit the link?")
+                        .with_default(false)
+                        .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
+                        .prompt();
                     if confirm_answer.is_ok_and(|x| x) {
                         Actions::edit_link(id);
                     }
@@ -409,25 +407,31 @@ impl Actions {
         eprintln!("⚠️ No task found with id {id}");
     }
 
-    pub fn done(id: usize) {
+    pub fn done(ids: Vec<usize>) {
         let data_path = get_data_path();
         let mut items = read_data(&data_path);
-        if let Some(item) = items.iter_mut().find(|t| t.id == id) {
-            let title = item.title.clone();
-            if item.status == Status::Done {
-                item.status = Status::Todo;
-                item.active_date = None;
-                write_data(&data_path, items).expect("Failed to write file!");
-                println!("Moved task back to todo: {}", title);
+        let mut did_change = false;
+        ids.iter().for_each(|id| {
+            if let Some(item) = items.iter_mut().find(|t| t.id == *id) {
+                let title = item.title.clone();
+                if item.status == Status::Done {
+                    item.status = Status::Todo;
+                    item.active_date = None;
+                    did_change = true;
+                    println!("Moved task back to todo: {}", title);
+                } else {
+                    item.status = Status::Done;
+                    item.active_date = Some(Local::now().date_naive());
+                    did_change = true;
+                    println!("Completed task: {}", title);
+                }
             } else {
-                item.status = Status::Done;
-                item.active_date = Some(Local::now().date_naive());
-                write_data(&data_path, items).expect("Failed to write file!");
-                println!("Completed task: {}", title);
+                eprintln!("⚠️ No task found with id {id}");
             }
-            return;
+        });
+        if did_change {
+            write_data(&data_path, items).expect("Failed to write file!");
         }
-        eprintln!("⚠️ No task found with id {id}");
     }
 
     pub fn delete(id: usize) {
