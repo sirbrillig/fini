@@ -3,11 +3,14 @@ use chrono::{Local, NaiveDate};
 use colored::Colorize;
 use directories::BaseDirs;
 use edit::edit;
-use inquire::{Confirm, Select, Text};
+use inquire::{Confirm, MultiSelect, Select, Text};
 use serde::{Deserialize, Serialize};
-use tempfile::NamedTempFile;
-use std::{fmt, fs, path::{Path, PathBuf}};
 use std::io::Write;
+use std::{
+    fmt, fs,
+    path::{Path, PathBuf},
+};
+use tempfile::NamedTempFile;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TaskItem {
@@ -137,6 +140,7 @@ impl Actions {
                 "add",
                 "check",
                 "begin",
+                "copy",
                 "clear",
                 "delete",
                 "cycle",
@@ -182,6 +186,16 @@ impl Actions {
                         continue;
                     }
                     println!("An error happened when asking for the task.");
+                }
+                "copy" => {
+                    let data_path = get_data_path();
+                    let items = read_data(&data_path);
+                    let visible = sort_visible_items(&items);
+                    if let Ok(selections) =
+                        MultiSelect::new("Select tasks to copy", visible).prompt()
+                    {
+                        Actions::copy(selections.iter().map(|i| i.id).collect());
+                    }
                 }
                 "check" => {
                     let data_path = get_data_path();
@@ -389,6 +403,13 @@ impl Actions {
         clipboard
             .set_text(text)
             .expect("Failed to save text to clipboard");
+        println!(
+            "Copied text for tasks: {}",
+            ids.iter()
+                .map(|n| n.to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
+        );
     }
 
     pub fn clear() {
