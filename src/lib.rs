@@ -144,6 +144,7 @@ impl Actions {
                 "clear",
                 "delete",
                 "cycle",
+                "edit",
                 "list-archived",
             ];
             let answer = Select::new("Select a command:", commands)
@@ -195,6 +196,15 @@ impl Actions {
                         MultiSelect::new("Select tasks to copy", visible).prompt()
                     {
                         Actions::copy(selections.iter().map(|i| i.id).collect());
+                    }
+                }
+                "edit" => {
+                    let data_path = get_data_path();
+                    let items = read_data(&data_path);
+                    let visible = sort_visible_items(&items);
+                    if let Ok(selection) = Select::new("Select task to edit", visible).prompt()
+                    {
+                        Actions::edit(selection.id);
                     }
                 }
                 "check" => {
