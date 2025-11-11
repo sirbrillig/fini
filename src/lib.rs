@@ -362,7 +362,6 @@ impl Actions {
                             item.title = new_title.clone();
                             write_data(&data_path, items).expect("Failed to write file!");
                             println!("Updated task: {}", new_title);
-                            return;
                         }
                     }
 
