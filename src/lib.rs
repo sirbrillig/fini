@@ -31,7 +31,7 @@ enum Status {
 
 impl fmt::Display for TaskItem {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} {}", self.get_status(), self.title)?;
+        write!(f, "{}\t{}", self.get_status(), self.title)?;
         if let Some(link) = &self.link {
             write!(f, " {}", link.dimmed())?;
         }
@@ -51,26 +51,18 @@ impl TaskItem {
     pub fn print_with_date(&self) {
         if let Some(date) = &self.active_date {
             println!(
-                "{} {} {}",
+                "{}\t{} {}",
                 self.get_status(),
                 date.format("%Y-%m-%d"),
                 self.title
             );
         } else {
-            println!("{} {}", self.get_status(), self.title);
+            println!("{}", self);
         }
-        self.print_link();
     }
 
     pub fn print_with_index(&self, index: usize) {
-        println!("{:>3}. {}\t{}", index, self.get_status(), &self.title);
-        self.print_link();
-    }
-
-    fn print_link(&self) {
-        if let Some(link) = &&self.link {
-            println!("\t  {}", link.dimmed());
-        }
+        println!("{:>3}. {}", index, self);
     }
 
     fn get_status(&self) -> String {
@@ -306,8 +298,10 @@ impl Actions {
     pub fn archived() {
         let data_path = get_data_path();
         let items = read_data(&data_path);
+        // TODO: sort and group these by date
         for item in items {
             if item.status == Status::Archived {
+                // TODO: remove this and just print the item's Display trait
                 item.print_with_date();
             }
         }
