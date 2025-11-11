@@ -31,7 +31,11 @@ enum Status {
 
 impl fmt::Display for TaskItem {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} {}", self.get_status(), self.title)
+        write!(f, "{} {}", self.get_status(), self.title)?;
+        if let Some(link) = &self.link {
+            write!(f, " {}", link.dimmed())?;
+        }
+        Ok(())
     }
 }
 
