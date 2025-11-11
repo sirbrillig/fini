@@ -313,6 +313,43 @@ impl Actions {
         }
     }
 
+    pub fn edit_link(id: usize) {
+        let data_path = get_data_path();
+        let mut items = read_data(&data_path);
+        if let Some(item) = items.iter_mut().find(|t| t.id == id) {
+            let item_id = item.id;
+            let current_link = item.link.clone().unwrap_or_default();
+
+            match edit(&current_link) {
+                Ok(new_link) => {
+                    let new_link = new_link.trim().to_string();
+                    if new_link.is_empty() {
+                        eprintln!("⚠️ link cannot be empty");
+                        return;
+                    }
+
+                    if new_link == current_link {
+                        println!("No changes made");
+                        return;
+                    }
+
+                    // Update the task
+                    if let Some(item) = items.iter_mut().find(|t| t.id == item_id) {
+                        item.link = Some(new_link.clone());
+                        write_data(&data_path, items).expect("Failed to write file!");
+                        println!("Updated task: {}", new_link);
+                        return;
+                    }
+                }
+                Err(e) => {
+                    eprintln!("⚠️ Error editing task: {}", e);
+                    return;
+                }
+            }
+        }
+        eprintln!("⚠️ No task found with id {id}");
+    }
+
     pub fn edit(id: usize) {
         let data_path = get_data_path();
         let mut items = read_data(&data_path);
@@ -329,18 +366,24 @@ impl Actions {
                         return;
                     }
 
-                    if new_title == current_title {
-                        println!("No changes made");
-                        return;
+                    if new_title != current_title {
+                        if let Some(item) = items.iter_mut().find(|t| t.id == item_id) {
+                            item.title = new_title.clone();
+                            write_data(&data_path, items).expect("Failed to write file!");
+                            println!("Updated task: {}", new_title);
+                            return;
+                        }
                     }
 
-                    // Update the task
-                    if let Some(item) = items.iter_mut().find(|t| t.id == item_id) {
-                        item.title = new_title.clone();
-                        write_data(&data_path, items).expect("Failed to write file!");
-                        println!("Updated task: {}", new_title);
-                        return;
+                    let confirm_answer =
+                        Confirm::new("Do you want to edit the link?")
+                            .with_default(false)
+                            .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
+                            .prompt();
+                    if confirm_answer.is_ok_and(|x| x) {
+                        Actions::edit_link(id);
                     }
+                    return;
                 }
                 Err(e) => {
                     eprintln!("⚠️ Error editing task: {}", e);
