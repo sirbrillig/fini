@@ -148,6 +148,7 @@ impl Actions {
                 "list-archived",
             ];
             let answer = Select::new("Select a command:", commands)
+                .with_page_size(4)
                 .prompt()
                 .unwrap_or("");
             match answer {
@@ -440,6 +441,8 @@ impl Actions {
                     };
                     next_id += 1;
                     copies.push(copy);
+                    // Return in-progress tasks to To do
+                    item.status = Status::Todo;
                 }
                 _ => {}
             }
