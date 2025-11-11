@@ -153,8 +153,13 @@ impl Actions {
             ];
             let answer = Select::new("Select a command:", commands)
                 .with_page_size(4)
-                .prompt()
-                .unwrap_or("");
+                .prompt();
+
+            let answer = match answer {
+                Ok(cmd) => cmd,
+                Err(_) => break, // Handle ctrl-c by quitting
+            };
+
             match answer {
                 "quit" => break,
                 "list" => Actions::list(),
