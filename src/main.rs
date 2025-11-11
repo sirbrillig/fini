@@ -24,11 +24,11 @@ enum Commands {
     /// List all current tasks
     #[command(alias = "l")]
     List,
-    /// Toggle a task as in-progress
+    /// Toggle a task as in-progress (alias begin)
     #[command(aliases=["w", "begin", "b"])]
     Work {
-        /// The index of the task to toggle
-        index: usize,
+        /// The indices of the tasks to toggle
+        indices: Vec<usize>,
     },
     /// Edit a task
     #[command(alias = "e")]
@@ -50,8 +50,8 @@ enum Commands {
     },
     /// Archive done tasks (archives a copy of in-progress tasks)
     Clear,
-    /// Copy tasks to the clipboard
-    #[command(alias = "y")]
+    /// Copy tasks to the clipboard (alias yank)
+    #[command(aliases = ["y", "yank"])]
     Copy {
         /// The indices of the tasks to copy
         indices: Vec<usize>,
@@ -95,13 +95,15 @@ fn main() {
                 eprintln!("⚠️ No task found with index {index}");
             }
         }
-        Commands::Work { index } => {
+        Commands::Work { indices } => {
             let visible = get_visible_items();
-            if let Some(id) = get_task_id_by_index(index, &visible) {
-                Actions::work(id);
-            } else {
-                eprintln!("⚠️ No task found with index {index}");
-            }
+            let mut ids: Vec<usize> = vec![];
+            indices.iter().for_each(|index| {
+                if let Some(id) = get_task_id_by_index(*index, &visible) {
+                    ids.push(id);
+                }
+            });
+            Actions::work(ids);
         }
         Commands::Done { indices } => {
             let visible = get_visible_items();

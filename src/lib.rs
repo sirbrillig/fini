@@ -227,8 +227,8 @@ impl Actions {
                     let data_path = get_data_path();
                     let items = read_data(&data_path);
                     let visible = sort_visible_items(&items);
-                    if let Ok(selection) = Select::new("Select task to start", visible).prompt() {
-                        Actions::work(selection.id);
+                    if let Ok(selections) = MultiSelect::new("Select task to start", visible).prompt() {
+                        Actions::work(selections.iter().map(|i| i.id).collect());
                     }
                 }
                 _ => println!("Unknown command"),
@@ -384,25 +384,31 @@ impl Actions {
         eprintln!("⚠️ No task found with id {id}");
     }
 
-    pub fn work(id: usize) {
+    pub fn work(ids: Vec<usize>) {
         let data_path = get_data_path();
         let mut items = read_data(&data_path);
-        if let Some(item) = items.iter_mut().find(|t| t.id == id) {
+        let mut did_change = false;
+        ids.iter().for_each(|id| {
+        if let Some(item) = items.iter_mut().find(|t| t.id == *id) {
             let title = item.title.clone();
             if item.status == Status::InProgress {
                 item.status = Status::Todo;
                 item.active_date = None;
-                write_data(&data_path, items).expect("Failed to write file!");
+                did_change = true;
                 println!("Moved task back to todo: {}", title);
             } else {
                 item.status = Status::InProgress;
                 item.active_date = Some(Local::now().date_naive());
-                write_data(&data_path, items).expect("Failed to write file!");
+                did_change = true;
                 println!("Started task: {}", title);
             }
-            return;
+        } else {
+            eprintln!("⚠️ No task found with id {id}");
         }
-        eprintln!("⚠️ No task found with id {id}");
+        } );
+        if did_change {
+            write_data(&data_path, items).expect("Failed to write file!");
+        }
     }
 
     pub fn done(ids: Vec<usize>) {
