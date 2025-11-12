@@ -14,15 +14,15 @@ use tempfile::NamedTempFile;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TaskItem {
-    id: usize,
-    title: String,
-    status: Status,
-    active_date: Option<NaiveDate>,
-    link: Option<String>,
+    pub id: usize,
+    pub title: String,
+    pub status: Status,
+    pub active_date: Option<NaiveDate>,
+    pub link: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
-enum Status {
+pub enum Status {
     Todo,
     InProgress,
     Done,
@@ -107,6 +107,25 @@ fn sort_visible_items(items: &[TaskItem]) -> Vec<&TaskItem> {
         .collect()
 }
 
+pub fn get_task_ids_for_date(date: String) -> Vec<usize> {
+    let tasks = get_all_items();
+    let mut ids: Vec<usize> = vec![];
+    tasks.iter().for_each(|t| {
+        if let Some(task_date) = t.active_date {
+            // TODO: parse the user date so it can be various formats like "yesterday"
+            if task_date.format("%Y-%m-%d").to_string() == date {
+                ids.push(t.id);
+            }
+        }
+    });
+    ids
+}
+
+pub fn get_all_items() -> Vec<TaskItem> {
+    let data_path = get_data_path();
+    read_data(&data_path)
+}
+
 pub fn get_visible_items() -> Vec<TaskItem> {
     let data_path = get_data_path();
     let items = read_data(&data_path);
@@ -137,6 +156,7 @@ impl Actions {
                 "check",
                 "begin",
                 "copy",
+                "copy-date",
                 "clear",
                 "delete",
                 "cycle",
@@ -156,7 +176,7 @@ impl Actions {
                 "quit" => break,
                 "list" => {
                     // Do nothing as the list will be printed when we loop.
-                },
+                }
                 "list-archived" => Actions::archived(),
                 "clear" => {
                     let confirm_answer =
@@ -202,6 +222,12 @@ impl Actions {
                         Actions::copy(selections.iter().map(|i| i.id).collect());
                     }
                 }
+                "copy-date" => {
+                    let date = Text::new("Enter date:").prompt();
+                    if let Ok(date) = date {
+                        Actions::copy(get_task_ids_for_date(date));
+                    }
+                }
                 "edit" => {
                     let data_path = get_data_path();
                     let items = read_data(&data_path);
@@ -214,7 +240,8 @@ impl Actions {
                     let data_path = get_data_path();
                     let items = read_data(&data_path);
                     let visible = sort_visible_items(&items);
-                    if let Ok(selections) = MultiSelect::new("Select task to complete", visible).prompt()
+                    if let Ok(selections) =
+                        MultiSelect::new("Select task to complete", visible).prompt()
                     {
                         Actions::done(selections.iter().map(|i| i.id).collect());
                     }
@@ -231,7 +258,9 @@ impl Actions {
                     let data_path = get_data_path();
                     let items = read_data(&data_path);
                     let visible = sort_visible_items(&items);
-                    if let Ok(selections) = MultiSelect::new("Select task to start", visible).prompt() {
+                    if let Ok(selections) =
+                        MultiSelect::new("Select task to start", visible).prompt()
+                    {
                         Actions::work(selections.iter().map(|i| i.id).collect());
                     }
                 }
@@ -392,23 +421,23 @@ impl Actions {
         let mut items = read_data(&data_path);
         let mut did_change = false;
         ids.iter().for_each(|id| {
-        if let Some(item) = items.iter_mut().find(|t| t.id == *id) {
-            let title = item.title.clone();
-            if item.status == Status::InProgress {
-                item.status = Status::Todo;
-                item.active_date = None;
-                did_change = true;
-                println!("Moved task back to todo: {}", title);
+            if let Some(item) = items.iter_mut().find(|t| t.id == *id) {
+                let title = item.title.clone();
+                if item.status == Status::InProgress {
+                    item.status = Status::Todo;
+                    item.active_date = None;
+                    did_change = true;
+                    println!("Moved task back to todo: {}", title);
+                } else {
+                    item.status = Status::InProgress;
+                    item.active_date = Some(Local::now().date_naive());
+                    did_change = true;
+                    println!("Started task: {}", title);
+                }
             } else {
-                item.status = Status::InProgress;
-                item.active_date = Some(Local::now().date_naive());
-                did_change = true;
-                println!("Started task: {}", title);
+                eprintln!("⚠️ No task found with id {id}");
             }
-        } else {
-            eprintln!("⚠️ No task found with id {id}");
-        }
-        } );
+        });
         if did_change {
             write_data(&data_path, items).expect("Failed to write file!");
         }
