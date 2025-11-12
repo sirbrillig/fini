@@ -15,34 +15,34 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Add a new task
+    /// Add a new task (alias: a)
     #[command(alias = "a")]
     Add {
         /// The task title
         title: Vec<String>,
     },
-    /// List all current tasks
+    /// List all current tasks (alias: l)
     #[command(alias = "l")]
     List,
-    /// Toggle a task as in-progress (alias begin)
+    /// Toggle a task as in-progress (aliases: w, b, begin)
     #[command(aliases=["w", "begin", "b"])]
     Work {
         /// The indices of the tasks to toggle
         indices: Vec<usize>,
     },
-    /// Edit a task
+    /// Edit a task (alias: e)
     #[command(alias = "e")]
     Edit {
         /// The index of the task to edit
         index: usize,
     },
-    /// Toggle a task as done
+    /// Toggle a task as done (aliases: c, check)
     #[command(aliases=["check", "c"])]
     Done {
         /// The indices of the tasks to toggle
         indices: Vec<usize>,
     },
-    /// Delete a task entirely
+    /// Delete a task entirely (alias: d)
     #[command(alias = "d")]
     Delete {
         /// The index of the task to delete
@@ -50,7 +50,7 @@ enum Commands {
     },
     /// Archive done tasks (archives a copy of in-progress tasks)
     Clear,
-    /// Copy tasks to the clipboard (alias yank)
+    /// Copy tasks to the clipboard (aliases: y, yank)
     #[command(aliases = ["y", "yank"])]
     Copy {
         /// The indices of the tasks to copy
@@ -60,7 +60,7 @@ enum Commands {
     Archived,
     /// Delete archived tasks
     Cycle,
-    /// Enter interactive mode
+    /// Enter interactive mode (alias: i)
     #[command(alias = "i")]
     Interactive,
 }
