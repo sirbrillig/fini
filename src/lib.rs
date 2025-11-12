@@ -132,6 +132,7 @@ impl Actions {
             Actions::list();
             let commands = vec![
                 "quit",
+                "list",
                 "add",
                 "check",
                 "begin",
@@ -153,6 +154,9 @@ impl Actions {
 
             match answer {
                 "quit" => break,
+                "list" => {
+                    // Do nothing as the list will be printed when we loop.
+                },
                 "list-archived" => Actions::archived(),
                 "clear" => {
                     let confirm_answer =
