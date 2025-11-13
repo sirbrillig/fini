@@ -12,6 +12,8 @@ use std::{
 };
 use tempfile::NamedTempFile;
 
+const SELECT_PAGE_SIZE: usize = 20;
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TaskItem {
     pub id: usize,
@@ -220,8 +222,9 @@ impl Actions {
                     let data_path = get_data_path();
                     let items = read_data(&data_path);
                     let visible = sort_visible_items(&items);
-                    if let Ok(selections) =
-                        MultiSelect::new("Select tasks to copy", visible).prompt()
+                    if let Ok(selections) = MultiSelect::new("Select tasks to copy", visible)
+                        .with_page_size(SELECT_PAGE_SIZE)
+                        .prompt()
                     {
                         Actions::copy(selections.iter().map(|i| i.id).collect());
                     }
@@ -244,8 +247,9 @@ impl Actions {
                     let data_path = get_data_path();
                     let items = read_data(&data_path);
                     let visible = sort_visible_items(&items);
-                    if let Ok(selections) =
-                        MultiSelect::new("Select task to complete", visible).prompt()
+                    if let Ok(selections) = MultiSelect::new("Select task to complete", visible)
+                        .with_page_size(SELECT_PAGE_SIZE)
+                        .prompt()
                     {
                         Actions::done(selections.iter().map(|i| i.id).collect());
                     }
@@ -262,8 +266,9 @@ impl Actions {
                     let data_path = get_data_path();
                     let items = read_data(&data_path);
                     let visible = sort_visible_items(&items);
-                    if let Ok(selections) =
-                        MultiSelect::new("Select task to start", visible).prompt()
+                    if let Ok(selections) = MultiSelect::new("Select task to start", visible)
+                        .with_page_size(SELECT_PAGE_SIZE)
+                        .prompt()
                     {
                         Actions::work(selections.iter().map(|i| i.id).collect());
                     }
