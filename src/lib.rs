@@ -200,15 +200,19 @@ impl Actions {
                 }
                 "add" => {
                     let title = Text::new("Enter task:").prompt();
-                    // TODO: if title is missing, stop immediately
-                    let link = Text::new("(Optional) Enter link:").prompt();
-                    if let (Ok(title), Ok(link)) = (title, link) {
-                        if link.is_empty() {
-                            Actions::add(title);
-                        } else {
-                            Actions::add_with_link(title, link);
+                    if let Ok(title) = title {
+                        if title.is_empty() {
+                            continue;
                         }
-                        continue;
+                        let link = Text::new("(Optional) Enter link:").prompt();
+                        if let Ok(link) = link {
+                            if link.is_empty() {
+                                Actions::add(title);
+                            } else {
+                                Actions::add_with_link(title, link);
+                            }
+                            continue;
+                        }
                     }
                     println!("An error happened when asking for the task.");
                 }

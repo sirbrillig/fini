@@ -74,7 +74,11 @@ fn main() {
     let cli = Cli::parse();
     match cli.command {
         Commands::Add { title } => {
-            let id = Actions::add(title.join(" "));
+            let title_joined = title.join(" ");
+            if title_joined.is_empty() {
+                return;
+            }
+            let id = Actions::add(title_joined);
             let link = Text::new("(Optional) Enter link:").prompt();
             if let Ok(link) = link {
                 Actions::link(id, link);
