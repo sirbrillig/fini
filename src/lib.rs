@@ -202,21 +202,23 @@ impl Actions {
                 }
                 "add" => {
                     let title = Text::new("Enter task:").prompt();
-                    if let Ok(title) = title {
-                        if title.is_empty() {
-                            continue;
-                        }
-                        let link = Text::new("(Optional) Enter link:").prompt();
-                        if let Ok(link) = link {
-                            if link.is_empty() {
-                                Actions::add(title);
-                            } else {
-                                Actions::add_with_link(title, link);
-                            }
-                            continue;
-                        }
+                    let Ok(title) = title else {
+                        println!("An error happened when asking for the task.");
+                        continue;
+                    };
+                    if title.is_empty() {
+                        println!("The title of the task cannot be empty.");
+                        continue;
                     }
-                    println!("An error happened when asking for the task.");
+                    let link = Text::new("(Optional) Enter link:").prompt();
+                    let Ok(link) = link else {
+                        continue;
+                    };
+                    if link.is_empty() {
+                        Actions::add(title);
+                    } else {
+                        Actions::add_with_link(title, link);
+                    }
                 }
                 "copy" => {
                     let data_path = get_data_path();
