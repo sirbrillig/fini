@@ -243,7 +243,10 @@ impl Actions {
                     let data_path = get_data_path();
                     let items = read_data(&data_path);
                     let visible = sort_visible_items(&items);
-                    if let Ok(selection) = Select::new("Select task to edit", visible).prompt() {
+                    if let Ok(selection) = Select::new("Select task to edit", visible)
+                        .with_page_size(SELECT_PAGE_SIZE)
+                        .prompt()
+                    {
                         Actions::edit(selection.id);
                     }
                 }
@@ -262,7 +265,10 @@ impl Actions {
                     let data_path = get_data_path();
                     let items = read_data(&data_path);
                     let visible = sort_visible_items(&items);
-                    if let Ok(selection) = Select::new("Select task to delete", visible).prompt() {
+                    if let Ok(selection) = Select::new("Select task to delete", visible)
+                        .with_page_size(SELECT_PAGE_SIZE)
+                        .prompt()
+                    {
                         Actions::delete(selection.id);
                     }
                 }
