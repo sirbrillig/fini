@@ -137,6 +137,7 @@ pub struct Actions {}
 impl Actions {
     pub fn interactive() {
         loop {
+            println!("{}", "-----------------------------------------".green());
             Actions::list();
             let commands = vec![
                 "quit",
@@ -153,6 +154,7 @@ impl Actions {
                 "edit",
                 "list-archived",
             ];
+            println!("{}", "-----------------------------------------".dimmed());
             let answer = Select::new("Select a command:", commands)
                 .with_page_size(4)
                 .prompt();
