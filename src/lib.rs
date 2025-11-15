@@ -159,6 +159,7 @@ impl Actions {
                 "begin",
                 "copy",
                 "copy-date",
+                "copy-checked",
                 "clear",
                 "delete",
                 "cycle",
@@ -230,6 +231,18 @@ impl Actions {
                     {
                         Actions::copy(selections.iter().map(|i| i.id).collect());
                     }
+                }
+                "copy-checked" => {
+                    let data_path = get_data_path();
+                    let items = read_data(&data_path);
+                    let mut ids: Vec<usize> = vec![];
+                    for item in items.iter() {
+                        match item.status {
+                            Status::Done | Status::InProgress => ids.push(item.id),
+                            _ => {}
+                        }
+                    }
+                    Actions::copy(ids);
                 }
                 "copy-date" => {
                     let date = Text::new("Enter date:").prompt();
