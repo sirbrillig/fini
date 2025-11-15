@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand};
-use fini::{get_task_id_by_index, get_task_ids_for_date, get_visible_items, Actions};
+use fini::{get_task_id_by_index, get_task_ids_for_date, get_visible_items, Actions, Status};
 use inquire::{Confirm, Text};
 
 #[derive(Parser)]
@@ -62,6 +62,8 @@ enum Commands {
         /// The indices of the tasks to copy
         indices: Vec<usize>,
     },
+    /// Copy checked tasks to the clipboard
+    CopyChecked,
     /// Copy archived tasks to the clipboard by date
     Date {
         /// The date of the tasks to copy
@@ -98,6 +100,17 @@ fn main() {
                     ids.push(id);
                 }
             });
+            Actions::copy(ids);
+        }
+        Commands::CopyChecked => {
+            let visible = get_visible_items();
+            let mut ids: Vec<usize> = vec![];
+            visible
+                .iter()
+                .filter(|i| matches!(i.status, Status::InProgress | Status::Done))
+                .for_each(|task| {
+                    ids.push(task.id);
+                });
             Actions::copy(ids);
         }
         Commands::Date { date } => {

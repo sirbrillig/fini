@@ -35,7 +35,7 @@ pub enum Status {
 
 impl fmt::Display for TaskItem {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if self.star.is_some_and(|v| v ) {
+        if self.star.is_some_and(|v| v) {
             write!(f, "{} ", "★".yellow())?;
         } else {
             write!(f, "  ")?;
@@ -491,7 +491,7 @@ impl Actions {
         let mut did_change = false;
         ids.iter().for_each(|id| {
             if let Some(item) = items.iter_mut().find(|t| t.id == *id) {
-                if item.star.is_some_and(|v| v ) {
+                if item.star.is_some_and(|v| v) {
                     item.star = None;
                 } else {
                     item.star = Some(true);
