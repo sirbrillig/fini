@@ -14,17 +14,19 @@ use tempfile::NamedTempFile;
 
 const SELECT_PAGE_SIZE: usize = 20;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Default)]
 pub struct TaskItem {
     pub id: usize,
     pub title: String,
     pub status: Status,
     pub active_date: Option<NaiveDate>,
     pub link: Option<String>,
+    pub star: Option<bool>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Default)]
 pub enum Status {
+    #[default]
     Todo,
     InProgress,
     Done,
@@ -33,6 +35,11 @@ pub enum Status {
 
 impl fmt::Display for TaskItem {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.star.is_some_and(|v| v ) {
+            write!(f, "{} ", "★".yellow())?;
+        } else {
+            write!(f, "  ")?;
+        }
         write!(f, "{}  {}", self.get_status(), self.title)?;
         if let Some(link) = &self.link {
             write!(f, " {}", link.dimmed())?;
@@ -51,7 +58,7 @@ impl TaskItem {
     }
 
     pub fn print_with_index(&self, index: usize) {
-        println!("{:>3}. {}", index, self);
+        println!("{:>2}.{}", index, self);
     }
 
     fn get_status(&self) -> String {
@@ -145,6 +152,7 @@ impl Actions {
                 "add",
                 "check",
                 "begin",
+                "star",
                 "copy",
                 "copy-date",
                 "copy-checked",
@@ -254,11 +262,22 @@ impl Actions {
                     let data_path = get_data_path();
                     let items = read_data(&data_path);
                     let visible = sort_visible_items(&items);
-                    if let Ok(selections) = MultiSelect::new("Select task to complete", visible)
+                    if let Ok(selections) = MultiSelect::new("Select tasks to complete", visible)
                         .with_page_size(SELECT_PAGE_SIZE)
                         .prompt()
                     {
                         Actions::done(selections.iter().map(|i| i.id).collect());
+                    }
+                }
+                "star" => {
+                    let data_path = get_data_path();
+                    let items = read_data(&data_path);
+                    let visible = sort_visible_items(&items);
+                    if let Ok(selections) = MultiSelect::new("Select tasks to star", visible)
+                        .with_page_size(SELECT_PAGE_SIZE)
+                        .prompt()
+                    {
+                        Actions::star(selections.iter().map(|i| i.id).collect());
                     }
                 }
                 "delete" => {
@@ -276,7 +295,7 @@ impl Actions {
                     let data_path = get_data_path();
                     let items = read_data(&data_path);
                     let visible = sort_visible_items(&items);
-                    if let Ok(selections) = MultiSelect::new("Select task to start", visible)
+                    if let Ok(selections) = MultiSelect::new("Select tasks to start", visible)
                         .with_page_size(SELECT_PAGE_SIZE)
                         .prompt()
                     {
@@ -295,9 +314,7 @@ impl Actions {
         let item = TaskItem {
             id,
             title: title.clone(),
-            link: None,
-            status: Status::Todo,
-            active_date: None,
+            ..Default::default()
         };
         items.push(item);
         write_data(&data_path, items).expect("Failed to write file!");
@@ -313,8 +330,7 @@ impl Actions {
             id,
             title: title.clone(),
             link: Some(link),
-            status: Status::Todo,
-            active_date: None,
+            ..Default::default()
         };
         items.push(item);
         write_data(&data_path, items).expect("Failed to write file!");
@@ -469,6 +485,30 @@ impl Actions {
         }
     }
 
+    pub fn star(ids: Vec<usize>) {
+        let data_path = get_data_path();
+        let mut items = read_data(&data_path);
+        let mut did_change = false;
+        ids.iter().for_each(|id| {
+            if let Some(item) = items.iter_mut().find(|t| t.id == *id) {
+                if item.star.is_some_and(|v| v ) {
+                    item.star = None;
+                } else {
+                    item.star = Some(true);
+                }
+                did_change = true;
+            } else {
+                eprintln!("⚠️ No task found with id {id}");
+            }
+        });
+        if did_change {
+            write_data(&data_path, items).expect("Failed to write file!");
+            println!("Starred the selected tasks");
+        } else {
+            println!("No tasks selected");
+        }
+    }
+
     pub fn done(ids: Vec<usize>) {
         let data_path = get_data_path();
         let mut items = read_data(&data_path);
@@ -550,6 +590,7 @@ impl Actions {
                         link: item.link.clone(),
                         status: Status::Archived,
                         active_date: item.active_date,
+                        ..Default::default()
                     };
                     next_id += 1;
                     copies.push(copy);

@@ -30,6 +30,12 @@ enum Commands {
         /// The indices of the tasks to toggle
         indices: Vec<usize>,
     },
+    /// Star or un-star a task (alias: s)
+    #[command(aliases=["s"])]
+    Star {
+        /// The indices of the tasks to toggle
+        indices: Vec<usize>,
+    },
     /// Edit a task (alias: e)
     #[command(alias = "e")]
     Edit {
@@ -116,6 +122,16 @@ fn main() {
                 }
             });
             Actions::work(ids);
+        }
+        Commands::Star { indices } => {
+            let visible = get_visible_items();
+            let mut ids: Vec<usize> = vec![];
+            indices.iter().for_each(|index| {
+                if let Some(id) = get_task_id_by_index(*index, &visible) {
+                    ids.push(id);
+                }
+            });
+            Actions::star(ids);
         }
         Commands::Done { indices } => {
             let visible = get_visible_items();
