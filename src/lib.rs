@@ -33,7 +33,7 @@ pub enum Status {
 
 impl fmt::Display for TaskItem {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}\t{}", self.get_status(), self.title)?;
+        write!(f, "{}  {}", self.get_status(), self.title)?;
         if let Some(link) = &self.link {
             write!(f, " {}", link.dimmed())?;
         }
@@ -50,19 +50,6 @@ impl TaskItem {
         text
     }
 
-    pub fn print_with_date(&self) {
-        if let Some(date) = &self.active_date {
-            println!(
-                "{}\t{} {}",
-                self.get_status(),
-                date.format("%Y-%m-%d"),
-                self.title
-            );
-        } else {
-            println!("{}", self);
-        }
-    }
-
     pub fn print_with_index(&self, index: usize) {
         println!("{:>3}. {}", index, self);
     }
@@ -72,7 +59,7 @@ impl TaskItem {
             Status::Todo => "☐".purple().to_string(),
             Status::InProgress => "…".yellow().to_string(),
             Status::Done => "✔".green().to_string(),
-            Status::Archived => "✔".green().to_string(),
+            Status::Archived => "-".green().to_string(),
         }
     }
 }
@@ -351,12 +338,19 @@ impl Actions {
 
     pub fn archived() {
         let data_path = get_data_path();
-        let items = read_data(&data_path);
-        // TODO: sort and group these by date
+        let mut items = read_data(&data_path);
+        items.sort_by_key(|i| i.active_date);
+        let mut current_date: NaiveDate = Default::default();
         for item in items {
             if item.status == Status::Archived {
-                // TODO: remove this and just print the item's Display trait
-                item.print_with_date();
+                let Some(date) = item.active_date else {
+                    continue;
+                };
+                if date != current_date {
+                    println!("\n {}", date.to_string().green());
+                    current_date = date;
+                }
+                println!("  {}", item);
             }
         }
     }
