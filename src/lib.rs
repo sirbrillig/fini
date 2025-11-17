@@ -89,7 +89,7 @@ fn write_data(path: &PathBuf, data: Vec<TaskItem>) -> std::io::Result<()> {
     Ok(())
 }
 
-fn get_data_path() -> PathBuf {
+pub fn get_data_path() -> PathBuf {
     let data_dir = BaseDirs::new()
         .map(|b| b.data_dir().to_path_buf())
         .unwrap_or_else(|| PathBuf::from("."));
@@ -106,12 +106,37 @@ fn sort_visible_items(items: &[TaskItem]) -> Vec<&TaskItem> {
 pub fn get_task_ids_for_date(date: String) -> Vec<usize> {
     let tasks = get_all_items();
     let mut ids: Vec<usize> = vec![];
+    // TODO: parse the input date so it can be various formats like "yesterday"
     tasks.iter().for_each(|t| {
         if let Some(task_date) = t.active_date {
-            // TODO: parse the user date so it can be various formats like "yesterday"
             if task_date.format("%Y-%m-%d").to_string() == date {
                 ids.push(t.id);
             }
+        }
+    });
+    ids
+}
+
+pub fn get_task_ids_before_date(date: String) -> Vec<usize> {
+    let tasks = get_all_items();
+    let mut ids: Vec<usize> = vec![];
+    // TODO: parse the input date so it can be various formats like "yesterday"
+    tasks.iter().for_each(|t| {
+        if let Some(task_date) = t.active_date {
+            if task_date.format("%Y-%m-%d").to_string() < date {
+                ids.push(t.id);
+            }
+        }
+    });
+    ids
+}
+
+pub fn get_archived_task_ids() -> Vec<usize> {
+    let tasks = get_all_items();
+    let mut ids: Vec<usize> = vec![];
+    tasks.iter().for_each(|t| {
+        if t.status == Status::Archived {
+            ids.push(t.id);
         }
     });
     ids
@@ -158,7 +183,6 @@ impl Actions {
                 "copy-checked",
                 "clear",
                 "delete",
-                "cycle",
                 "edit",
                 "list-archived",
             ];
@@ -186,16 +210,6 @@ impl Actions {
                             .prompt();
                     if confirm_answer.is_ok_and(|x| x) {
                         Actions::clear();
-                    }
-                }
-                "cycle" => {
-                    let confirm_answer =
-                        Confirm::new("Are you sure you want to delete all archived tasks?")
-                            .with_default(false)
-                            .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
-                            .prompt();
-                    if confirm_answer.is_ok_and(|x| x) {
-                        Actions::cycle();
                     }
                 }
                 "add" => {
@@ -288,7 +302,7 @@ impl Actions {
                         .with_page_size(SELECT_PAGE_SIZE)
                         .prompt()
                     {
-                        Actions::delete(selection.id);
+                        Actions::delete(vec![selection.id]);
                     }
                 }
                 "begin" => {
@@ -536,17 +550,11 @@ impl Actions {
         }
     }
 
-    pub fn delete(id: usize) {
+    pub fn delete(ids: Vec<usize>) {
         let data_path = get_data_path();
         let mut items = read_data(&data_path);
-        if let Some(item) = items.iter_mut().find(|t| t.id == id) {
-            let title = item.title.clone();
-            items.retain(|i| i.id != id);
-            write_data(&data_path, items).expect("Failed to write file!");
-            println!("Deleted task: {}", title);
-            return;
-        }
-        eprintln!("⚠️ No task found with id {id}");
+        items.retain(|i| !ids.contains(&i.id));
+        write_data(&data_path, items).expect("Failed to write file!");
     }
 
     pub fn copy(ids: Vec<usize>) {
@@ -603,13 +611,5 @@ impl Actions {
         items.extend(copies);
         write_data(&data_path, items).expect("Failed to write file!");
         println!("Archived completed tasks");
-    }
-
-    pub fn cycle() {
-        let data_path = get_data_path();
-        let mut items = read_data(&data_path);
-        items.retain(|i| i.status != Status::Archived);
-        write_data(&data_path, items).expect("Failed to write file!");
-        println!("Deleted archived tasks");
     }
 }

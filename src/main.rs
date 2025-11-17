@@ -1,5 +1,7 @@
 use clap::{Parser, Subcommand};
-use fini::{get_task_id_by_index, get_task_ids_for_date, get_visible_items, Actions, Status};
+use fini::{
+    get_archived_task_ids, get_data_path, get_task_id_by_index, get_task_ids_before_date, get_task_ids_for_date, get_visible_items, Actions, Status
+};
 use inquire::{Confirm, Text};
 
 #[derive(Parser)]
@@ -24,9 +26,9 @@ enum Commands {
     /// List all current tasks (alias: l)
     #[command(alias = "l")]
     List,
-    /// Toggle a task as in-progress (aliases: w, b, begin)
-    #[command(aliases=["w", "begin", "b"])]
-    Work {
+    /// Toggle a task as in-progress (aliases: b)
+    #[command(aliases=["b"])]
+    Begin {
         /// The indices of the tasks to toggle
         indices: Vec<usize>,
     },
@@ -42,17 +44,17 @@ enum Commands {
         /// The index of the task to edit
         index: usize,
     },
-    /// Toggle a task as done (aliases: c, check)
-    #[command(aliases=["check", "c"])]
-    Done {
+    /// Toggle a task as done (aliases: c)
+    #[command(aliases=["c"])]
+    Check {
         /// The indices of the tasks to toggle
         indices: Vec<usize>,
     },
-    /// Delete a task entirely (alias: d)
+    /// Delete tasks entirely (alias: d)
     #[command(alias = "d")]
     Delete {
-        /// The index of the task to delete
-        index: usize,
+        /// The indices of the tasks to delete
+        indices: Vec<usize>,
     },
     /// Archive done tasks (archives a copy of in-progress tasks)
     Clear,
@@ -64,15 +66,22 @@ enum Commands {
     },
     /// Copy checked tasks to the clipboard
     CopyChecked,
+    /// Copy archived tasks to the clipboard
+    CopyArchived,
     /// Copy archived tasks to the clipboard by date
-    Date {
+    CopyDate {
         /// The date of the tasks to copy
         date: String,
     },
+    /// Print the file path where the data is kept
+    FilePath,
     /// List all archived tasks
     Archived,
-    /// Delete archived tasks
-    Cycle,
+    /// Delete archived tasks before date
+    DeleteBefore {
+        /// The date before which to delete tasks
+        date: String,
+    },
     /// Enter interactive mode (alias: i)
     #[command(alias = "i")]
     Interactive,
@@ -90,6 +99,11 @@ fn main() {
             let link = Text::new("(Optional) Enter link:").prompt();
             if let Ok(link) = link {
                 Actions::link(id, link);
+            }
+        }
+        Commands::FilePath => {
+            if let Some(path) = get_data_path().to_str() {
+                println!("{}", path);
             }
         }
         Commands::Copy { indices } => {
@@ -113,8 +127,11 @@ fn main() {
                 });
             Actions::copy(ids);
         }
-        Commands::Date { date } => {
+        Commands::CopyDate { date } => {
             Actions::copy(get_task_ids_for_date(date));
+        }
+        Commands::CopyArchived => {
+            Actions::copy(get_archived_task_ids());
         }
         Commands::List => Actions::list(),
         Commands::Archived => Actions::archived(),
@@ -126,7 +143,7 @@ fn main() {
                 eprintln!("⚠️ No task found with index {index}");
             }
         }
-        Commands::Work { indices } => {
+        Commands::Begin { indices } => {
             let visible = get_visible_items();
             let mut ids: Vec<usize> = vec![];
             indices.iter().for_each(|index| {
@@ -146,7 +163,7 @@ fn main() {
             });
             Actions::star(ids);
         }
-        Commands::Done { indices } => {
+        Commands::Check { indices } => {
             let visible = get_visible_items();
             let mut ids: Vec<usize> = vec![];
             indices.iter().for_each(|index| {
@@ -156,13 +173,15 @@ fn main() {
             });
             Actions::done(ids);
         }
-        Commands::Delete { index } => {
+        Commands::Delete { indices } => {
             let visible = get_visible_items();
-            if let Some(id) = get_task_id_by_index(index, &visible) {
-                Actions::delete(id);
-            } else {
-                eprintln!("⚠️ No task found with index {index}");
-            }
+            let mut ids: Vec<usize> = vec![];
+            indices.iter().for_each(|index| {
+                if let Some(id) = get_task_id_by_index(*index, &visible) {
+                    ids.push(id);
+                }
+            });
+            Actions::delete(ids);
         }
         Commands::Clear => {
             let confirm_answer =
@@ -174,14 +193,14 @@ fn main() {
                 Actions::clear();
             }
         }
-        Commands::Cycle => {
+        Commands::DeleteBefore { date } => {
             let confirm_answer =
-                Confirm::new("Are you sure you want to delete all archived tasks?")
+                Confirm::new("Are you sure you want to delete all archived tasks before {date}?")
                     .with_default(false)
                     .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
                     .prompt();
             if confirm_answer.is_ok_and(|x| x) {
-                Actions::cycle();
+                Actions::delete(get_task_ids_before_date(date));
             }
         }
         Commands::Interactive => Actions::interactive(),
