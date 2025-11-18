@@ -1,7 +1,9 @@
+use arboard::Clipboard;
 use clap::{Parser, Subcommand};
 use fini::{
-    get_archived_task_ids, get_data_path, get_ids_for_indices, get_task_id_by_index,
-    get_task_ids_before_date, get_task_ids_for_date, get_visible_items, Actions, Status,
+    archived_tasks_as_markdown, get_archived_tasks, get_data_path, get_ids_for_indices,
+    get_task_id_by_index, get_task_ids_before_date, get_task_ids_for_date, get_visible_items,
+    Actions, Status,
 };
 use inquire::{Confirm, Text};
 
@@ -125,7 +127,13 @@ fn main() {
             Actions::copy(get_task_ids_for_date(date));
         }
         Commands::CopyArchived => {
-            Actions::copy(get_archived_task_ids());
+            let items = get_archived_tasks();
+            let text = archived_tasks_as_markdown(items);
+            let mut clipboard = Clipboard::new().expect("Failed to access clipboard");
+            clipboard
+                .set_text(text)
+                .expect("Failed to save text to clipboard");
+            println!("Copied archived tasks as Markdown");
         }
         Commands::List => Actions::list(),
         Commands::Archived => Actions::archived(),

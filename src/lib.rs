@@ -73,6 +73,27 @@ impl fmt::Display for TaskItem {
     }
 }
 
+pub fn archived_tasks_as_markdown(mut items: Vec<TaskItem>) -> String {
+    // TODO: Markdown probably can't have color codes so we should remove those but I would like
+    // them when printing in the terminal.
+    let mut outputs: Vec<String> = vec![];
+    items.sort_by_key(|i| i.active_date);
+    let mut current_date: NaiveDate = Default::default();
+    for item in items {
+        if item.status == Status::Archived {
+            let Some(date) = item.active_date else {
+                continue;
+            };
+            if date != current_date {
+                outputs.push(format!("\n ## {}", date.to_string().green()));
+                current_date = date;
+            }
+            outputs.push(format!("  - {}", item));
+        }
+    }
+    outputs.join("\n")
+}
+
 impl TaskItem {
     pub fn get_copy_text(&self) -> String {
         let mut text = self.title.clone();
@@ -145,6 +166,14 @@ pub fn get_task_ids_before_date(date: String) -> Vec<usize> {
         }
     });
     ids
+}
+
+pub fn get_archived_tasks() -> Vec<TaskItem> {
+    let tasks = get_all_items();
+    tasks
+        .into_iter()
+        .filter(|t| t.status == Status::Archived)
+        .collect()
 }
 
 pub fn get_archived_task_ids() -> Vec<usize> {
@@ -290,7 +319,13 @@ impl Actions {
                     Actions::copy(ids);
                 }
                 "copy-archived" => {
-                    Actions::copy(get_archived_task_ids());
+                    let items = get_archived_tasks();
+                    let text = archived_tasks_as_markdown(items);
+                    let mut clipboard = Clipboard::new().expect("Failed to access clipboard");
+                    clipboard
+                        .set_text(text)
+                        .expect("Failed to save text to clipboard");
+                    println!("Copied archived tasks as Markdown");
                 }
                 "copy-date" => {
                     let date = Text::new("Enter date:").prompt();
@@ -403,21 +438,8 @@ impl Actions {
 
     pub fn archived() {
         let data_path = get_data_path();
-        let mut items = read_data(&data_path);
-        items.sort_by_key(|i| i.active_date);
-        let mut current_date: NaiveDate = Default::default();
-        for item in items {
-            if item.status == Status::Archived {
-                let Some(date) = item.active_date else {
-                    continue;
-                };
-                if date != current_date {
-                    println!("\n ## {}", date.to_string().green());
-                    current_date = date;
-                }
-                println!("  - {}", item);
-            }
-        }
+        let items = read_data(&data_path);
+        print!("{}", archived_tasks_as_markdown(items));
     }
 
     pub fn edit_link(id: usize) {
