@@ -33,6 +33,18 @@ pub enum Status {
     Archived,
 }
 
+impl fmt::Display for Status {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match &self {
+            Status::Todo => "☐".purple().to_string(),
+            Status::InProgress => "…".yellow().to_string(),
+            Status::Done => "✔".green().to_string(),
+            Status::Archived => "-".green().to_string(),
+        })?;
+        Ok(())
+    }
+}
+
 impl fmt::Display for TaskItem {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.star.is_some_and(|v| v) && self.status != Status::Archived {
@@ -40,7 +52,7 @@ impl fmt::Display for TaskItem {
         } else {
             write!(f, "  ")?;
         }
-        write!(f, "{}  {}", self.get_status(), self.title)?;
+        write!(f, "{}  {}", self.status, self.title)?;
         if let Some(link) = &self.link {
             write!(f, " {}", link.dimmed())?;
         }
@@ -59,15 +71,6 @@ impl TaskItem {
 
     pub fn print_with_index(&self, index: usize) {
         println!("{:>2}.{}", index, self);
-    }
-
-    fn get_status(&self) -> String {
-        match &self.status {
-            Status::Todo => "☐".purple().to_string(),
-            Status::InProgress => "…".yellow().to_string(),
-            Status::Done => "✔".green().to_string(),
-            Status::Archived => "-".green().to_string(),
-        }
     }
 }
 
