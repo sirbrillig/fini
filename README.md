@@ -2,6 +2,10 @@
 
 A fast, interactive CLI todo list tool written in Rust. Track tasks with optional links (URLs, issue trackers) and manage them efficiently from your terminal.
 
+## IMPORTANT! Alpha software!
+
+**This is still in heavy development and features may change at a moment's notice. Do not expect this to be stable yet.**
+
 ## Features
 
 - **Task Management**: Create, edit, complete, and delete tasks
