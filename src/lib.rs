@@ -35,24 +35,37 @@ pub enum Status {
 
 impl fmt::Display for Status {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match &self {
-            Status::Todo => "☐".purple().to_string(),
-            Status::InProgress => "…".yellow().to_string(),
-            Status::Done => "✔".green().to_string(),
-            Status::Archived => "-".green().to_string(),
-        })?;
+        write!(
+            f,
+            "{}",
+            match &self {
+                Status::Todo => "☐".purple().to_string(),
+                Status::InProgress => "…".yellow().to_string(),
+                Status::Done => "✔".green().to_string(),
+                Status::Archived => "-".green().to_string(),
+            }
+        )?;
         Ok(())
     }
 }
 
 impl fmt::Display for TaskItem {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if self.star.is_some_and(|v| v) && self.status != Status::Archived {
-            write!(f, "{} ", "★".yellow())?;
-        } else {
-            write!(f, "  ")?;
+        match self.status {
+            // Archived status doesn't require any extra formatting because it will never be mixed
+            // with other statuses and will never be starred.
+            Status::Archived => {
+                write!(f, "{}", self.title)?;
+            }
+            _ => {
+                if self.star.is_some_and(|v| v) {
+                    write!(f, "{} ", "★".yellow())?;
+                } else {
+                    write!(f, "  ")?;
+                }
+                write!(f, "{}  {}", self.status, self.title)?;
+            }
         }
-        write!(f, "{}  {}", self.status, self.title)?;
         if let Some(link) = &self.link {
             write!(f, " {}", link.dimmed())?;
         }
@@ -399,10 +412,10 @@ impl Actions {
                     continue;
                 };
                 if date != current_date {
-                    println!("\n {}", date.to_string().green());
+                    println!("\n ## {}", date.to_string().green());
                     current_date = date;
                 }
-                println!("  {}", item);
+                println!("  - {}", item);
             }
         }
     }
