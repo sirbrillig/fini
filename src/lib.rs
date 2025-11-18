@@ -35,7 +35,7 @@ pub enum Status {
 
 impl fmt::Display for TaskItem {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if self.star.is_some_and(|v| v) {
+        if self.star.is_some_and(|v| v) && self.status != Status::Archived {
             write!(f, "{} ", "★".yellow())?;
         } else {
             write!(f, "  ")?;
