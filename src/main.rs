@@ -128,7 +128,8 @@ fn main() {
         }
         Commands::CopyArchived => {
             let items = get_archived_tasks();
-            let text = archived_tasks_as_markdown(items);
+            // We have to strip escape codes to remove the color.
+            let text = strip_ansi_escapes::strip_str(archived_tasks_as_markdown(items));
             let mut clipboard = Clipboard::new().expect("Failed to access clipboard");
             clipboard
                 .set_text(text)
