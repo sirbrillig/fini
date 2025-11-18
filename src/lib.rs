@@ -179,10 +179,12 @@ impl Actions {
                 "begin",
                 "star",
                 "copy",
+                "copy-archived",
                 "copy-date",
                 "copy-checked",
                 "clear",
                 "delete",
+                "delete-before",
                 "edit",
                 "list-archived",
             ];
@@ -255,6 +257,9 @@ impl Actions {
                     }
                     Actions::copy(ids);
                 }
+                "copy-archived" => {
+                    Actions::copy(get_archived_task_ids());
+                }
                 "copy-date" => {
                     let date = Text::new("Enter date:").prompt();
                     if let Ok(date) = date {
@@ -294,15 +299,29 @@ impl Actions {
                         Actions::star(selections.iter().map(|i| i.id).collect());
                     }
                 }
+                "delete-before" => {
+                    let date = Text::new("Enter date:").prompt();
+                    if let Ok(date) = date {
+                        let confirm_answer = Confirm::new(
+                            "Are you sure you want to delete all archived tasks before {date}?",
+                        )
+                        .with_default(false)
+                        .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
+                        .prompt();
+                        if confirm_answer.is_ok_and(|x| x) {
+                            Actions::delete(get_task_ids_before_date(date));
+                        }
+                    }
+                }
                 "delete" => {
                     let data_path = get_data_path();
                     let items = read_data(&data_path);
                     let visible = sort_visible_items(&items);
-                    if let Ok(selection) = Select::new("Select task to delete", visible)
+                    if let Ok(selections) = MultiSelect::new("Select task to delete", visible)
                         .with_page_size(SELECT_PAGE_SIZE)
                         .prompt()
                     {
-                        Actions::delete(vec![selection.id]);
+                        Actions::delete(selections.iter().map(|i| i.id).collect());
                     }
                 }
                 "begin" => {
