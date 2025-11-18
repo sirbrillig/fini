@@ -156,6 +156,17 @@ pub fn get_visible_items() -> Vec<TaskItem> {
         .collect()
 }
 
+pub fn get_ids_for_indices( indices: Vec<usize> ) -> Vec<usize> {
+    let visible = get_visible_items();
+    let mut ids: Vec<usize> = vec![];
+    indices.iter().for_each(|index| {
+        if let Some(id) = get_task_id_by_index(*index, &visible) {
+            ids.push(id);
+        }
+    });
+    ids
+}
+
 pub fn get_task_id_by_index(index: usize, visible: &[TaskItem]) -> Option<usize> {
     visible.get(index - 1).map(|i| i.id)
 }

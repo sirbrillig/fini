@@ -1,6 +1,7 @@
 use clap::{Parser, Subcommand};
 use fini::{
-    get_archived_task_ids, get_data_path, get_task_id_by_index, get_task_ids_before_date, get_task_ids_for_date, get_visible_items, Actions, Status
+    get_archived_task_ids, get_data_path, get_ids_for_indices, get_task_id_by_index,
+    get_task_ids_before_date, get_task_ids_for_date, get_visible_items, Actions, Status,
 };
 use inquire::{Confirm, Text};
 
@@ -107,14 +108,7 @@ fn main() {
             }
         }
         Commands::Copy { indices } => {
-            let visible = get_visible_items();
-            let mut ids: Vec<usize> = vec![];
-            indices.iter().for_each(|index| {
-                if let Some(id) = get_task_id_by_index(*index, &visible) {
-                    ids.push(id);
-                }
-            });
-            Actions::copy(ids);
+            Actions::copy(get_ids_for_indices(indices));
         }
         Commands::CopyChecked => {
             let visible = get_visible_items();
@@ -144,44 +138,16 @@ fn main() {
             }
         }
         Commands::Begin { indices } => {
-            let visible = get_visible_items();
-            let mut ids: Vec<usize> = vec![];
-            indices.iter().for_each(|index| {
-                if let Some(id) = get_task_id_by_index(*index, &visible) {
-                    ids.push(id);
-                }
-            });
-            Actions::work(ids);
+            Actions::work(get_ids_for_indices(indices));
         }
         Commands::Star { indices } => {
-            let visible = get_visible_items();
-            let mut ids: Vec<usize> = vec![];
-            indices.iter().for_each(|index| {
-                if let Some(id) = get_task_id_by_index(*index, &visible) {
-                    ids.push(id);
-                }
-            });
-            Actions::star(ids);
+            Actions::star(get_ids_for_indices(indices));
         }
         Commands::Check { indices } => {
-            let visible = get_visible_items();
-            let mut ids: Vec<usize> = vec![];
-            indices.iter().for_each(|index| {
-                if let Some(id) = get_task_id_by_index(*index, &visible) {
-                    ids.push(id);
-                }
-            });
-            Actions::done(ids);
+            Actions::done(get_ids_for_indices(indices));
         }
         Commands::Delete { indices } => {
-            let visible = get_visible_items();
-            let mut ids: Vec<usize> = vec![];
-            indices.iter().for_each(|index| {
-                if let Some(id) = get_task_id_by_index(*index, &visible) {
-                    ids.push(id);
-                }
-            });
-            Actions::delete(ids);
+            Actions::delete(get_ids_for_indices(indices));
         }
         Commands::Clear => {
             let confirm_answer =
