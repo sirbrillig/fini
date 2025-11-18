@@ -142,6 +142,17 @@ pub fn get_archived_task_ids() -> Vec<usize> {
     ids
 }
 
+fn prompt_for_task_ids(message: &str) -> Option<Vec<usize>> {
+    let data_path = get_data_path();
+    let items = read_data(&data_path);
+    let visible = sort_visible_items(&items);
+    MultiSelect::new(message, visible)
+        .with_page_size(SELECT_PAGE_SIZE)
+        .prompt()
+        .ok()
+        .map(|s| s.iter().map(|i| i.id).collect())
+}
+
 pub fn get_all_items() -> Vec<TaskItem> {
     let data_path = get_data_path();
     read_data(&data_path)
@@ -156,7 +167,7 @@ pub fn get_visible_items() -> Vec<TaskItem> {
         .collect()
 }
 
-pub fn get_ids_for_indices( indices: Vec<usize> ) -> Vec<usize> {
+pub fn get_ids_for_indices(indices: Vec<usize>) -> Vec<usize> {
     let visible = get_visible_items();
     let mut ids: Vec<usize> = vec![];
     indices.iter().for_each(|index| {
@@ -246,14 +257,8 @@ impl Actions {
                     }
                 }
                 "copy" => {
-                    let data_path = get_data_path();
-                    let items = read_data(&data_path);
-                    let visible = sort_visible_items(&items);
-                    if let Ok(selections) = MultiSelect::new("Select tasks to copy", visible)
-                        .with_page_size(SELECT_PAGE_SIZE)
-                        .prompt()
-                    {
-                        Actions::copy(selections.iter().map(|i| i.id).collect());
+                    if let Some(ids) = prompt_for_task_ids("Select tasks to copy") {
+                        Actions::copy(ids);
                     }
                 }
                 "copy-checked" => {
@@ -289,25 +294,13 @@ impl Actions {
                     }
                 }
                 "check" => {
-                    let data_path = get_data_path();
-                    let items = read_data(&data_path);
-                    let visible = sort_visible_items(&items);
-                    if let Ok(selections) = MultiSelect::new("Select tasks to complete", visible)
-                        .with_page_size(SELECT_PAGE_SIZE)
-                        .prompt()
-                    {
-                        Actions::done(selections.iter().map(|i| i.id).collect());
+                    if let Some(ids) = prompt_for_task_ids("Select tasks to complete") {
+                        Actions::done(ids);
                     }
                 }
                 "star" => {
-                    let data_path = get_data_path();
-                    let items = read_data(&data_path);
-                    let visible = sort_visible_items(&items);
-                    if let Ok(selections) = MultiSelect::new("Select tasks to star", visible)
-                        .with_page_size(SELECT_PAGE_SIZE)
-                        .prompt()
-                    {
-                        Actions::star(selections.iter().map(|i| i.id).collect());
+                    if let Some(ids) = prompt_for_task_ids("Select tasks to star") {
+                        Actions::star(ids);
                     }
                 }
                 "delete-before" => {
@@ -325,25 +318,13 @@ impl Actions {
                     }
                 }
                 "delete" => {
-                    let data_path = get_data_path();
-                    let items = read_data(&data_path);
-                    let visible = sort_visible_items(&items);
-                    if let Ok(selections) = MultiSelect::new("Select task to delete", visible)
-                        .with_page_size(SELECT_PAGE_SIZE)
-                        .prompt()
-                    {
-                        Actions::delete(selections.iter().map(|i| i.id).collect());
+                    if let Some(ids) = prompt_for_task_ids("Select tasks to delete") {
+                        Actions::delete(ids);
                     }
                 }
                 "begin" => {
-                    let data_path = get_data_path();
-                    let items = read_data(&data_path);
-                    let visible = sort_visible_items(&items);
-                    if let Ok(selections) = MultiSelect::new("Select tasks to start", visible)
-                        .with_page_size(SELECT_PAGE_SIZE)
-                        .prompt()
-                    {
-                        Actions::work(selections.iter().map(|i| i.id).collect());
+                    if let Some(ids) = prompt_for_task_ids("Select tasks to start") {
+                        Actions::work(ids);
                     }
                 }
                 _ => println!("Unknown command"),
