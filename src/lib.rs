@@ -600,6 +600,7 @@ impl Actions {
         let mut copies: Vec<TaskItem> = vec![];
         let mut next_id = get_next_id(&items);
         for item in items.iter_mut() {
+            item.star = None;
             match item.status {
                 Status::Done => item.status = Status::Archived,
                 Status::InProgress => {
