@@ -60,19 +60,16 @@ Output format:
 
 ```bash
 # Mark task(s) as in-progress (toggles with Todo)
-fini work 1 2 3
-fini w 1       # using alias
-fini begin 1   # alternative alias
-fini b 1       # short alias
+fini begin 1 2 3
+fini b 1       # using alias
 ```
 
 ### Complete Tasks
 
 ```bash
 # Mark task(s) as done (toggles with Todo)
-fini done 1 2
-fini check 1  # alternative alias
-fini c 1      # short alias
+fini check 1 2
+fini c 1      # using alias
 ```
 
 ### Edit Tasks
@@ -93,6 +90,14 @@ fini delete 1
 fini d 1  # using alias
 ```
 
+### Star Tasks
+
+```bash
+# Star or un-star task(s) to mark as important
+fini star 1 2 3
+fini s 1       # using alias
+```
+
 ### Copy Tasks
 
 ```bash
@@ -101,8 +106,14 @@ fini copy 1 2 3
 fini y 1 2     # using alias
 fini yank 1    # alternative alias
 
+# Copy all checked tasks (in-progress and done)
+fini copy-checked
+
 # Copy tasks completed on a specific date
-fini date 2024-12-15
+fini copy-date 2024-12-15
+
+# Copy all archived tasks as Markdown
+fini copy-archived
 ```
 
 ### Archive Management
@@ -115,8 +126,8 @@ fini clear
 # View all archived tasks
 fini archived
 
-# Delete all archived tasks permanently
-fini cycle
+# Delete archived tasks before a specific date
+fini delete-before 2024-12-15
 ```
 
 ### Interactive Mode
@@ -132,6 +143,13 @@ Interactive mode provides:
 - Multi-select for batch operations
 - Confirmation prompts for destructive actions
 - Continuous workflow without re-running commands
+
+### Utility Commands
+
+```bash
+# Print the file path where data is stored
+fini file-path
+```
 
 ## Data Storage
 
