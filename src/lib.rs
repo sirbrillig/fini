@@ -358,9 +358,10 @@ impl Actions {
                 "delete-before" => {
                     let date = Text::new("Enter date:").prompt();
                     if let Ok(date) = date {
-                        let confirm_answer = Confirm::new(
-                            "Are you sure you want to delete all archived tasks before {date}?",
-                        )
+                        let confirm_answer = Confirm::new(&format!(
+                            "Are you sure you want to delete all archived tasks before {}?",
+                            date
+                        ))
                         .with_default(false)
                         .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
                         .prompt();

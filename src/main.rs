@@ -169,11 +169,13 @@ fn main() {
             }
         }
         Commands::DeleteBefore { date } => {
-            let confirm_answer =
-                Confirm::new("Are you sure you want to delete all archived tasks before {date}?")
-                    .with_default(false)
-                    .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
-                    .prompt();
+            let confirm_answer = Confirm::new(&format!(
+                "Are you sure you want to delete all archived tasks before {}?",
+                date
+            ))
+            .with_default(false)
+            .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
+            .prompt();
             if confirm_answer.is_ok_and(|x| x) {
                 Actions::delete(get_task_ids_before_date(date));
             }
