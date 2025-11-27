@@ -625,13 +625,13 @@ impl Actions {
         clipboard
             .set_text(text)
             .expect("Failed to save text to clipboard");
-        println!(
-            "Copied text for tasks: {}",
-            ids.iter()
-                .map(|n| n.to_string())
-                .collect::<Vec<_>>()
-                .join(", ")
-        );
+        if ids.len() > 1 {
+            println!("Copied text for selected tasks");
+        } else if let Some(first_text) = text_lines.first() {
+            println!("Copied text for task: {}", first_text);
+        } else {
+            println!("Copied text for selected tasks");
+        }
     }
 
     pub fn clear() {
