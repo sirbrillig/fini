@@ -625,12 +625,10 @@ impl Actions {
         clipboard
             .set_text(text)
             .expect("Failed to save text to clipboard");
-        if ids.len() > 1 {
-            println!("Copied text for selected tasks");
-        } else if let Some(first_text) = text_lines.first() {
-            println!("Copied text for task: {}", first_text);
-        } else {
-            println!("Copied text for selected tasks");
+        match text_lines.len() {
+            0 => println!("No tasks to copy"),
+            1 => println!("Copied text for task: {}", text_lines[0]),
+            _ => println!("Copied text for selected tasks"),
         }
     }
 
