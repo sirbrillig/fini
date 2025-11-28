@@ -1,89 +1,20 @@
+pub mod task_item;
+
 use arboard::Clipboard;
 use chrono::{Local, NaiveDate};
 use colored::Colorize;
 use directories::BaseDirs;
 use edit::edit;
 use inquire::{Confirm, MultiSelect, Select, Text};
-use serde::{Deserialize, Serialize};
 use std::io::Write;
 use std::{
-    fmt, fs,
+    fs,
     path::{Path, PathBuf},
 };
+use task_item::{Status, TaskItem, TaskItemCopyable};
 use tempfile::NamedTempFile;
 
 const SELECT_PAGE_SIZE: usize = 20;
-
-#[derive(Serialize, Deserialize, Debug, Default)]
-pub struct TaskItem {
-    pub id: usize,
-    pub title: String,
-    pub status: Status,
-    pub active_date: Option<NaiveDate>,
-    pub link: Option<String>,
-    pub star: Option<bool>,
-}
-
-#[derive(Serialize, Deserialize, Debug, PartialEq, Default)]
-pub enum Status {
-    #[default]
-    Todo,
-    InProgress,
-    Done,
-    Archived,
-}
-
-impl fmt::Display for Status {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            match &self {
-                Status::Todo => "☐".purple().to_string(),
-                Status::InProgress => "…".yellow().to_string(),
-                Status::Done => "✔".green().to_string(),
-                Status::Archived => "-".green().to_string(),
-            }
-        )?;
-        Ok(())
-    }
-}
-
-impl fmt::Display for TaskItem {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self.status {
-            // Archived status doesn't require any extra formatting because it will never be mixed
-            // with other statuses and will never be starred.
-            Status::Archived => {
-                write!(f, "{}", self.title)?;
-            }
-            _ => {
-                if self.star.is_some_and(|v| v) {
-                    write!(f, "{} ", "★".yellow())?;
-                } else {
-                    write!(f, "  ")?;
-                }
-                write!(f, "{}  {}", self.status, self.title)?;
-            }
-        }
-        if let Some(link) = &self.link {
-            write!(f, " {}", link.dimmed())?;
-        }
-        Ok(())
-    }
-}
-
-struct TaskItemCopyable<'a>(&'a TaskItem);
-
-impl fmt::Display for TaskItemCopyable<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0.title)?;
-        if let Some(link) = &self.0.link {
-            write!(f, " {}", link)?;
-        }
-        Ok(())
-    }
-}
 
 pub fn archived_tasks_as_markdown(mut items: Vec<TaskItem>) -> String {
     // Markdown can't have color codes so we should always remove those if copying this text but I
@@ -104,12 +35,6 @@ pub fn archived_tasks_as_markdown(mut items: Vec<TaskItem>) -> String {
         }
     }
     outputs.join("\n")
-}
-
-impl TaskItem {
-    pub fn print_with_index(&self, index: usize) {
-        println!("{:>2}.{}", index, self);
-    }
 }
 
 fn read_data(path: &PathBuf) -> Vec<TaskItem> {

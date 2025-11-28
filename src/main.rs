@@ -1,9 +1,10 @@
 use arboard::Clipboard;
 use clap::{Parser, Subcommand};
+use fini::task_item::Status;
 use fini::{
     archived_tasks_as_markdown, get_archived_tasks, get_data_path, get_ids_for_indices,
     get_task_id_by_index, get_task_ids_before_date, get_task_ids_for_date, get_visible_items,
-    Actions, Status,
+    Actions,
 };
 use inquire::{Confirm, Text};
 
