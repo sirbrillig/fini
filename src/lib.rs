@@ -73,6 +73,18 @@ impl fmt::Display for TaskItem {
     }
 }
 
+struct TaskItemCopyable<'a>(&'a TaskItem);
+
+impl fmt::Display for TaskItemCopyable<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0.title)?;
+        if let Some(link) = &self.0.link {
+            write!(f, " {}", link)?;
+        }
+        Ok(())
+    }
+}
+
 pub fn archived_tasks_as_markdown(mut items: Vec<TaskItem>) -> String {
     // Markdown can't have color codes so we should always remove those if copying this text but I
     // would like them when printing in the terminal so I'm leaving that to the caller.
@@ -95,14 +107,6 @@ pub fn archived_tasks_as_markdown(mut items: Vec<TaskItem>) -> String {
 }
 
 impl TaskItem {
-    pub fn get_copy_text(&self) -> String {
-        let mut text = self.title.clone();
-        if let Some(link) = &self.link {
-            text.push_str(&format!(" {}", link));
-        }
-        text
-    }
-
     pub fn print_with_index(&self, index: usize) {
         println!("{:>2}.{}", index, self);
     }
@@ -616,7 +620,7 @@ impl Actions {
             .iter()
             .filter_map(|i| {
                 if ids.contains(&i.id) {
-                    return Some(i.get_copy_text());
+                    return Some(TaskItemCopyable(i).to_string());
                 }
                 None
             })
