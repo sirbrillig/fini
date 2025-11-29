@@ -1,11 +1,11 @@
 use arboard::Clipboard;
 use clap::{Parser, Subcommand};
 use fini::task_item::Status;
-use fini::{
+use fini::util::{
     archived_tasks_as_markdown, get_archived_tasks, get_data_path, get_ids_for_indices,
     get_task_id_by_index, get_task_ids_before_date, get_task_ids_for_date, get_visible_items,
-    Actions,
 };
+use fini::actions;
 use inquire::{Confirm, Text};
 
 #[derive(Parser)]
@@ -99,10 +99,10 @@ fn main() {
             if title_joined.is_empty() {
                 return;
             }
-            let id = Actions::add(title_joined);
+            let id = actions::add(title_joined);
             let link = Text::new("(Optional) Enter link:").prompt();
             if let Ok(link) = link {
-                Actions::link(id, link);
+                actions::link(id, link);
             }
         }
         Commands::FilePath => {
@@ -111,7 +111,7 @@ fn main() {
             }
         }
         Commands::Copy { indices } => {
-            Actions::copy(get_ids_for_indices(indices));
+            actions::copy(get_ids_for_indices(indices));
         }
         Commands::CopyChecked => {
             let visible = get_visible_items();
@@ -122,10 +122,10 @@ fn main() {
                 .for_each(|task| {
                     ids.push(task.id);
                 });
-            Actions::copy(ids);
+            actions::copy(ids);
         }
         Commands::CopyDate { date } => {
-            Actions::copy(get_task_ids_for_date(date));
+            actions::copy(get_task_ids_for_date(date));
         }
         Commands::CopyArchived => {
             let items = get_archived_tasks();
@@ -137,27 +137,27 @@ fn main() {
                 .expect("Failed to save text to clipboard");
             println!("Copied archived tasks as Markdown");
         }
-        Commands::List => Actions::list(),
-        Commands::Archived => Actions::archived(),
+        Commands::List => actions::list(),
+        Commands::Archived => actions::archived(),
         Commands::Edit { index } => {
             let visible = get_visible_items();
             if let Some(id) = get_task_id_by_index(index, &visible) {
-                Actions::edit(id);
+                actions::edit_task(id);
             } else {
                 eprintln!("⚠️ No task found with index {index}");
             }
         }
         Commands::Begin { indices } => {
-            Actions::work(get_ids_for_indices(indices));
+            actions::work(get_ids_for_indices(indices));
         }
         Commands::Star { indices } => {
-            Actions::star(get_ids_for_indices(indices));
+            actions::star(get_ids_for_indices(indices));
         }
         Commands::Check { indices } => {
-            Actions::done(get_ids_for_indices(indices));
+            actions::done(get_ids_for_indices(indices));
         }
         Commands::Delete { indices } => {
-            Actions::delete(get_ids_for_indices(indices));
+            actions::delete(get_ids_for_indices(indices));
         }
         Commands::Clear => {
             let confirm_answer =
@@ -166,7 +166,7 @@ fn main() {
                     .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
                     .prompt();
             if confirm_answer.is_ok_and(|x| x) {
-                Actions::clear();
+                actions::clear();
             }
         }
         Commands::DeleteBefore { date } => {
@@ -178,9 +178,9 @@ fn main() {
             .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
             .prompt();
             if confirm_answer.is_ok_and(|x| x) {
-                Actions::delete(get_task_ids_before_date(date));
+                actions::delete(get_task_ids_before_date(date));
             }
         }
-        Commands::Interactive => Actions::interactive(),
+        Commands::Interactive => actions::interactive(),
     }
 }
