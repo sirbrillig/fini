@@ -85,13 +85,11 @@ pub fn interactive() {
             "copy-checked" => {
                 let data_path = get_data_path();
                 let items = read_data(&data_path);
-                let mut ids: Vec<usize> = vec![];
-                for item in items.iter() {
-                    match item.status {
-                        Status::Done | Status::InProgress => ids.push(item.id),
-                        _ => {}
-                    }
-                }
+                let ids = items
+                    .iter()
+                    .filter(|i| matches!(i.status, Status::Done | Status::InProgress))
+                    .map(|i| i.id)
+                    .collect();
                 copy(ids);
             }
             "copy-archived" => {

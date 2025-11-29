@@ -1,11 +1,11 @@
 use arboard::Clipboard;
 use clap::{Parser, Subcommand};
+use fini::actions;
 use fini::task_item::Status;
 use fini::util::{
     archived_tasks_as_markdown, get_archived_tasks, get_data_path, get_ids_for_indices,
     get_task_id_by_index, get_task_ids_before_date, get_task_ids_for_date, get_visible_items,
 };
-use fini::actions;
 use inquire::{Confirm, Text};
 
 #[derive(Parser)]
@@ -115,13 +115,11 @@ fn main() {
         }
         Commands::CopyChecked => {
             let visible = get_visible_items();
-            let mut ids: Vec<usize> = vec![];
-            visible
+            let ids = visible
                 .iter()
-                .filter(|i| matches!(i.status, Status::InProgress | Status::Done))
-                .for_each(|task| {
-                    ids.push(task.id);
-                });
+                .filter(|i| matches!(i.status, Status::Done | Status::InProgress))
+                .map(|i| i.id)
+                .collect();
             actions::copy(ids);
         }
         Commands::CopyDate { date } => {

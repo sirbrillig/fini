@@ -67,30 +67,28 @@ pub fn sort_visible_items(items: &[TaskItem]) -> Vec<&TaskItem> {
 
 pub fn get_task_ids_for_date(date: String) -> Vec<usize> {
     let tasks = get_all_items();
-    let mut ids: Vec<usize> = vec![];
     // TODO: parse the input date so it can be various formats like "yesterday"
-    tasks.iter().for_each(|t| {
-        if let Some(task_date) = t.active_date {
-            if task_date.format("%Y-%m-%d").to_string() == date {
-                ids.push(t.id);
-            }
+    tasks.iter().filter_map(|t| {
+        let task_date = t.active_date?;
+        if task_date.format("%Y-%m-%d").to_string() == date {
+            Some(t.id)
+        } else {
+            None
         }
-    });
-    ids
+    }).collect()
 }
 
 pub fn get_task_ids_before_date(date: String) -> Vec<usize> {
     let tasks = get_all_items();
-    let mut ids: Vec<usize> = vec![];
     // TODO: parse the input date so it can be various formats like "yesterday"
-    tasks.iter().for_each(|t| {
-        if let Some(task_date) = t.active_date {
-            if task_date.format("%Y-%m-%d").to_string() < date {
-                ids.push(t.id);
-            }
+    tasks.iter().filter_map(|t| {
+        let task_date = t.active_date?;
+        if task_date.format("%Y-%m-%d").to_string() < date {
+            Some(t.id)
+        } else {
+            None
         }
-    });
-    ids
+    }).collect()
 }
 
 pub fn get_archived_tasks() -> Vec<TaskItem> {
@@ -103,13 +101,11 @@ pub fn get_archived_tasks() -> Vec<TaskItem> {
 
 pub fn get_archived_task_ids() -> Vec<usize> {
     let tasks = get_all_items();
-    let mut ids: Vec<usize> = vec![];
-    tasks.iter().for_each(|t| {
-        if t.status == Status::Archived {
-            ids.push(t.id);
-        }
-    });
-    ids
+    tasks
+        .iter()
+        .filter(|t| t.status == Status::Archived)
+        .map(|t| t.id)
+        .collect()
 }
 
 pub fn prompt_for_task_ids(message: &str) -> Option<Vec<usize>> {
@@ -139,13 +135,10 @@ pub fn get_visible_items() -> Vec<TaskItem> {
 
 pub fn get_ids_for_indices(indices: Vec<usize>) -> Vec<usize> {
     let visible = get_visible_items();
-    let mut ids: Vec<usize> = vec![];
-    indices.iter().for_each(|index| {
-        if let Some(id) = get_task_id_by_index(*index, &visible) {
-            ids.push(id);
-        }
-    });
-    ids
+    indices
+        .iter()
+        .filter_map(|index| get_task_id_by_index(*index, &visible))
+        .collect()
 }
 
 pub fn get_task_id_by_index(index: usize, visible: &[TaskItem]) -> Option<usize> {
