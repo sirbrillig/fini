@@ -1,14 +1,14 @@
+use crate::commands::{execute_command, Command};
 use crate::task_item::{Status, TaskItem, TaskItemCopyable};
 use crate::util::{
-    archived_tasks_as_markdown, get_archived_tasks, get_data_path, get_next_id,
-    get_task_ids_before_date, get_task_ids_for_date, prompt_for_task_ids, read_data,
-    sort_visible_items, write_data, SELECT_PAGE_SIZE,
+    archived_tasks_as_markdown, get_archived_tasks, get_data_path, get_next_id, read_data,
+    sort_visible_items, write_data,
 };
 use arboard::Clipboard;
 use chrono::Local;
 use colored::Colorize;
 use edit::edit;
-use inquire::{Confirm, Select, Text};
+use inquire::{Confirm, Select};
 
 pub fn interactive() -> Result<(), Box<dyn std::error::Error>> {
     loop {
@@ -46,136 +46,33 @@ pub fn interactive() -> Result<(), Box<dyn std::error::Error>> {
             "list" => {
                 // Do nothing as the list will be printed when we loop.
             }
-            "list-archived" => archived(),
-            "clear" => {
-                let confirm_answer =
-                    Confirm::new("Are you sure you want to archive all complete tasks?")
-                        .with_default(false)
-                        .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
-                        .prompt();
-                if confirm_answer.is_ok_and(|x| x) {
-                    clear()?;
-                }
-            }
-            "add" => {
-                let title = Text::new("Enter task:").prompt();
-                let Ok(title) = title else {
-                    println!("An error happened when asking for the task.");
-                    continue;
-                };
-                if title.is_empty() {
-                    println!("The title of the task cannot be empty.");
-                    continue;
-                }
-                let link = Text::new("(Optional) Enter link:").prompt();
-                let Ok(link) = link else {
-                    continue;
-                };
-                if link.is_empty() {
-                    add(title)?;
-                } else {
-                    add_with_link(title, link)?;
-                }
-            }
-            "copy" => {
-                if let Some(ids) = prompt_for_task_ids("Select tasks to copy") {
-                    copy(ids)?;
-                }
-            }
-            "copy-checked" => {
-                let data_path = get_data_path();
-                let items = read_data(&data_path);
-                let ids = items
-                    .iter()
-                    .filter(|i| matches!(i.status, Status::Done | Status::InProgress))
-                    .map(|i| i.id)
-                    .collect();
-                copy(ids)?;
-            }
-            "copy-archived" => {
-                copy_archived()?;
-            }
-            "copy-date" => {
-                let date = Text::new("Enter date:").prompt();
-                if let Ok(date) = date {
-                    copy(get_task_ids_for_date(date))?;
-                }
-            }
-            "edit" => {
-                let data_path = get_data_path();
-                let items = read_data(&data_path);
-                let visible = sort_visible_items(&items);
-                if let Ok(selection) = Select::new("Select task to edit", visible)
-                    .with_page_size(SELECT_PAGE_SIZE)
-                    .prompt()
-                {
-                    edit_task(selection.id)?;
-                }
-            }
-            "check" => {
-                if let Some(ids) = prompt_for_task_ids("Select tasks to complete") {
-                    done(ids)?;
-                }
-            }
-            "star" => {
-                if let Some(ids) = prompt_for_task_ids("Select tasks to star") {
-                    star(ids)?;
-                }
-            }
-            "delete-before" => {
-                let date = Text::new("Enter date:").prompt();
-                if let Ok(date) = date {
-                    let confirm_answer = Confirm::new(&format!(
-                        "Are you sure you want to delete all archived tasks before {}?",
-                        date
-                    ))
-                    .with_default(false)
-                    .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
-                    .prompt();
-                    if confirm_answer.is_ok_and(|x| x) {
-                        delete(get_task_ids_before_date(date))?;
-                    }
-                }
-            }
-            "delete" => {
-                if let Some(ids) = prompt_for_task_ids("Select tasks to delete") {
-                    delete(ids)?;
-                }
-            }
-            "begin" => {
-                if let Some(ids) = prompt_for_task_ids("Select tasks to start") {
-                    work(ids)?;
-                }
-            }
+            "list-archived" => execute_command(Command::Archived)?,
+            "clear" => execute_command(Command::Clear)?,
+            "add" => execute_command(Command::Add { title: None })?,
+            "copy" => execute_command(Command::Copy { ids: None })?,
+            "copy-checked" => execute_command(Command::CopyChecked)?,
+            "copy-archived" => execute_command(Command::CopyArchived)?,
+            "copy-date" => execute_command(Command::CopyDate { date: None })?,
+            "edit" => execute_command(Command::Edit { id: None })?,
+            "check" => execute_command(Command::Check { ids: None })?,
+            "star" => execute_command(Command::Star { ids: None })?,
+            "delete-before" => execute_command(Command::DeleteBefore { date: None })?,
+            "delete" => execute_command(Command::Delete { ids: None })?,
+            "begin" => execute_command(Command::Begin { ids: None })?,
             _ => println!("Unknown command"),
         }
     }
     Ok(())
 }
 
-pub fn add(title: String) -> Result<usize, Box<dyn std::error::Error>> {
+pub fn add(title: String, link: Option<String>) -> Result<usize, Box<dyn std::error::Error>> {
     let data_path = get_data_path();
     let mut items = read_data(&data_path);
     let id = get_next_id(&items);
     let item = TaskItem {
         id,
         title,
-        ..Default::default()
-    };
-    println!("Added task: {}", &item.title);
-    items.push(item);
-    write_data(&data_path, items)?;
-    Ok(id)
-}
-
-pub fn add_with_link(title: String, link: String) -> Result<usize, Box<dyn std::error::Error>> {
-    let data_path = get_data_path();
-    let mut items = read_data(&data_path);
-    let id = get_next_id(&items);
-    let item = TaskItem {
-        id,
-        title,
-        link: Some(link),
+        link,
         ..Default::default()
     };
     println!("Added task: {}", &item.title);

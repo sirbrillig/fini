@@ -2,7 +2,7 @@ use crate::task_item::{Status, TaskItem};
 use chrono::NaiveDate;
 use colored::Colorize;
 use directories::BaseDirs;
-use inquire::MultiSelect;
+use inquire::{MultiSelect, Select};
 use std::io::Write;
 use std::{
     fs,
@@ -114,15 +114,24 @@ pub fn get_archived_task_ids() -> Vec<usize> {
         .collect()
 }
 
-pub fn prompt_for_task_ids(message: &str) -> Option<Vec<usize>> {
+pub fn prompt_for_task_id(message: &str) -> Result<usize, Box<dyn std::error::Error>> {
     let data_path = get_data_path();
     let items = read_data(&data_path);
     let visible = sort_visible_items(&items);
-    MultiSelect::new(message, visible)
+    let val = Select::new(message, visible)
         .with_page_size(SELECT_PAGE_SIZE)
-        .prompt()
-        .ok()
-        .map(|s| s.iter().map(|i| i.id).collect())
+        .prompt()?;
+    Ok(val.id)
+}
+
+pub fn prompt_for_task_ids(message: &str) -> Result<Vec<usize>, Box<dyn std::error::Error>> {
+    let data_path = get_data_path();
+    let items = read_data(&data_path);
+    let visible = sort_visible_items(&items);
+    let val = MultiSelect::new(message, visible)
+        .with_page_size(SELECT_PAGE_SIZE)
+        .prompt()?;
+    Ok(val.iter().map(|i| i.id).collect())
 }
 
 pub fn get_all_items() -> Vec<TaskItem> {
@@ -139,6 +148,11 @@ pub fn get_visible_items() -> Vec<TaskItem> {
         .collect()
 }
 
+pub fn get_id_for_index(index: usize) -> Option<usize> {
+    let visible = get_visible_items();
+    get_task_id_by_index(index, &visible)
+}
+
 pub fn get_ids_for_indices(indices: Vec<usize>) -> Vec<usize> {
     let visible = get_visible_items();
     indices
@@ -147,7 +161,7 @@ pub fn get_ids_for_indices(indices: Vec<usize>) -> Vec<usize> {
         .collect()
 }
 
-pub fn get_task_id_by_index(index: usize, visible: &[TaskItem]) -> Option<usize> {
+fn get_task_id_by_index(index: usize, visible: &[TaskItem]) -> Option<usize> {
     visible.get(index - 1).map(|i| i.id)
 }
 

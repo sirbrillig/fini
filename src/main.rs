@@ -1,11 +1,6 @@
 use clap::{Parser, Subcommand};
-use fini::actions;
-use fini::task_item::Status;
-use fini::util::{
-    get_data_path, get_ids_for_indices, get_task_id_by_index, get_task_ids_before_date,
-    get_task_ids_for_date, get_visible_items,
-};
-use inquire::{Confirm, Text};
+use fini::commands::{execute_command, Command};
+use fini::util::{get_id_for_index, get_ids_for_indices};
 
 #[derive(Parser)]
 #[command(
@@ -15,11 +10,11 @@ use inquire::{Confirm, Text};
 )]
 struct Cli {
     #[command(subcommand)]
-    command: Commands,
+    command: CliCommands,
 }
 
 #[derive(Subcommand)]
-enum Commands {
+enum CliCommands {
     /// Add a new task (alias: a)
     #[command(alias = "a")]
     Add {
@@ -93,85 +88,46 @@ enum Commands {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
     match cli.command {
-        Commands::Add { title } => {
-            let title_joined = title.join(" ");
-            if title_joined.is_empty() {
-                return Ok(());
-            }
-            let id = actions::add(title_joined)?;
-            let link = Text::new("(Optional) Enter link:").prompt();
-            if let Ok(link) = link {
-                actions::link(id, link)?;
-            }
+        CliCommands::Add { title } => {
+            execute_command(Command::Add {
+                // TODO: pass None if empty string
+                title: Some(title.join(" ")),
+            })?;
         }
-        Commands::FilePath => {
-            if let Some(path) = get_data_path().to_str() {
-                println!("{}", path);
-            }
+        CliCommands::FilePath => execute_command(Command::FilePath)?,
+        CliCommands::Copy { indices } => execute_command(Command::Copy {
+            // TODO: pass None if empty list
+            ids: Some(get_ids_for_indices(indices)),
+        })?,
+        CliCommands::CopyChecked => execute_command(Command::CopyChecked)?,
+        CliCommands::CopyDate { date } => execute_command(Command::CopyDate { date: Some(date) })?,
+        CliCommands::CopyArchived => execute_command(Command::CopyArchived)?,
+        CliCommands::List => execute_command(Command::List)?,
+        CliCommands::Archived => execute_command(Command::Archived)?,
+        CliCommands::Edit { index } => execute_command(Command::Edit {
+            id: get_id_for_index(index),
+        })?,
+        CliCommands::Begin { indices } => execute_command(Command::Begin {
+            // TODO: pass None if empty list
+            ids: Some(get_ids_for_indices(indices)),
+        })?,
+        CliCommands::Star { indices } => execute_command(Command::Star {
+            // TODO: pass None if empty list
+            ids: Some(get_ids_for_indices(indices)),
+        })?,
+        CliCommands::Check { indices } => execute_command(Command::Check {
+            // TODO: pass None if empty list
+            ids: Some(get_ids_for_indices(indices)),
+        })?,
+        CliCommands::Delete { indices } => execute_command(Command::Delete {
+            // TODO: pass None if empty list
+            ids: Some(get_ids_for_indices(indices)),
+        })?,
+        CliCommands::Clear => execute_command(Command::Clear)?,
+        CliCommands::DeleteBefore { date } => {
+            execute_command(Command::DeleteBefore { date: Some(date) })?
         }
-        Commands::Copy { indices } => {
-            actions::copy(get_ids_for_indices(indices))?;
-        }
-        Commands::CopyChecked => {
-            let visible = get_visible_items();
-            let ids = visible
-                .iter()
-                .filter(|i| matches!(i.status, Status::Done | Status::InProgress))
-                .map(|i| i.id)
-                .collect();
-            actions::copy(ids)?;
-        }
-        Commands::CopyDate { date } => {
-            actions::copy(get_task_ids_for_date(date))?;
-        }
-        Commands::CopyArchived => {
-            actions::copy_archived()?;
-        }
-        Commands::List => actions::list(),
-        Commands::Archived => actions::archived(),
-        Commands::Edit { index } => {
-            let visible = get_visible_items();
-            if let Some(id) = get_task_id_by_index(index, &visible) {
-                actions::edit_task(id)?;
-            } else {
-                eprintln!("⚠️ No task found with index {index}");
-            }
-        }
-        Commands::Begin { indices } => {
-            actions::work(get_ids_for_indices(indices))?;
-        }
-        Commands::Star { indices } => {
-            actions::star(get_ids_for_indices(indices))?;
-        }
-        Commands::Check { indices } => {
-            actions::done(get_ids_for_indices(indices))?;
-        }
-        Commands::Delete { indices } => {
-            actions::delete(get_ids_for_indices(indices))?;
-        }
-        Commands::Clear => {
-            let confirm_answer =
-                Confirm::new("Are you sure you want to archive all complete tasks?")
-                    .with_default(false)
-                    .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
-                    .prompt();
-            if confirm_answer.is_ok_and(|x| x) {
-                actions::clear()?;
-            }
-        }
-        Commands::DeleteBefore { date } => {
-            let confirm_answer = Confirm::new(&format!(
-                "Are you sure you want to delete all archived tasks before {}?",
-                date
-            ))
-            .with_default(false)
-            .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
-            .prompt();
-            if confirm_answer.is_ok_and(|x| x) {
-                actions::delete(get_task_ids_before_date(date))?;
-            }
-        }
-        Commands::Interactive => actions::interactive()?,
+        CliCommands::Interactive => fini::actions::interactive()?,
     }
     Ok(())
 }
