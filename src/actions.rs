@@ -93,12 +93,7 @@ pub fn interactive() -> Result<(), Box<dyn std::error::Error>> {
                 copy(ids)?;
             }
             "copy-archived" => {
-                let items = get_archived_tasks();
-                // We have to strip escape codes to remove the color.
-                let text = strip_ansi_escapes::strip_str(archived_tasks_as_markdown(items));
-                let mut clipboard = Clipboard::new()?;
-                clipboard.set_text(text)?;
-                println!("Copied archived tasks as Markdown");
+                copy_archived()?;
             }
             "copy-date" => {
                 let date = Text::new("Enter date:").prompt();
@@ -363,6 +358,16 @@ pub fn delete(ids: Vec<usize>) -> Result<(), Box<dyn std::error::Error>> {
     let mut items = read_data(&data_path);
     items.retain(|i| !ids.contains(&i.id));
     write_data(&data_path, items)?;
+    Ok(())
+}
+
+pub fn copy_archived() -> Result<(), Box<dyn std::error::Error>> {
+    let items = get_archived_tasks();
+    // We have to strip escape codes to remove the color.
+    let text = strip_ansi_escapes::strip_str(archived_tasks_as_markdown(items));
+    let mut clipboard = Clipboard::new()?;
+    clipboard.set_text(text)?;
+    println!("Copied archived tasks as Markdown");
     Ok(())
 }
 

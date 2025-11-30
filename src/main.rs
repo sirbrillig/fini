@@ -1,10 +1,9 @@
-use arboard::Clipboard;
 use clap::{Parser, Subcommand};
 use fini::actions;
 use fini::task_item::Status;
 use fini::util::{
-    archived_tasks_as_markdown, get_archived_tasks, get_data_path, get_ids_for_indices,
-    get_task_id_by_index, get_task_ids_before_date, get_task_ids_for_date, get_visible_items,
+    get_data_path, get_ids_for_indices, get_task_id_by_index, get_task_ids_before_date,
+    get_task_ids_for_date, get_visible_items,
 };
 use inquire::{Confirm, Text};
 
@@ -126,12 +125,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             actions::copy(get_task_ids_for_date(date))?;
         }
         Commands::CopyArchived => {
-            let items = get_archived_tasks();
-            // We have to strip escape codes to remove the color.
-            let text = strip_ansi_escapes::strip_str(archived_tasks_as_markdown(items));
-            let mut clipboard = Clipboard::new()?;
-            clipboard.set_text(text)?;
-            println!("Copied archived tasks as Markdown");
+            actions::copy_archived()?;
         }
         Commands::List => actions::list(),
         Commands::Archived => actions::archived(),
