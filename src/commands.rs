@@ -145,6 +145,7 @@ pub fn execute_command(command: Command) -> Result<(), Box<dyn std::error::Error
                 Some(ids) => ids,
                 None => prompt_for_task_ids("Select tasks to delete")?,
             };
+            // TODO: print tasks that will be deleted
             let confirm_answer =
                 Confirm::new("Are you sure you want to delete the selected tasks?")
                     .with_default(false)

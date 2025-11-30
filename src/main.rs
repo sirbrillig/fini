@@ -90,14 +90,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     match cli.command {
         CliCommands::Add { title } => {
             execute_command(Command::Add {
-                // TODO: pass None if empty string
-                title: Some(title.join(" ")),
+                title: Some(title.join(" ")).filter(|x| !x.is_empty())
             })?;
         }
         CliCommands::FilePath => execute_command(Command::FilePath)?,
         CliCommands::Copy { indices } => execute_command(Command::Copy {
-            // TODO: pass None if empty list
-            ids: Some(get_ids_for_indices(indices)),
+            ids: Some(get_ids_for_indices(indices)).filter(|x| !x.is_empty()),
         })?,
         CliCommands::CopyChecked => execute_command(Command::CopyChecked)?,
         CliCommands::CopyDate { date } => execute_command(Command::CopyDate { date: Some(date) })?,
@@ -108,20 +106,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             id: get_id_for_index(index),
         })?,
         CliCommands::Begin { indices } => execute_command(Command::Begin {
-            // TODO: pass None if empty list
-            ids: Some(get_ids_for_indices(indices)),
+            ids: Some(get_ids_for_indices(indices)).filter(|x| !x.is_empty()),
         })?,
         CliCommands::Star { indices } => execute_command(Command::Star {
-            // TODO: pass None if empty list
-            ids: Some(get_ids_for_indices(indices)),
+            ids: Some(get_ids_for_indices(indices)).filter(|x| !x.is_empty()),
         })?,
         CliCommands::Check { indices } => execute_command(Command::Check {
-            // TODO: pass None if empty list
-            ids: Some(get_ids_for_indices(indices)),
+            ids: Some(get_ids_for_indices(indices)).filter(|x| !x.is_empty()),
         })?,
         CliCommands::Delete { indices } => execute_command(Command::Delete {
-            // TODO: pass None if empty list
-            ids: Some(get_ids_for_indices(indices)),
+            ids: Some(get_ids_for_indices(indices)).filter(|x| !x.is_empty()),
         })?,
         CliCommands::Clear => execute_command(Command::Clear)?,
         CliCommands::DeleteBefore { date } => {
