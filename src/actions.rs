@@ -302,8 +302,8 @@ pub fn work(ids: Vec<usize>) {
     let data_path = get_data_path();
     let mut items = read_data(&data_path);
     let mut did_change = false;
-    ids.iter().for_each(|id| {
-        if let Some(item) = items.iter_mut().find(|t| t.id == *id) {
+    for id in ids {
+        if let Some(item) = items.iter_mut().find(|t| t.id == id) {
             if item.status == Status::InProgress {
                 item.status = Status::Todo;
                 item.active_date = None;
@@ -318,7 +318,7 @@ pub fn work(ids: Vec<usize>) {
         } else {
             eprintln!("⚠️ No task found with id {id}");
         }
-    });
+    };
     if did_change {
         write_data(&data_path, items).expect("Failed to write file!");
     }
@@ -328,8 +328,8 @@ pub fn star(ids: Vec<usize>) {
     let data_path = get_data_path();
     let mut items = read_data(&data_path);
     let mut did_change = false;
-    ids.iter().for_each(|id| {
-        if let Some(item) = items.iter_mut().find(|t| t.id == *id) {
+    for id in ids {
+        if let Some(item) = items.iter_mut().find(|t| t.id == id) {
             if item.star.is_some_and(|v| v) {
                 item.star = None;
             } else {
@@ -339,7 +339,7 @@ pub fn star(ids: Vec<usize>) {
         } else {
             eprintln!("⚠️ No task found with id {id}");
         }
-    });
+    }
     if did_change {
         write_data(&data_path, items).expect("Failed to write file!");
         println!("Starred the selected tasks");
@@ -352,8 +352,8 @@ pub fn done(ids: Vec<usize>) {
     let data_path = get_data_path();
     let mut items = read_data(&data_path);
     let mut did_change = false;
-    ids.iter().for_each(|id| {
-        if let Some(item) = items.iter_mut().find(|t| t.id == *id) {
+    for id in ids {
+        if let Some(item) = items.iter_mut().find(|t| t.id == id) {
             if item.status == Status::Done {
                 item.status = Status::Todo;
                 item.active_date = None;
@@ -368,7 +368,7 @@ pub fn done(ids: Vec<usize>) {
         } else {
             eprintln!("⚠️ No task found with id {id}");
         }
-    });
+    }
     if did_change {
         write_data(&data_path, items).expect("Failed to write file!");
     }
