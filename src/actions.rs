@@ -260,43 +260,30 @@ pub fn edit_link(id: usize) -> Result<(), Box<dyn std::error::Error>> {
 pub fn edit_task(id: usize) -> Result<(), Box<dyn std::error::Error>> {
     let data_path = get_data_path();
     let mut items = read_data(&data_path);
-    if let Some(item) = items.iter_mut().find(|t| t.id == id) {
-        let item_id = item.id;
-        let current_title = item.title.clone();
+    let Some(item) = items.iter_mut().find(|t| t.id == id) else {
+        return Err("No task found to edit".into());
+    };
 
-        // Open editor with current title
-        match edit(&current_title) {
-            Ok(new_title) => {
-                let new_title = new_title.trim().to_string();
-                if new_title.is_empty() {
-                    eprintln!("⚠️ Title cannot be empty");
-                    return Ok(());
-                }
-
-                if new_title != current_title {
-                    if let Some(item) = items.iter_mut().find(|t| t.id == item_id) {
-                        item.title = new_title.clone();
-                        write_data(&data_path, items)?;
-                        println!("Updated task: {}", new_title);
-                    }
-                }
-
-                let confirm_answer = Confirm::new("Do you want to edit the link?")
-                    .with_default(false)
-                    .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
-                    .prompt();
-                if confirm_answer.is_ok_and(|x| x) {
-                    edit_link(id)?;
-                }
-                return Ok(());
-            }
-            Err(e) => {
-                eprintln!("⚠️ Error editing task: {}", e);
-                return Ok(());
-            }
-        }
+    let new_title = edit(&item.title)?;
+    let new_title = new_title.trim().to_string();
+    if new_title.is_empty() {
+        eprintln!("⚠️ Title cannot be empty");
+        return Ok(());
     }
-    eprintln!("⚠️ No task found with id {id}");
+
+    if new_title != item.title {
+        item.title = new_title.clone();
+        write_data(&data_path, items)?;
+        println!("Updated task: {}", new_title);
+    }
+
+    let confirm_answer = Confirm::new("Do you want to edit the link?")
+        .with_default(false)
+        .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
+        .prompt();
+    if confirm_answer.is_ok_and(|x| x) {
+        edit_link(id)?;
+    }
     Ok(())
 }
 
