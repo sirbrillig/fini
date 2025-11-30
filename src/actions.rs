@@ -192,10 +192,12 @@ pub fn add_with_link(title: String, link: String) -> Result<usize, Box<dyn std::
 pub fn link(id: usize, link: String) -> Result<(), Box<dyn std::error::Error>> {
     let data_path = get_data_path();
     let mut items = read_data(&data_path);
-    if let Some(item) = items.iter_mut().find(|t| t.id == id) {
-        item.link = Some(link);
-        println!("Added link to task: {}", item.title);
-    }
+    let Some(item) = items.iter_mut().find(|t| t.id == id) else {
+        eprintln!("⚠️ No task found with id {id}");
+        return Ok(());
+    };
+    item.link = Some(link);
+    println!("Added link to task: {}", item.title);
     write_data(&data_path, items)?;
     Ok(())
 }
@@ -282,20 +284,20 @@ pub fn work(ids: Vec<usize>) -> Result<(), Box<dyn std::error::Error>> {
     let mut items = read_data(&data_path);
     let mut did_change = false;
     for id in ids {
-        if let Some(item) = items.iter_mut().find(|t| t.id == id) {
-            if item.status == Status::InProgress {
-                item.status = Status::Todo;
-                item.active_date = None;
-                did_change = true;
-                println!("Moved task back to todo: {}", item.title);
-            } else {
-                item.status = Status::InProgress;
-                item.active_date = Some(Local::now().date_naive());
-                did_change = true;
-                println!("Started task: {}", item.title);
-            }
-        } else {
+        let Some(item) = items.iter_mut().find(|t| t.id == id) else {
             eprintln!("⚠️ No task found with id {id}");
+            return Ok(());
+        };
+        if item.status == Status::InProgress {
+            item.status = Status::Todo;
+            item.active_date = None;
+            did_change = true;
+            println!("Moved task back to todo: {}", item.title);
+        } else {
+            item.status = Status::InProgress;
+            item.active_date = Some(Local::now().date_naive());
+            did_change = true;
+            println!("Started task: {}", item.title);
         }
     }
     if did_change {
@@ -309,16 +311,16 @@ pub fn star(ids: Vec<usize>) -> Result<(), Box<dyn std::error::Error>> {
     let mut items = read_data(&data_path);
     let mut did_change = false;
     for id in ids {
-        if let Some(item) = items.iter_mut().find(|t| t.id == id) {
-            if item.star.is_some_and(|v| v) {
-                item.star = None;
-            } else {
-                item.star = Some(true);
-            }
-            did_change = true;
-        } else {
+        let Some(item) = items.iter_mut().find(|t| t.id == id) else {
             eprintln!("⚠️ No task found with id {id}");
+            return Ok(());
+        };
+        if item.star.is_some_and(|v| v) {
+            item.star = None;
+        } else {
+            item.star = Some(true);
         }
+        did_change = true;
     }
     if did_change {
         write_data(&data_path, items)?;
@@ -334,20 +336,20 @@ pub fn done(ids: Vec<usize>) -> Result<(), Box<dyn std::error::Error>> {
     let mut items = read_data(&data_path);
     let mut did_change = false;
     for id in ids {
-        if let Some(item) = items.iter_mut().find(|t| t.id == id) {
-            if item.status == Status::Done {
-                item.status = Status::Todo;
-                item.active_date = None;
-                did_change = true;
-                println!("Moved task back to todo: {}", item.title);
-            } else {
-                item.status = Status::Done;
-                item.active_date = Some(Local::now().date_naive());
-                did_change = true;
-                println!("Completed task: {}", item.title);
-            }
-        } else {
+        let Some(item) = items.iter_mut().find(|t| t.id == id) else {
             eprintln!("⚠️ No task found with id {id}");
+            return Ok(());
+        };
+        if item.status == Status::Done {
+            item.status = Status::Todo;
+            item.active_date = None;
+            did_change = true;
+            println!("Moved task back to todo: {}", item.title);
+        } else {
+            item.status = Status::Done;
+            item.active_date = Some(Local::now().date_naive());
+            did_change = true;
+            println!("Completed task: {}", item.title);
         }
     }
     if did_change {
