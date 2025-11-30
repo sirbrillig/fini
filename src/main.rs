@@ -91,18 +91,18 @@ enum Commands {
     Interactive,
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
     match cli.command {
         Commands::Add { title } => {
             let title_joined = title.join(" ");
             if title_joined.is_empty() {
-                return;
+                return Ok(());
             }
-            let id = actions::add(title_joined);
+            let id = actions::add(title_joined)?;
             let link = Text::new("(Optional) Enter link:").prompt();
             if let Ok(link) = link {
-                actions::link(id, link);
+                actions::link(id, link)?;
             }
         }
         Commands::FilePath => {
@@ -111,7 +111,7 @@ fn main() {
             }
         }
         Commands::Copy { indices } => {
-            actions::copy(get_ids_for_indices(indices));
+            actions::copy(get_ids_for_indices(indices))?;
         }
         Commands::CopyChecked => {
             let visible = get_visible_items();
@@ -120,19 +120,17 @@ fn main() {
                 .filter(|i| matches!(i.status, Status::Done | Status::InProgress))
                 .map(|i| i.id)
                 .collect();
-            actions::copy(ids);
+            actions::copy(ids)?;
         }
         Commands::CopyDate { date } => {
-            actions::copy(get_task_ids_for_date(date));
+            actions::copy(get_task_ids_for_date(date))?;
         }
         Commands::CopyArchived => {
             let items = get_archived_tasks();
             // We have to strip escape codes to remove the color.
             let text = strip_ansi_escapes::strip_str(archived_tasks_as_markdown(items));
-            let mut clipboard = Clipboard::new().expect("Failed to access clipboard");
-            clipboard
-                .set_text(text)
-                .expect("Failed to save text to clipboard");
+            let mut clipboard = Clipboard::new()?;
+            clipboard.set_text(text)?;
             println!("Copied archived tasks as Markdown");
         }
         Commands::List => actions::list(),
@@ -140,22 +138,22 @@ fn main() {
         Commands::Edit { index } => {
             let visible = get_visible_items();
             if let Some(id) = get_task_id_by_index(index, &visible) {
-                actions::edit_task(id);
+                actions::edit_task(id)?;
             } else {
                 eprintln!("⚠️ No task found with index {index}");
             }
         }
         Commands::Begin { indices } => {
-            actions::work(get_ids_for_indices(indices));
+            actions::work(get_ids_for_indices(indices))?;
         }
         Commands::Star { indices } => {
-            actions::star(get_ids_for_indices(indices));
+            actions::star(get_ids_for_indices(indices))?;
         }
         Commands::Check { indices } => {
-            actions::done(get_ids_for_indices(indices));
+            actions::done(get_ids_for_indices(indices))?;
         }
         Commands::Delete { indices } => {
-            actions::delete(get_ids_for_indices(indices));
+            actions::delete(get_ids_for_indices(indices))?;
         }
         Commands::Clear => {
             let confirm_answer =
@@ -164,7 +162,7 @@ fn main() {
                     .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
                     .prompt();
             if confirm_answer.is_ok_and(|x| x) {
-                actions::clear();
+                actions::clear()?;
             }
         }
         Commands::DeleteBefore { date } => {
@@ -176,9 +174,10 @@ fn main() {
             .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
             .prompt();
             if confirm_answer.is_ok_and(|x| x) {
-                actions::delete(get_task_ids_before_date(date));
+                actions::delete(get_task_ids_before_date(date))?;
             }
         }
-        Commands::Interactive => actions::interactive(),
+        Commands::Interactive => actions::interactive()?,
     }
+    Ok(())
 }

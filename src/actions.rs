@@ -10,7 +10,7 @@ use colored::Colorize;
 use edit::edit;
 use inquire::{Confirm, Select, Text};
 
-pub fn interactive() {
+pub fn interactive() -> Result<(), Box<dyn std::error::Error>> {
     loop {
         println!("{}", "-----------------------------------------".green());
         list();
@@ -54,7 +54,7 @@ pub fn interactive() {
                         .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
                         .prompt();
                 if confirm_answer.is_ok_and(|x| x) {
-                    clear();
+                    clear()?;
                 }
             }
             "add" => {
@@ -72,14 +72,14 @@ pub fn interactive() {
                     continue;
                 };
                 if link.is_empty() {
-                    add(title);
+                    add(title)?;
                 } else {
-                    add_with_link(title, link);
+                    add_with_link(title, link)?;
                 }
             }
             "copy" => {
                 if let Some(ids) = prompt_for_task_ids("Select tasks to copy") {
-                    copy(ids);
+                    copy(ids)?;
                 }
             }
             "copy-checked" => {
@@ -90,22 +90,20 @@ pub fn interactive() {
                     .filter(|i| matches!(i.status, Status::Done | Status::InProgress))
                     .map(|i| i.id)
                     .collect();
-                copy(ids);
+                copy(ids)?;
             }
             "copy-archived" => {
                 let items = get_archived_tasks();
                 // We have to strip escape codes to remove the color.
                 let text = strip_ansi_escapes::strip_str(archived_tasks_as_markdown(items));
-                let mut clipboard = Clipboard::new().expect("Failed to access clipboard");
-                clipboard
-                    .set_text(text)
-                    .expect("Failed to save text to clipboard");
+                let mut clipboard = Clipboard::new()?;
+                clipboard.set_text(text)?;
                 println!("Copied archived tasks as Markdown");
             }
             "copy-date" => {
                 let date = Text::new("Enter date:").prompt();
                 if let Ok(date) = date {
-                    copy(get_task_ids_for_date(date));
+                    copy(get_task_ids_for_date(date))?;
                 }
             }
             "edit" => {
@@ -116,17 +114,17 @@ pub fn interactive() {
                     .with_page_size(SELECT_PAGE_SIZE)
                     .prompt()
                 {
-                    edit_task(selection.id);
+                    edit_task(selection.id)?;
                 }
             }
             "check" => {
                 if let Some(ids) = prompt_for_task_ids("Select tasks to complete") {
-                    done(ids);
+                    done(ids)?;
                 }
             }
             "star" => {
                 if let Some(ids) = prompt_for_task_ids("Select tasks to star") {
-                    star(ids);
+                    star(ids)?;
                 }
             }
             "delete-before" => {
@@ -140,26 +138,27 @@ pub fn interactive() {
                     .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
                     .prompt();
                     if confirm_answer.is_ok_and(|x| x) {
-                        delete(get_task_ids_before_date(date));
+                        delete(get_task_ids_before_date(date))?;
                     }
                 }
             }
             "delete" => {
                 if let Some(ids) = prompt_for_task_ids("Select tasks to delete") {
-                    delete(ids);
+                    delete(ids)?;
                 }
             }
             "begin" => {
                 if let Some(ids) = prompt_for_task_ids("Select tasks to start") {
-                    work(ids);
+                    work(ids)?;
                 }
             }
             _ => println!("Unknown command"),
         }
     }
+    Ok(())
 }
 
-pub fn add(title: String) -> usize {
+pub fn add(title: String) -> Result<usize, Box<dyn std::error::Error>> {
     let data_path = get_data_path();
     let mut items = read_data(&data_path);
     let id = get_next_id(&items);
@@ -170,11 +169,11 @@ pub fn add(title: String) -> usize {
     };
     println!("Added task: {}", &item.title);
     items.push(item);
-    write_data(&data_path, items).expect("Failed to write file!");
-    id
+    write_data(&data_path, items)?;
+    Ok(id)
 }
 
-pub fn add_with_link(title: String, link: String) -> usize {
+pub fn add_with_link(title: String, link: String) -> Result<usize, Box<dyn std::error::Error>> {
     let data_path = get_data_path();
     let mut items = read_data(&data_path);
     let id = get_next_id(&items);
@@ -186,18 +185,19 @@ pub fn add_with_link(title: String, link: String) -> usize {
     };
     println!("Added task: {}", &item.title);
     items.push(item);
-    write_data(&data_path, items).expect("Failed to write file!");
-    id
+    write_data(&data_path, items)?;
+    Ok(id)
 }
 
-pub fn link(id: usize, link: String) {
+pub fn link(id: usize, link: String) -> Result<(), Box<dyn std::error::Error>> {
     let data_path = get_data_path();
     let mut items = read_data(&data_path);
     if let Some(item) = items.iter_mut().find(|t| t.id == id) {
         item.link = Some(link);
         println!("Added link to task: {}", item.title);
     }
-    write_data(&data_path, items).expect("Failed to write file!");
+    write_data(&data_path, items)?;
+    Ok(())
 }
 
 pub fn list() {
@@ -219,7 +219,7 @@ pub fn archived() {
     print!("{}", archived_tasks_as_markdown(items));
 }
 
-pub fn edit_link(id: usize) {
+pub fn edit_link(id: usize) -> Result<(), Box<dyn std::error::Error>> {
     let data_path = get_data_path();
     let mut items = read_data(&data_path);
     if let Some(item) = items.iter_mut().find(|t| t.id == id) {
@@ -231,32 +231,33 @@ pub fn edit_link(id: usize) {
                 let new_link = new_link.trim().to_string();
                 if new_link.is_empty() {
                     eprintln!("⚠️ link cannot be empty");
-                    return;
+                    return Ok(());
                 }
 
                 if new_link == current_link {
                     println!("No changes made");
-                    return;
+                    return Ok(());
                 }
 
                 // Update the task
                 if let Some(item) = items.iter_mut().find(|t| t.id == item_id) {
                     item.link = Some(new_link.clone());
-                    write_data(&data_path, items).expect("Failed to write file!");
+                    write_data(&data_path, items)?;
                     println!("Updated task: {}", new_link);
-                    return;
+                    return Ok(());
                 }
             }
             Err(e) => {
                 eprintln!("⚠️ Error editing task: {}", e);
-                return;
+                return Ok(());
             }
         }
     }
     eprintln!("⚠️ No task found with id {id}");
+    Ok(())
 }
 
-pub fn edit_task(id: usize) {
+pub fn edit_task(id: usize) -> Result<(), Box<dyn std::error::Error>> {
     let data_path = get_data_path();
     let mut items = read_data(&data_path);
     if let Some(item) = items.iter_mut().find(|t| t.id == id) {
@@ -269,13 +270,13 @@ pub fn edit_task(id: usize) {
                 let new_title = new_title.trim().to_string();
                 if new_title.is_empty() {
                     eprintln!("⚠️ Title cannot be empty");
-                    return;
+                    return Ok(());
                 }
 
                 if new_title != current_title {
                     if let Some(item) = items.iter_mut().find(|t| t.id == item_id) {
                         item.title = new_title.clone();
-                        write_data(&data_path, items).expect("Failed to write file!");
+                        write_data(&data_path, items)?;
                         println!("Updated task: {}", new_title);
                     }
                 }
@@ -285,20 +286,21 @@ pub fn edit_task(id: usize) {
                     .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
                     .prompt();
                 if confirm_answer.is_ok_and(|x| x) {
-                    edit_link(id);
+                    edit_link(id)?;
                 }
-                return;
+                return Ok(());
             }
             Err(e) => {
                 eprintln!("⚠️ Error editing task: {}", e);
-                return;
+                return Ok(());
             }
         }
     }
     eprintln!("⚠️ No task found with id {id}");
+    Ok(())
 }
 
-pub fn work(ids: Vec<usize>) {
+pub fn work(ids: Vec<usize>) -> Result<(), Box<dyn std::error::Error>> {
     let data_path = get_data_path();
     let mut items = read_data(&data_path);
     let mut did_change = false;
@@ -318,13 +320,14 @@ pub fn work(ids: Vec<usize>) {
         } else {
             eprintln!("⚠️ No task found with id {id}");
         }
-    };
-    if did_change {
-        write_data(&data_path, items).expect("Failed to write file!");
     }
+    if did_change {
+        write_data(&data_path, items)?;
+    }
+    Ok(())
 }
 
-pub fn star(ids: Vec<usize>) {
+pub fn star(ids: Vec<usize>) -> Result<(), Box<dyn std::error::Error>> {
     let data_path = get_data_path();
     let mut items = read_data(&data_path);
     let mut did_change = false;
@@ -341,14 +344,15 @@ pub fn star(ids: Vec<usize>) {
         }
     }
     if did_change {
-        write_data(&data_path, items).expect("Failed to write file!");
+        write_data(&data_path, items)?;
         println!("Starred the selected tasks");
     } else {
         println!("No tasks selected");
     }
+    Ok(())
 }
 
-pub fn done(ids: Vec<usize>) {
+pub fn done(ids: Vec<usize>) -> Result<(), Box<dyn std::error::Error>> {
     let data_path = get_data_path();
     let mut items = read_data(&data_path);
     let mut did_change = false;
@@ -370,19 +374,21 @@ pub fn done(ids: Vec<usize>) {
         }
     }
     if did_change {
-        write_data(&data_path, items).expect("Failed to write file!");
+        write_data(&data_path, items)?;
     }
+    Ok(())
 }
 
-pub fn delete(ids: Vec<usize>) {
+pub fn delete(ids: Vec<usize>) -> Result<(), Box<dyn std::error::Error>> {
     let data_path = get_data_path();
     let mut items = read_data(&data_path);
     items.retain(|i| !ids.contains(&i.id));
-    write_data(&data_path, items).expect("Failed to write file!");
+    write_data(&data_path, items)?;
+    Ok(())
 }
 
-pub fn copy(ids: Vec<usize>) {
-    let mut clipboard = Clipboard::new().expect("Failed to access clipboard");
+pub fn copy(ids: Vec<usize>) -> Result<(), Box<dyn std::error::Error>> {
+    let mut clipboard = Clipboard::new()?;
     let data_path = get_data_path();
     let items = read_data(&data_path);
     let text_lines: Vec<String> = items
@@ -395,17 +401,16 @@ pub fn copy(ids: Vec<usize>) {
         })
         .collect();
     let text = text_lines.join("\n");
-    clipboard
-        .set_text(text)
-        .expect("Failed to save text to clipboard");
+    clipboard.set_text(text)?;
     match text_lines.len() {
         0 => println!("No tasks to copy"),
         1 => println!("Copied text for task: {}", text_lines[0]),
         _ => println!("Copied text for selected tasks"),
-    }
+    };
+    Ok(())
 }
 
-pub fn clear() {
+pub fn clear() -> Result<(), Box<dyn std::error::Error>> {
     let data_path = get_data_path();
     let mut items = read_data(&data_path);
     let mut copies: Vec<TaskItem> = vec![];
@@ -435,6 +440,7 @@ pub fn clear() {
         }
     }
     items.extend(copies);
-    write_data(&data_path, items).expect("Failed to write file!");
+    write_data(&data_path, items)?;
     println!("Archived completed tasks");
+    Ok(())
 }
