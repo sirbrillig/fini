@@ -33,7 +33,7 @@ pub fn archived_tasks_as_markdown(mut items: Vec<TaskItem>) -> String {
     outputs.join("\n")
 }
 
-pub fn read_data(path: &PathBuf) -> Vec<TaskItem> {
+pub fn read_data(path: &Path) -> Vec<TaskItem> {
     if let Ok(data) = fs::read_to_string(path) {
         serde_json::from_str(&data).unwrap_or_default()
     } else {
@@ -41,7 +41,7 @@ pub fn read_data(path: &PathBuf) -> Vec<TaskItem> {
     }
 }
 
-pub fn write_data(path: &PathBuf, data: Vec<TaskItem>) -> std::io::Result<()> {
+pub fn write_data(path: &Path, data: Vec<TaskItem>) -> std::io::Result<()> {
     let dir = path.parent().unwrap_or_else(|| Path::new("."));
     let mut tmp = NamedTempFile::new_in(dir)?;
     serde_json::to_writer_pretty(&mut tmp, &data)?;
