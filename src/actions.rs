@@ -165,28 +165,29 @@ pub fn add(title: String) -> usize {
     let id = get_next_id(&items);
     let item = TaskItem {
         id,
-        title: title.clone(),
+        title,
         ..Default::default()
     };
+    println!("Added task: {}", &item.title);
     items.push(item);
     write_data(&data_path, items).expect("Failed to write file!");
-    println!("Added task: {}", title);
     id
 }
 
-pub fn add_with_link(title: String, link: String) {
+pub fn add_with_link(title: String, link: String) -> usize {
     let data_path = get_data_path();
     let mut items = read_data(&data_path);
     let id = get_next_id(&items);
     let item = TaskItem {
         id,
-        title: title.clone(),
+        title,
         link: Some(link),
         ..Default::default()
     };
+    println!("Added task: {}", &item.title);
     items.push(item);
     write_data(&data_path, items).expect("Failed to write file!");
-    println!("Added task: {}", title);
+    id
 }
 
 pub fn link(id: usize, link: String) {
@@ -303,17 +304,16 @@ pub fn work(ids: Vec<usize>) {
     let mut did_change = false;
     ids.iter().for_each(|id| {
         if let Some(item) = items.iter_mut().find(|t| t.id == *id) {
-            let title = item.title.clone();
             if item.status == Status::InProgress {
                 item.status = Status::Todo;
                 item.active_date = None;
                 did_change = true;
-                println!("Moved task back to todo: {}", title);
+                println!("Moved task back to todo: {}", item.title);
             } else {
                 item.status = Status::InProgress;
                 item.active_date = Some(Local::now().date_naive());
                 did_change = true;
-                println!("Started task: {}", title);
+                println!("Started task: {}", item.title);
             }
         } else {
             eprintln!("⚠️ No task found with id {id}");
@@ -354,17 +354,16 @@ pub fn done(ids: Vec<usize>) {
     let mut did_change = false;
     ids.iter().for_each(|id| {
         if let Some(item) = items.iter_mut().find(|t| t.id == *id) {
-            let title = item.title.clone();
             if item.status == Status::Done {
                 item.status = Status::Todo;
                 item.active_date = None;
                 did_change = true;
-                println!("Moved task back to todo: {}", title);
+                println!("Moved task back to todo: {}", item.title);
             } else {
                 item.status = Status::Done;
                 item.active_date = Some(Local::now().date_naive());
                 did_change = true;
-                println!("Completed task: {}", title);
+                println!("Completed task: {}", item.title);
             }
         } else {
             eprintln!("⚠️ No task found with id {id}");
@@ -412,10 +411,13 @@ pub fn clear() {
     let mut copies: Vec<TaskItem> = vec![];
     let mut next_id = get_next_id(&items);
     for item in items.iter_mut() {
+        // Unstar all items.
         item.star = None;
         match item.status {
             Status::Done => item.status = Status::Archived,
             Status::InProgress => {
+                // Duplicate in-progress tasks and complete one of them so you can see that this
+                // task was worked on today.
                 let copy = TaskItem {
                     id: next_id,
                     title: item.title.clone(),

@@ -68,27 +68,33 @@ pub fn sort_visible_items(items: &[TaskItem]) -> Vec<&TaskItem> {
 pub fn get_task_ids_for_date(date: String) -> Vec<usize> {
     let tasks = get_all_items();
     // TODO: parse the input date so it can be various formats like "yesterday"
-    tasks.iter().filter_map(|t| {
-        let task_date = t.active_date?;
-        if task_date.format("%Y-%m-%d").to_string() == date {
-            Some(t.id)
-        } else {
-            None
-        }
-    }).collect()
+    tasks
+        .iter()
+        .filter_map(|t| {
+            let task_date = t.active_date?;
+            if task_date.format("%Y-%m-%d").to_string() == date {
+                Some(t.id)
+            } else {
+                None
+            }
+        })
+        .collect()
 }
 
 pub fn get_task_ids_before_date(date: String) -> Vec<usize> {
     let tasks = get_all_items();
     // TODO: parse the input date so it can be various formats like "yesterday"
-    tasks.iter().filter_map(|t| {
-        let task_date = t.active_date?;
-        if task_date.format("%Y-%m-%d").to_string() < date {
-            Some(t.id)
-        } else {
-            None
-        }
-    }).collect()
+    tasks
+        .iter()
+        .filter_map(|t| {
+            let task_date = t.active_date?;
+            if task_date.format("%Y-%m-%d").to_string() < date {
+                Some(t.id)
+            } else {
+                None
+            }
+        })
+        .collect()
 }
 
 pub fn get_archived_tasks() -> Vec<TaskItem> {
