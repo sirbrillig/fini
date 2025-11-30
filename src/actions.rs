@@ -222,38 +222,28 @@ pub fn archived() {
 pub fn edit_link(id: usize) -> Result<(), Box<dyn std::error::Error>> {
     let data_path = get_data_path();
     let mut items = read_data(&data_path);
-    if let Some(item) = items.iter_mut().find(|t| t.id == id) {
-        let item_id = item.id;
-        let current_link = item.link.clone().unwrap_or_default();
+    let Some(item) = items.iter_mut().find(|t| t.id == id) else {
+        eprintln!("⚠️ No task found with id {id}");
+        return Ok(());
+    };
+    let current_link = item.link.clone().unwrap_or_default();
 
-        match edit(&current_link) {
-            Ok(new_link) => {
-                let new_link = new_link.trim().to_string();
-                if new_link.is_empty() {
-                    eprintln!("⚠️ link cannot be empty");
-                    return Ok(());
-                }
-
-                if new_link == current_link {
-                    println!("No changes made");
-                    return Ok(());
-                }
-
-                // Update the task
-                if let Some(item) = items.iter_mut().find(|t| t.id == item_id) {
-                    item.link = Some(new_link.clone());
-                    write_data(&data_path, items)?;
-                    println!("Updated task: {}", new_link);
-                    return Ok(());
-                }
-            }
-            Err(e) => {
-                eprintln!("⚠️ Error editing task: {}", e);
-                return Ok(());
-            }
-        }
+    let new_link = edit(&current_link)?;
+    let new_link = new_link.trim().to_string();
+    if new_link.is_empty() {
+        eprintln!("⚠️ link cannot be empty");
+        return Ok(());
     }
-    eprintln!("⚠️ No task found with id {id}");
+
+    if new_link == current_link {
+        println!("No changes made");
+        return Ok(());
+    }
+
+    // Update the task
+    println!("Updated task: {}", new_link);
+    item.link = Some(new_link);
+    write_data(&data_path, items)?;
     Ok(())
 }
 
