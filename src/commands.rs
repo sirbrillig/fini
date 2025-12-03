@@ -70,7 +70,7 @@ pub enum Command {
 }
 
 pub fn execute_command(
-    storage: &dyn TaskStorage,
+    storage: &mut dyn TaskStorage,
     command: Command,
 ) -> Result<(), Box<dyn std::error::Error>> {
     match command {
@@ -182,7 +182,8 @@ pub fn execute_command(
             .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
             .prompt();
             if confirm_answer.is_ok_and(|x| x) {
-                delete(storage, &get_task_ids_before_date(storage, date)?)?;
+                let tasks = &get_task_ids_before_date(storage, date)?;
+                delete(storage, tasks)?;
             }
         }
     }

@@ -10,7 +10,7 @@ use colored::Colorize;
 use edit::edit;
 use inquire::{Confirm, Select};
 
-pub fn interactive(storage: &dyn TaskStorage) -> Result<(), Box<dyn std::error::Error>> {
+pub fn interactive(storage: &mut dyn TaskStorage) -> Result<(), Box<dyn std::error::Error>> {
     loop {
         println!("{}", "-----------------------------------------".green());
         list(storage)?;
@@ -66,7 +66,7 @@ pub fn interactive(storage: &dyn TaskStorage) -> Result<(), Box<dyn std::error::
 }
 
 pub fn add(
-    storage: &dyn TaskStorage,
+    storage: &mut dyn TaskStorage,
     title: String,
     link: Option<String>,
 ) -> Result<usize, Box<dyn std::error::Error>> {
@@ -85,7 +85,7 @@ pub fn add(
 }
 
 pub fn link(
-    storage: &dyn TaskStorage,
+    storage: &mut dyn TaskStorage,
     id: usize,
     link: String,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -119,7 +119,7 @@ pub fn archived(storage: &dyn TaskStorage) -> Result<(), Box<dyn std::error::Err
     Ok(())
 }
 
-pub fn edit_link(storage: &dyn TaskStorage, id: usize) -> Result<(), Box<dyn std::error::Error>> {
+pub fn edit_link(storage: &mut dyn TaskStorage, id: usize) -> Result<(), Box<dyn std::error::Error>> {
     let mut tasks = storage.read()?;
     let Some(item) = tasks.iter_mut().find(|t| t.id == id) else {
         eprintln!("⚠️ No task found with id {id}");
@@ -146,7 +146,7 @@ pub fn edit_link(storage: &dyn TaskStorage, id: usize) -> Result<(), Box<dyn std
     Ok(())
 }
 
-pub fn edit_task(storage: &dyn TaskStorage, id: usize) -> Result<(), Box<dyn std::error::Error>> {
+pub fn edit_task(storage: &mut dyn TaskStorage, id: usize) -> Result<(), Box<dyn std::error::Error>> {
     let mut tasks = storage.read()?;
     let Some(item) = tasks.iter_mut().find(|t| t.id == id) else {
         return Err("No task found to edit".into());
@@ -175,7 +175,7 @@ pub fn edit_task(storage: &dyn TaskStorage, id: usize) -> Result<(), Box<dyn std
     Ok(())
 }
 
-pub fn work(storage: &dyn TaskStorage, ids: &[usize]) -> Result<(), Box<dyn std::error::Error>> {
+pub fn work(storage: &mut dyn TaskStorage, ids: &[usize]) -> Result<(), Box<dyn std::error::Error>> {
     let mut tasks = storage.read()?;
     let mut did_change = false;
     for id in ids {
@@ -201,7 +201,7 @@ pub fn work(storage: &dyn TaskStorage, ids: &[usize]) -> Result<(), Box<dyn std:
     Ok(())
 }
 
-pub fn star(storage: &dyn TaskStorage, ids: &[usize]) -> Result<(), Box<dyn std::error::Error>> {
+pub fn star(storage: &mut dyn TaskStorage, ids: &[usize]) -> Result<(), Box<dyn std::error::Error>> {
     let mut tasks = storage.read()?;
     let mut did_change = false;
     for id in ids {
@@ -225,7 +225,7 @@ pub fn star(storage: &dyn TaskStorage, ids: &[usize]) -> Result<(), Box<dyn std:
     Ok(())
 }
 
-pub fn done(storage: &dyn TaskStorage, ids: &[usize]) -> Result<(), Box<dyn std::error::Error>> {
+pub fn done(storage: &mut dyn TaskStorage, ids: &[usize]) -> Result<(), Box<dyn std::error::Error>> {
     let mut tasks = storage.read()?;
     let mut did_change = false;
     for id in ids {
@@ -251,7 +251,7 @@ pub fn done(storage: &dyn TaskStorage, ids: &[usize]) -> Result<(), Box<dyn std:
     Ok(())
 }
 
-pub fn delete(storage: &dyn TaskStorage, ids: &[usize]) -> Result<(), Box<dyn std::error::Error>> {
+pub fn delete(storage: &mut dyn TaskStorage, ids: &[usize]) -> Result<(), Box<dyn std::error::Error>> {
     let mut tasks = storage.read()?;
     tasks.retain(|i| !ids.contains(&i.id));
     storage.write(tasks)?;
@@ -290,7 +290,7 @@ pub fn copy(storage: &dyn TaskStorage, ids: &[usize]) -> Result<(), Box<dyn std:
     Ok(())
 }
 
-pub fn clear(storage: &dyn TaskStorage) -> Result<(), Box<dyn std::error::Error>> {
+pub fn clear(storage: &mut dyn TaskStorage) -> Result<(), Box<dyn std::error::Error>> {
     let mut tasks = storage.read()?;
     let mut copies: Vec<TaskItem> = vec![];
     let mut next_id = get_next_id(&tasks);
