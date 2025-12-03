@@ -171,12 +171,12 @@ pub fn edit_task(id: usize) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-pub fn work(ids: Vec<usize>) -> Result<(), Box<dyn std::error::Error>> {
+pub fn work(ids: &[usize]) -> Result<(), Box<dyn std::error::Error>> {
     let data_path = get_data_path();
     let mut items = read_data(&data_path);
     let mut did_change = false;
     for id in ids {
-        let Some(item) = items.iter_mut().find(|t| t.id == id) else {
+        let Some(item) = items.iter_mut().find(|t| &t.id == id) else {
             eprintln!("⚠️ No task found with id {id}");
             return Ok(());
         };
@@ -198,12 +198,12 @@ pub fn work(ids: Vec<usize>) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-pub fn star(ids: Vec<usize>) -> Result<(), Box<dyn std::error::Error>> {
+pub fn star(ids: &[usize]) -> Result<(), Box<dyn std::error::Error>> {
     let data_path = get_data_path();
     let mut items = read_data(&data_path);
     let mut did_change = false;
     for id in ids {
-        let Some(item) = items.iter_mut().find(|t| t.id == id) else {
+        let Some(item) = items.iter_mut().find(|t| &t.id == id) else {
             eprintln!("⚠️ No task found with id {id}");
             return Ok(());
         };
@@ -223,12 +223,12 @@ pub fn star(ids: Vec<usize>) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-pub fn done(ids: Vec<usize>) -> Result<(), Box<dyn std::error::Error>> {
+pub fn done(ids: &[usize]) -> Result<(), Box<dyn std::error::Error>> {
     let data_path = get_data_path();
     let mut items = read_data(&data_path);
     let mut did_change = false;
     for id in ids {
-        let Some(item) = items.iter_mut().find(|t| t.id == id) else {
+        let Some(item) = items.iter_mut().find(|t| &t.id == id) else {
             eprintln!("⚠️ No task found with id {id}");
             return Ok(());
         };
@@ -250,7 +250,7 @@ pub fn done(ids: Vec<usize>) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-pub fn delete(ids: Vec<usize>) -> Result<(), Box<dyn std::error::Error>> {
+pub fn delete(ids: &[usize]) -> Result<(), Box<dyn std::error::Error>> {
     let data_path = get_data_path();
     let mut items = read_data(&data_path);
     items.retain(|i| !ids.contains(&i.id));
@@ -268,7 +268,7 @@ pub fn copy_archived() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-pub fn copy(ids: Vec<usize>) -> Result<(), Box<dyn std::error::Error>> {
+pub fn copy(ids: &[usize]) -> Result<(), Box<dyn std::error::Error>> {
     let mut clipboard = Clipboard::new()?;
     let data_path = get_data_path();
     let items = read_data(&data_path);

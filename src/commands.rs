@@ -92,22 +92,22 @@ pub fn execute_command(command: Command) -> Result<(), Box<dyn std::error::Error
                 Some(ids) => ids,
                 None => prompt_for_task_ids("Select tasks to copy")?,
             };
-            copy(ids)?;
+            copy(&ids)?;
         }
         Command::CopyChecked => {
-            let ids = get_all_items()
+            let ids: Vec<usize> = get_all_items()
                 .iter()
                 .filter(|i| matches!(i.status, Status::Done | Status::InProgress))
                 .map(|i| i.id)
                 .collect();
-            copy(ids)?;
+            copy(&ids)?;
         }
         Command::CopyDate { date } => {
             let date = match date {
                 Some(content) => content,
                 None => Text::new("Enter date (YYYY-MM-DD):").prompt()?,
             };
-            copy(get_task_ids_for_date(date))?;
+            copy(&get_task_ids_for_date(date))?;
         }
         Command::CopyArchived => copy_archived()?,
         Command::List => list(),
@@ -124,21 +124,21 @@ pub fn execute_command(command: Command) -> Result<(), Box<dyn std::error::Error
                 Some(ids) => ids,
                 None => prompt_for_task_ids("Select tasks to begin")?,
             };
-            work(ids)?;
+            work(&ids)?;
         }
         Command::Star { ids } => {
             let ids = match ids {
                 Some(ids) => ids,
                 None => prompt_for_task_ids("Select tasks to star")?,
             };
-            star(ids)?;
+            star(&ids)?;
         }
         Command::Check { ids } => {
             let ids = match ids {
                 Some(ids) => ids,
                 None => prompt_for_task_ids("Select tasks to check")?,
             };
-            done(ids)?;
+            done(&ids)?;
         }
         Command::Delete { ids } => {
             let ids = match ids {
@@ -152,7 +152,7 @@ pub fn execute_command(command: Command) -> Result<(), Box<dyn std::error::Error
                     .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
                     .prompt();
             if confirm_answer.is_ok_and(|x| x) {
-                delete(ids)?;
+                delete(&ids)?;
             }
         }
         Command::Clear => {
@@ -178,7 +178,7 @@ pub fn execute_command(command: Command) -> Result<(), Box<dyn std::error::Error
             .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
             .prompt();
             if confirm_answer.is_ok_and(|x| x) {
-                delete(get_task_ids_before_date(date))?;
+                delete(&get_task_ids_before_date(date))?;
             }
         }
     }
