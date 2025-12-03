@@ -1,6 +1,7 @@
 use crate::actions::{
     add, archived, clear, copy, copy_archived, delete, done, edit_task, list, star, work,
 };
+use crate::storage::TaskStorage;
 use crate::task_item::Status;
 use crate::util::{
     get_all_items, get_data_path, get_task_ids_before_date, get_task_ids_for_date,
@@ -68,7 +69,10 @@ pub enum Command {
     },
 }
 
-pub fn execute_command(command: Command) -> Result<(), Box<dyn std::error::Error>> {
+pub fn execute_command(
+    storage: &dyn TaskStorage,
+    command: Command,
+) -> Result<(), Box<dyn std::error::Error>> {
     match command {
         Command::Add { title } => {
             let title = match title {
@@ -80,7 +84,7 @@ pub fn execute_command(command: Command) -> Result<(), Box<dyn std::error::Error
                 return Ok(());
             }
             let link_input = Text::new("(Optional) Enter link:").prompt();
-            add(title, link_input.ok())?;
+            add(storage, title, link_input.ok())?;
         }
         Command::FilePath => {
             if let Some(path) = get_data_path().to_str() {
@@ -90,60 +94,60 @@ pub fn execute_command(command: Command) -> Result<(), Box<dyn std::error::Error
         Command::Copy { ids } => {
             let ids = match ids {
                 Some(ids) => ids,
-                None => prompt_for_task_ids("Select tasks to copy")?,
+                None => prompt_for_task_ids(storage, "Select tasks to copy")?,
             };
-            copy(&ids)?;
+            copy(storage, &ids)?;
         }
         Command::CopyChecked => {
-            let ids: Vec<usize> = get_all_items()
+            let ids: Vec<usize> = get_all_items(storage)?
                 .iter()
                 .filter(|i| matches!(i.status, Status::Done | Status::InProgress))
                 .map(|i| i.id)
                 .collect();
-            copy(&ids)?;
+            copy(storage, &ids)?;
         }
         Command::CopyDate { date } => {
             let date = match date {
                 Some(content) => content,
                 None => Text::new("Enter date (YYYY-MM-DD):").prompt()?,
             };
-            copy(&get_task_ids_for_date(date))?;
+            copy(storage, &get_task_ids_for_date(storage, date)?)?;
         }
-        Command::CopyArchived => copy_archived()?,
-        Command::List => list(),
-        Command::Archived => archived(),
+        Command::CopyArchived => copy_archived(storage)?,
+        Command::List => list(storage)?,
+        Command::Archived => archived(storage)?,
         Command::Edit { id } => {
             let id = match id {
                 Some(id) => id,
-                None => prompt_for_task_id("Select task to edit")?,
+                None => prompt_for_task_id(storage, "Select task to edit")?,
             };
-            edit_task(id)?;
+            edit_task(storage, id)?;
         }
         Command::Begin { ids } => {
             let ids = match ids {
                 Some(ids) => ids,
-                None => prompt_for_task_ids("Select tasks to begin")?,
+                None => prompt_for_task_ids(storage, "Select tasks to begin")?,
             };
-            work(&ids)?;
+            work(storage, &ids)?;
         }
         Command::Star { ids } => {
             let ids = match ids {
                 Some(ids) => ids,
-                None => prompt_for_task_ids("Select tasks to star")?,
+                None => prompt_for_task_ids(storage, "Select tasks to star")?,
             };
-            star(&ids)?;
+            star(storage, &ids)?;
         }
         Command::Check { ids } => {
             let ids = match ids {
                 Some(ids) => ids,
-                None => prompt_for_task_ids("Select tasks to check")?,
+                None => prompt_for_task_ids(storage, "Select tasks to check")?,
             };
-            done(&ids)?;
+            done(storage, &ids)?;
         }
         Command::Delete { ids } => {
             let ids = match ids {
                 Some(ids) => ids,
-                None => prompt_for_task_ids("Select tasks to delete")?,
+                None => prompt_for_task_ids(storage, "Select tasks to delete")?,
             };
             // TODO: print tasks that will be deleted
             let confirm_answer =
@@ -152,7 +156,7 @@ pub fn execute_command(command: Command) -> Result<(), Box<dyn std::error::Error
                     .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
                     .prompt();
             if confirm_answer.is_ok_and(|x| x) {
-                delete(&ids)?;
+                delete(storage, &ids)?;
             }
         }
         Command::Clear => {
@@ -162,7 +166,7 @@ pub fn execute_command(command: Command) -> Result<(), Box<dyn std::error::Error
                     .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
                     .prompt();
             if confirm_answer.is_ok_and(|x| x) {
-                clear()?;
+                clear(storage)?;
             }
         }
         Command::DeleteBefore { date } => {
@@ -178,7 +182,7 @@ pub fn execute_command(command: Command) -> Result<(), Box<dyn std::error::Error
             .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
             .prompt();
             if confirm_answer.is_ok_and(|x| x) {
-                delete(&get_task_ids_before_date(date))?;
+                delete(storage, &get_task_ids_before_date(storage, date)?)?;
             }
         }
     }
