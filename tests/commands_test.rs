@@ -6,7 +6,12 @@ mod tests {
     use fini::task_item::Status;
     use fini::util::get_id_for_index;
 
-    fn add_task(storage: &mut dyn TaskStorage, prompter: &dyn Prompter, title: &str, link: Option<String>) {
+    fn add_task(
+        storage: &mut dyn TaskStorage,
+        prompter: &dyn Prompter,
+        title: &str,
+        link: Option<String>,
+    ) {
         let command = Command::Add {
             title: Some(title.to_string()),
             link,
@@ -104,7 +109,9 @@ mod tests {
         add_task(&mut storage, &prompter, title, None);
 
         let id = get_id_for_index(&storage, 1).unwrap().unwrap();
-        let command = Command::Check { ids: Some( vec![ id ] ) };
+        let command = Command::Check {
+            ids: Some(vec![id]),
+        };
         let result = execute_command(&mut storage, &prompter, command);
 
         assert!(result.is_ok());
@@ -122,9 +129,13 @@ mod tests {
         add_task(&mut storage, &prompter, title, None);
 
         let id = get_id_for_index(&storage, 1).unwrap().unwrap();
-        let command = Command::Check { ids: Some( vec![ id ] ) };
+        let command = Command::Check {
+            ids: Some(vec![id]),
+        };
         execute_command(&mut storage, &prompter, command).unwrap();
-        let command = Command::Check { ids: Some( vec![ id ] ) };
+        let command = Command::Check {
+            ids: Some(vec![id]),
+        };
         let result = execute_command(&mut storage, &prompter, command);
 
         assert!(result.is_ok());
@@ -142,7 +153,9 @@ mod tests {
         add_task(&mut storage, &prompter, title, None);
 
         let id = get_id_for_index(&storage, 1).unwrap().unwrap();
-        let command = Command::Begin { ids: Some( vec![ id ] ) };
+        let command = Command::Begin {
+            ids: Some(vec![id]),
+        };
         let result = execute_command(&mut storage, &prompter, command);
 
         assert!(result.is_ok());
@@ -160,9 +173,13 @@ mod tests {
         add_task(&mut storage, &prompter, title, None);
 
         let id = get_id_for_index(&storage, 1).unwrap().unwrap();
-        let command = Command::Begin { ids: Some( vec![ id ] ) };
+        let command = Command::Begin {
+            ids: Some(vec![id]),
+        };
         execute_command(&mut storage, &prompter, command).unwrap();
-        let command = Command::Begin { ids: Some( vec![ id ] ) };
+        let command = Command::Begin {
+            ids: Some(vec![id]),
+        };
         let result = execute_command(&mut storage, &prompter, command);
 
         assert!(result.is_ok());
@@ -180,7 +197,9 @@ mod tests {
         add_task(&mut storage, &prompter, title, None);
 
         let id = get_id_for_index(&storage, 1).unwrap().unwrap();
-        let command = Command::Star { ids: Some( vec![ id ] ) };
+        let command = Command::Star {
+            ids: Some(vec![id]),
+        };
         let result = execute_command(&mut storage, &prompter, command);
 
         assert!(result.is_ok());
@@ -199,9 +218,13 @@ mod tests {
         add_task(&mut storage, &prompter, title, None);
 
         let id = get_id_for_index(&storage, 1).unwrap().unwrap();
-        let command = Command::Star { ids: Some( vec![ id ] ) };
+        let command = Command::Star {
+            ids: Some(vec![id]),
+        };
         execute_command(&mut storage, &prompter, command).unwrap();
-        let command = Command::Star { ids: Some( vec![ id ] ) };
+        let command = Command::Star {
+            ids: Some(vec![id]),
+        };
         let result = execute_command(&mut storage, &prompter, command);
 
         assert!(result.is_ok());
@@ -210,5 +233,68 @@ mod tests {
         assert_eq!(tasks[0].title, title);
         assert_eq!(tasks[0].status, Status::Todo);
         assert_eq!(tasks[0].star, None);
+    }
+
+    #[test]
+    fn test_delete_command() {
+        let mut storage = InMemoryStorage::new();
+        let prompter = MockPrompter::new();
+        let title1 = "Test task 1";
+        add_task(&mut storage, &prompter, title1, None);
+        let title2 = "Test task 2";
+        add_task(&mut storage, &prompter, title2, None);
+
+        let id = get_id_for_index(&storage, 1).unwrap().unwrap();
+        let command = Command::Delete {
+            ids: Some(vec![id]),
+        };
+        let result = execute_command(&mut storage, &prompter, command);
+
+        assert!(result.is_ok());
+        let tasks = storage.read().unwrap();
+        assert_eq!(tasks.len(), 1);
+        assert_eq!(tasks[0].title, title2);
+        assert_eq!(tasks[0].status, Status::Todo);
+    }
+
+    #[test]
+    fn test_clear_command() {
+        let mut storage = InMemoryStorage::new();
+        let prompter = MockPrompter::new();
+        let title1 = "Test task 1";
+        add_task(&mut storage, &prompter, title1, None);
+        let title2 = "Test task 2";
+        add_task(&mut storage, &prompter, title2, None);
+        let title3 = "Test task 3";
+        add_task(&mut storage, &prompter, title3, None);
+        let id = get_id_for_index(&storage, 1).unwrap().unwrap();
+        let command = Command::Check {
+            ids: Some(vec![id]),
+        };
+        execute_command(&mut storage, &prompter, command).unwrap();
+        let id = get_id_for_index(&storage, 2).unwrap().unwrap();
+        let command = Command::Begin {
+            ids: Some(vec![id]),
+        };
+        execute_command(&mut storage, &prompter, command).unwrap();
+
+        let command = Command::Clear {};
+        let result = execute_command(&mut storage, &prompter, command);
+
+        assert!(result.is_ok());
+        let tasks = storage.read().unwrap();
+        assert_eq!(tasks.len(), 4);
+        // The first task (at done) was archived
+        assert_eq!(tasks[0].title, title1);
+        assert_eq!(tasks[0].status, Status::Archived);
+        // The second task (at begin) was changed back to Todo
+        assert_eq!(tasks[1].title, title2);
+        assert_eq!(tasks[1].status, Status::Todo);
+        // The third task (at todo) remains unchanged
+        assert_eq!(tasks[2].title, title3);
+        assert_eq!(tasks[2].status, Status::Todo);
+        // The second task (since it was at begin) was duplicated and archived
+        assert_eq!(tasks[3].title, title2);
+        assert_eq!(tasks[3].status, Status::Archived);
     }
 }
