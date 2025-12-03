@@ -171,4 +171,44 @@ mod tests {
         assert_eq!(tasks[0].title, title);
         assert_eq!(tasks[0].status, Status::Todo);
     }
+
+    #[test]
+    fn test_star_command_from_todo() {
+        let mut storage = InMemoryStorage::new();
+        let prompter = MockPrompter::new();
+        let title = "Test task";
+        add_task(&mut storage, &prompter, title, None);
+
+        let id = get_id_for_index(&storage, 1).unwrap().unwrap();
+        let command = Command::Star { ids: Some( vec![ id ] ) };
+        let result = execute_command(&mut storage, &prompter, command);
+
+        assert!(result.is_ok());
+        let tasks = storage.read().unwrap();
+        assert_eq!(tasks.len(), 1);
+        assert_eq!(tasks[0].title, title);
+        assert_eq!(tasks[0].status, Status::Todo);
+        assert_eq!(tasks[0].star, Some(true));
+    }
+
+    #[test]
+    fn test_star_command_from_starred() {
+        let mut storage = InMemoryStorage::new();
+        let prompter = MockPrompter::new();
+        let title = "Test task";
+        add_task(&mut storage, &prompter, title, None);
+
+        let id = get_id_for_index(&storage, 1).unwrap().unwrap();
+        let command = Command::Star { ids: Some( vec![ id ] ) };
+        execute_command(&mut storage, &prompter, command).unwrap();
+        let command = Command::Star { ids: Some( vec![ id ] ) };
+        let result = execute_command(&mut storage, &prompter, command);
+
+        assert!(result.is_ok());
+        let tasks = storage.read().unwrap();
+        assert_eq!(tasks.len(), 1);
+        assert_eq!(tasks[0].title, title);
+        assert_eq!(tasks[0].status, Status::Todo);
+        assert_eq!(tasks[0].star, None);
+    }
 }
