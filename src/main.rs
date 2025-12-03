@@ -95,6 +95,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 &mut storage,
                 Command::Add {
                     title: Some(title.join(" ")).filter(|x| !x.is_empty()),
+                    link: None,
                 },
             )?;
         }

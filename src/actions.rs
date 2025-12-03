@@ -48,7 +48,7 @@ pub fn interactive(storage: &mut dyn TaskStorage) -> Result<(), Box<dyn std::err
             }
             "list-archived" => execute_command(storage, Command::Archived)?,
             "clear" => execute_command(storage, Command::Clear)?,
-            "add" => execute_command(storage, Command::Add { title: None })?,
+            "add" => execute_command(storage, Command::Add { title: None, link: None })?,
             "copy" => execute_command(storage, Command::Copy { ids: None })?,
             "copy-checked" => execute_command(storage, Command::CopyChecked)?,
             "copy-archived" => execute_command(storage, Command::CopyArchived)?,

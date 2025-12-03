@@ -14,6 +14,8 @@ pub enum Command {
     Add {
         /// The task title (will prompt if missing)
         title: Option<String>,
+        /// The task link (will prompt if missing)
+        link: Option<String>,
     },
     /// List all current tasks
     List,
@@ -74,7 +76,7 @@ pub fn execute_command(
     command: Command,
 ) -> Result<(), Box<dyn std::error::Error>> {
     match command {
-        Command::Add { title } => {
+        Command::Add { title, link } => {
             let title = match title {
                 Some(content) => content,
                 None => Text::new("Enter task title:").prompt()?,
@@ -83,8 +85,11 @@ pub fn execute_command(
                 println!("The title of the task cannot be empty.");
                 return Ok(());
             }
-            let link_input = Text::new("(Optional) Enter link:").prompt();
-            add(storage, title, link_input.ok())?;
+            let link = match link {
+                Some(content) => Some(content),
+                None => Text::new("(Optional) Enter link:").prompt().ok(),
+            };
+            add(storage, title, link)?;
         }
         Command::FilePath => {
             if let Some(path) = get_data_path().to_str() {
