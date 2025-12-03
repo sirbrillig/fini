@@ -91,34 +91,57 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
     match cli.command {
         CliCommands::Add { title } => {
-            execute_command(&storage, Command::Add {
-                title: Some(title.join(" ")).filter(|x| !x.is_empty())
-            })?;
+            execute_command(
+                &storage,
+                Command::Add {
+                    title: Some(title.join(" ")).filter(|x| !x.is_empty()),
+                },
+            )?;
         }
         CliCommands::FilePath => execute_command(&storage, Command::FilePath)?,
-        CliCommands::Copy { indices } => execute_command(&storage, Command::Copy {
-            ids: Some(get_ids_for_indices(&storage, indices)?).filter(|x| !x.is_empty()),
-        })?,
+        CliCommands::Copy { indices } => execute_command(
+            &storage,
+            Command::Copy {
+                ids: Some(get_ids_for_indices(&storage, indices)?).filter(|x| !x.is_empty()),
+            },
+        )?,
         CliCommands::CopyChecked => execute_command(&storage, Command::CopyChecked)?,
-        CliCommands::CopyDate { date } => execute_command(&storage, Command::CopyDate { date: Some(date) })?,
+        CliCommands::CopyDate { date } => {
+            execute_command(&storage, Command::CopyDate { date: Some(date) })?
+        }
         CliCommands::CopyArchived => execute_command(&storage, Command::CopyArchived)?,
         CliCommands::List => execute_command(&storage, Command::List)?,
         CliCommands::Archived => execute_command(&storage, Command::Archived)?,
-        CliCommands::Edit { index } => execute_command(&storage, Command::Edit {
-            id: get_id_for_index(&storage, index)?,
-        })?,
-        CliCommands::Begin { indices } => execute_command(&storage, Command::Begin {
-            ids: Some(get_ids_for_indices(&storage, indices)?).filter(|x| !x.is_empty()),
-        })?,
-        CliCommands::Star { indices } => execute_command(&storage, Command::Star {
-            ids: Some(get_ids_for_indices(&storage, indices)?).filter(|x| !x.is_empty()),
-        })?,
-        CliCommands::Check { indices } => execute_command(&storage, Command::Check {
-            ids: Some(get_ids_for_indices(&storage, indices)?).filter(|x| !x.is_empty()),
-        })?,
-        CliCommands::Delete { indices } => execute_command(&storage, Command::Delete {
-            ids: Some(get_ids_for_indices(&storage, indices)?).filter(|x| !x.is_empty()),
-        })?,
+        CliCommands::Edit { index } => execute_command(
+            &storage,
+            Command::Edit {
+                id: get_id_for_index(&storage, index)?,
+            },
+        )?,
+        CliCommands::Begin { indices } => execute_command(
+            &storage,
+            Command::Begin {
+                ids: Some(get_ids_for_indices(&storage, indices)?).filter(|x| !x.is_empty()),
+            },
+        )?,
+        CliCommands::Star { indices } => execute_command(
+            &storage,
+            Command::Star {
+                ids: Some(get_ids_for_indices(&storage, indices)?).filter(|x| !x.is_empty()),
+            },
+        )?,
+        CliCommands::Check { indices } => execute_command(
+            &storage,
+            Command::Check {
+                ids: Some(get_ids_for_indices(&storage, indices)?).filter(|x| !x.is_empty()),
+            },
+        )?,
+        CliCommands::Delete { indices } => execute_command(
+            &storage,
+            Command::Delete {
+                ids: Some(get_ids_for_indices(&storage, indices)?).filter(|x| !x.is_empty()),
+            },
+        )?,
         CliCommands::Clear => execute_command(&storage, Command::Clear)?,
         CliCommands::DeleteBefore { date } => {
             execute_command(&storage, Command::DeleteBefore { date: Some(date) })?

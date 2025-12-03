@@ -1,4 +1,7 @@
-use crate::{storage::TaskStorage, task_item::{Status, TaskItem}};
+use crate::{
+    storage::TaskStorage,
+    task_item::{Status, TaskItem},
+};
 use chrono::NaiveDate;
 use colored::Colorize;
 use directories::BaseDirs;
@@ -42,7 +45,10 @@ pub fn sort_visible_items(items: &[TaskItem]) -> Vec<&TaskItem> {
         .collect()
 }
 
-pub fn get_task_ids_for_date(storage: &dyn TaskStorage, date: String) -> Result<Vec<usize>, Box<dyn std::error::Error>>{
+pub fn get_task_ids_for_date(
+    storage: &dyn TaskStorage,
+    date: String,
+) -> Result<Vec<usize>, Box<dyn std::error::Error>> {
     let tasks = get_all_items(storage)?;
     // TODO: parse the input date so it can be various formats like "yesterday"
     Ok(tasks
@@ -58,7 +64,10 @@ pub fn get_task_ids_for_date(storage: &dyn TaskStorage, date: String) -> Result<
         .collect())
 }
 
-pub fn get_task_ids_before_date(storage: &dyn TaskStorage, date: String) -> Result<Vec<usize>, Box<dyn std::error::Error>>{
+pub fn get_task_ids_before_date(
+    storage: &dyn TaskStorage,
+    date: String,
+) -> Result<Vec<usize>, Box<dyn std::error::Error>> {
     let tasks = get_all_items(storage)?;
     // TODO: parse the input date so it can be various formats like "yesterday"
     Ok(tasks
@@ -74,7 +83,9 @@ pub fn get_task_ids_before_date(storage: &dyn TaskStorage, date: String) -> Resu
         .collect())
 }
 
-pub fn get_archived_tasks(storage: &dyn TaskStorage) -> Result<Vec<TaskItem>, Box<dyn std::error::Error>> {
+pub fn get_archived_tasks(
+    storage: &dyn TaskStorage,
+) -> Result<Vec<TaskItem>, Box<dyn std::error::Error>> {
     let tasks = get_all_items(storage)?;
     Ok(tasks
         .into_iter()
@@ -82,7 +93,9 @@ pub fn get_archived_tasks(storage: &dyn TaskStorage) -> Result<Vec<TaskItem>, Bo
         .collect())
 }
 
-pub fn get_archived_task_ids(storage: &dyn TaskStorage) -> Result<Vec<usize>, Box<dyn std::error::Error>> {
+pub fn get_archived_task_ids(
+    storage: &dyn TaskStorage,
+) -> Result<Vec<usize>, Box<dyn std::error::Error>> {
     let tasks = get_all_items(storage)?;
     Ok(tasks
         .iter()
@@ -91,7 +104,10 @@ pub fn get_archived_task_ids(storage: &dyn TaskStorage) -> Result<Vec<usize>, Bo
         .collect())
 }
 
-pub fn prompt_for_task_id(storage: &dyn TaskStorage, message: &str) -> Result<usize, Box<dyn std::error::Error>> {
+pub fn prompt_for_task_id(
+    storage: &dyn TaskStorage,
+    message: &str,
+) -> Result<usize, Box<dyn std::error::Error>> {
     let items = storage.read()?;
     let visible = sort_visible_items(&items);
     let val = Select::new(message, visible)
@@ -100,7 +116,10 @@ pub fn prompt_for_task_id(storage: &dyn TaskStorage, message: &str) -> Result<us
     Ok(val.id)
 }
 
-pub fn prompt_for_task_ids(storage: &dyn TaskStorage, message: &str) -> Result<Vec<usize>, Box<dyn std::error::Error>> {
+pub fn prompt_for_task_ids(
+    storage: &dyn TaskStorage,
+    message: &str,
+) -> Result<Vec<usize>, Box<dyn std::error::Error>> {
     let items = storage.read()?;
     let visible = sort_visible_items(&items);
     let val = MultiSelect::new(message, visible)
@@ -109,11 +128,15 @@ pub fn prompt_for_task_ids(storage: &dyn TaskStorage, message: &str) -> Result<V
     Ok(val.iter().map(|i| i.id).collect())
 }
 
-pub fn get_all_items(storage: &dyn TaskStorage) -> Result<Vec<TaskItem>, Box<dyn std::error::Error>> {
+pub fn get_all_items(
+    storage: &dyn TaskStorage,
+) -> Result<Vec<TaskItem>, Box<dyn std::error::Error>> {
     storage.read()
 }
 
-pub fn get_visible_items(storage: &dyn TaskStorage) -> Result<Vec<TaskItem>, Box<dyn std::error::Error>> {
+pub fn get_visible_items(
+    storage: &dyn TaskStorage,
+) -> Result<Vec<TaskItem>, Box<dyn std::error::Error>> {
     let items = storage.read()?;
     Ok(items
         .into_iter()
@@ -121,12 +144,18 @@ pub fn get_visible_items(storage: &dyn TaskStorage) -> Result<Vec<TaskItem>, Box
         .collect())
 }
 
-pub fn get_id_for_index(storage: &dyn TaskStorage, index: usize) -> Result<Option<usize>, Box<dyn std::error::Error>> {
+pub fn get_id_for_index(
+    storage: &dyn TaskStorage,
+    index: usize,
+) -> Result<Option<usize>, Box<dyn std::error::Error>> {
     let visible = get_visible_items(storage)?;
     Ok(get_task_id_by_index(index, &visible))
 }
 
-pub fn get_ids_for_indices(storage: &dyn TaskStorage, indices: Vec<usize>) -> Result<Vec<usize>, Box<dyn std::error::Error>> {
+pub fn get_ids_for_indices(
+    storage: &dyn TaskStorage,
+    indices: Vec<usize>,
+) -> Result<Vec<usize>, Box<dyn std::error::Error>> {
     let visible = get_visible_items(storage)?;
     Ok(indices
         .iter()
