@@ -1,4 +1,5 @@
 use crate::commands::{execute_command, Command};
+use crate::prompter::Prompter;
 use crate::storage::TaskStorage;
 use crate::task_item::{Status, TaskItem, TaskItemCopyable};
 use crate::util::{
@@ -10,7 +11,10 @@ use colored::Colorize;
 use edit::edit;
 use inquire::{Confirm, Select};
 
-pub fn interactive(storage: &mut dyn TaskStorage) -> Result<(), Box<dyn std::error::Error>> {
+pub fn interactive(
+    storage: &mut dyn TaskStorage,
+    prompter: &dyn Prompter,
+) -> Result<(), Box<dyn std::error::Error>> {
     loop {
         println!("{}", "-----------------------------------------".green());
         list(storage)?;
@@ -46,19 +50,28 @@ pub fn interactive(storage: &mut dyn TaskStorage) -> Result<(), Box<dyn std::err
             "list" => {
                 // Do nothing as the list will be printed when we loop.
             }
-            "list-archived" => execute_command(storage, Command::Archived)?,
-            "clear" => execute_command(storage, Command::Clear)?,
-            "add" => execute_command(storage, Command::Add { title: None, link: None })?,
-            "copy" => execute_command(storage, Command::Copy { ids: None })?,
-            "copy-checked" => execute_command(storage, Command::CopyChecked)?,
-            "copy-archived" => execute_command(storage, Command::CopyArchived)?,
-            "copy-date" => execute_command(storage, Command::CopyDate { date: None })?,
-            "edit" => execute_command(storage, Command::Edit { id: None })?,
-            "check" => execute_command(storage, Command::Check { ids: None })?,
-            "star" => execute_command(storage, Command::Star { ids: None })?,
-            "delete-before" => execute_command(storage, Command::DeleteBefore { date: None })?,
-            "delete" => execute_command(storage, Command::Delete { ids: None })?,
-            "begin" => execute_command(storage, Command::Begin { ids: None })?,
+            "list-archived" => execute_command(storage, prompter, Command::Archived)?,
+            "clear" => execute_command(storage, prompter, Command::Clear)?,
+            "add" => execute_command(
+                storage,
+                prompter,
+                Command::Add {
+                    title: None,
+                    link: None,
+                },
+            )?,
+            "copy" => execute_command(storage, prompter, Command::Copy { ids: None })?,
+            "copy-checked" => execute_command(storage, prompter, Command::CopyChecked)?,
+            "copy-archived" => execute_command(storage, prompter, Command::CopyArchived)?,
+            "copy-date" => execute_command(storage, prompter, Command::CopyDate { date: None })?,
+            "edit" => execute_command(storage, prompter, Command::Edit { id: None })?,
+            "check" => execute_command(storage, prompter, Command::Check { ids: None })?,
+            "star" => execute_command(storage, prompter, Command::Star { ids: None })?,
+            "delete-before" => {
+                execute_command(storage, prompter, Command::DeleteBefore { date: None })?
+            }
+            "delete" => execute_command(storage, prompter, Command::Delete { ids: None })?,
+            "begin" => execute_command(storage, prompter, Command::Begin { ids: None })?,
             _ => println!("Unknown command"),
         }
     }
@@ -119,7 +132,10 @@ pub fn archived(storage: &dyn TaskStorage) -> Result<(), Box<dyn std::error::Err
     Ok(())
 }
 
-pub fn edit_link(storage: &mut dyn TaskStorage, id: usize) -> Result<(), Box<dyn std::error::Error>> {
+pub fn edit_link(
+    storage: &mut dyn TaskStorage,
+    id: usize,
+) -> Result<(), Box<dyn std::error::Error>> {
     let mut tasks = storage.read()?;
     let Some(item) = tasks.iter_mut().find(|t| t.id == id) else {
         eprintln!("⚠️ No task found with id {id}");
@@ -146,7 +162,10 @@ pub fn edit_link(storage: &mut dyn TaskStorage, id: usize) -> Result<(), Box<dyn
     Ok(())
 }
 
-pub fn edit_task(storage: &mut dyn TaskStorage, id: usize) -> Result<(), Box<dyn std::error::Error>> {
+pub fn edit_task(
+    storage: &mut dyn TaskStorage,
+    id: usize,
+) -> Result<(), Box<dyn std::error::Error>> {
     let mut tasks = storage.read()?;
     let Some(item) = tasks.iter_mut().find(|t| t.id == id) else {
         return Err("No task found to edit".into());
@@ -175,7 +194,10 @@ pub fn edit_task(storage: &mut dyn TaskStorage, id: usize) -> Result<(), Box<dyn
     Ok(())
 }
 
-pub fn work(storage: &mut dyn TaskStorage, ids: &[usize]) -> Result<(), Box<dyn std::error::Error>> {
+pub fn work(
+    storage: &mut dyn TaskStorage,
+    ids: &[usize],
+) -> Result<(), Box<dyn std::error::Error>> {
     let mut tasks = storage.read()?;
     let mut did_change = false;
     for id in ids {
@@ -201,7 +223,10 @@ pub fn work(storage: &mut dyn TaskStorage, ids: &[usize]) -> Result<(), Box<dyn 
     Ok(())
 }
 
-pub fn star(storage: &mut dyn TaskStorage, ids: &[usize]) -> Result<(), Box<dyn std::error::Error>> {
+pub fn star(
+    storage: &mut dyn TaskStorage,
+    ids: &[usize],
+) -> Result<(), Box<dyn std::error::Error>> {
     let mut tasks = storage.read()?;
     let mut did_change = false;
     for id in ids {
@@ -225,7 +250,10 @@ pub fn star(storage: &mut dyn TaskStorage, ids: &[usize]) -> Result<(), Box<dyn 
     Ok(())
 }
 
-pub fn done(storage: &mut dyn TaskStorage, ids: &[usize]) -> Result<(), Box<dyn std::error::Error>> {
+pub fn done(
+    storage: &mut dyn TaskStorage,
+    ids: &[usize],
+) -> Result<(), Box<dyn std::error::Error>> {
     let mut tasks = storage.read()?;
     let mut did_change = false;
     for id in ids {
@@ -251,7 +279,10 @@ pub fn done(storage: &mut dyn TaskStorage, ids: &[usize]) -> Result<(), Box<dyn 
     Ok(())
 }
 
-pub fn delete(storage: &mut dyn TaskStorage, ids: &[usize]) -> Result<(), Box<dyn std::error::Error>> {
+pub fn delete(
+    storage: &mut dyn TaskStorage,
+    ids: &[usize],
+) -> Result<(), Box<dyn std::error::Error>> {
     let mut tasks = storage.read()?;
     tasks.retain(|i| !ids.contains(&i.id));
     storage.write(tasks)?;

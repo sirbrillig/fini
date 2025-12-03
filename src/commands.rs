@@ -1,13 +1,13 @@
 use crate::actions::{
     add, archived, clear, copy, copy_archived, delete, done, edit_task, list, star, work,
 };
+use crate::prompter::Prompter;
 use crate::storage::TaskStorage;
 use crate::task_item::Status;
 use crate::util::{
     get_all_items, get_data_path, get_task_ids_before_date, get_task_ids_for_date,
     prompt_for_task_id, prompt_for_task_ids,
 };
-use inquire::{Confirm, Text};
 
 pub enum Command {
     /// Add a new task
@@ -73,13 +73,14 @@ pub enum Command {
 
 pub fn execute_command(
     storage: &mut dyn TaskStorage,
+    prompter: &dyn Prompter,
     command: Command,
 ) -> Result<(), Box<dyn std::error::Error>> {
     match command {
         Command::Add { title, link } => {
             let title = match title {
                 Some(content) => content,
-                None => Text::new("Enter task title:").prompt()?,
+                None => prompter.text("Enter task title:")?,
             };
             if title.is_empty() {
                 println!("The title of the task cannot be empty.");
@@ -87,7 +88,7 @@ pub fn execute_command(
             }
             let link = match link {
                 Some(content) => Some(content),
-                None => Text::new("(Optional) Enter link:").prompt().ok(),
+                None => prompter.text("(Optional) Enter link:").ok().filter(|l| !l.is_empty()),
             };
             add(storage, title, link)?;
         }
@@ -114,7 +115,7 @@ pub fn execute_command(
         Command::CopyDate { date } => {
             let date = match date {
                 Some(content) => content,
-                None => Text::new("Enter date (YYYY-MM-DD):").prompt()?,
+                None => prompter.text("Enter date (YYYY-MM-DD):")?,
             };
             copy(storage, &get_task_ids_for_date(storage, date)?)?;
         }
@@ -156,20 +157,14 @@ pub fn execute_command(
             };
             // TODO: print tasks that will be deleted
             let confirm_answer =
-                Confirm::new("Are you sure you want to delete the selected tasks?")
-                    .with_default(false)
-                    .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
-                    .prompt();
+                prompter.confirm("Are you sure you want to delete the selected tasks?");
             if confirm_answer.is_ok_and(|x| x) {
                 delete(storage, &ids)?;
             }
         }
         Command::Clear => {
             let confirm_answer =
-                Confirm::new("Are you sure you want to archive all complete tasks?")
-                    .with_default(false)
-                    .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
-                    .prompt();
+                prompter.confirm("Are you sure you want to archive all complete tasks?");
             if confirm_answer.is_ok_and(|x| x) {
                 clear(storage)?;
             }
@@ -177,15 +172,12 @@ pub fn execute_command(
         Command::DeleteBefore { date } => {
             let date = match date {
                 Some(content) => content,
-                None => Text::new("Enter date (YYYY-MM-DD):").prompt()?,
+                None => prompter.text("Enter date (YYYY-MM-DD):")?,
             };
-            let confirm_answer = Confirm::new(&format!(
+            let confirm_answer = prompter.confirm(&format!(
                 "Are you sure you want to delete all archived tasks before {}?",
                 date
-            ))
-            .with_default(false)
-            .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
-            .prompt();
+            ));
             if confirm_answer.is_ok_and(|x| x) {
                 let tasks = &get_task_ids_before_date(storage, date)?;
                 delete(storage, tasks)?;
