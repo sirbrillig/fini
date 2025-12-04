@@ -79,3 +79,16 @@ impl fmt::Display for TaskItemCopyable<'_> {
         Ok(())
     }
 }
+
+pub struct TaskItemCopyableMarkdown<'a>(pub &'a TaskItem);
+
+impl fmt::Display for TaskItemCopyableMarkdown<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if let Some(link) = &self.0.link {
+            write!(f, "[{}]({})", self.0.title, link)?;
+        } else {
+            write!(f, "{}", self.0.title)?;
+        }
+        Ok(())
+    }
+}

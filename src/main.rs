@@ -64,6 +64,11 @@ enum CliCommands {
         /// The indices of the tasks to copy
         indices: Vec<usize>,
     },
+    /// Copy tasks to the clipboard (aliases: y, yank)
+    CopyMarkdown {
+        /// The indices of the tasks to copy
+        indices: Vec<usize>,
+    },
     /// Copy checked tasks to the clipboard
     CopyChecked,
     /// Copy archived tasks to the clipboard
@@ -109,6 +114,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 &mut storage,
                 &prompter,
                 Command::Copy {
+                    ids: Some(ids).filter(|x| !x.is_empty()),
+                },
+            )?;
+        }
+        CliCommands::CopyMarkdown { indices } => {
+            let ids = get_ids_for_indices(&storage, indices)?;
+            execute_command(
+                &mut storage,
+                &prompter,
+                Command::CopyMarkdown {
                     ids: Some(ids).filter(|x| !x.is_empty()),
                 },
             )?;

@@ -1,7 +1,7 @@
 use crate::commands::{execute_command, Command};
 use crate::prompter::Prompter;
 use crate::storage::TaskStorage;
-use crate::task_item::{Status, TaskItem, TaskItemCopyable};
+use crate::task_item::{Status, TaskItem, TaskItemCopyable, TaskItemCopyableMarkdown};
 use crate::util::{
     archived_tasks_as_markdown, get_archived_tasks, get_next_id, sort_visible_items,
 };
@@ -26,6 +26,7 @@ pub fn interactive(
             "begin",
             "star",
             "copy",
+            "copy-markdown",
             "copy-archived",
             "copy-date",
             "copy-checked",
@@ -61,6 +62,7 @@ pub fn interactive(
                 },
             )?,
             "copy" => execute_command(storage, prompter, Command::Copy { ids: None })?,
+            "copy-markdown" => execute_command(storage, prompter, Command::CopyMarkdown { ids: None })?,
             "copy-checked" => execute_command(storage, prompter, Command::CopyChecked)?,
             "copy-archived" => execute_command(storage, prompter, Command::CopyArchived)?,
             "copy-date" => execute_command(storage, prompter, Command::CopyDate { date: None })?,
@@ -296,6 +298,28 @@ pub fn copy_archived(storage: &dyn TaskStorage) -> Result<(), Box<dyn std::error
     let mut clipboard = Clipboard::new()?;
     clipboard.set_text(text)?;
     println!("Copied archived tasks as Markdown");
+    Ok(())
+}
+
+pub fn copy_with_markdown_links(storage: &dyn TaskStorage, ids: &[usize]) -> Result<(), Box<dyn std::error::Error>> {
+    let mut clipboard = Clipboard::new()?;
+    let tasks = storage.read()?;
+    let text_lines: Vec<String> = tasks
+        .iter()
+        .filter_map(|i| {
+            if ids.contains(&i.id) {
+                return Some(TaskItemCopyableMarkdown(i).to_string());
+            }
+            None
+        })
+        .collect();
+    let text = text_lines.join("\n");
+    clipboard.set_text(text)?;
+    match text_lines.len() {
+        0 => println!("No tasks to copy"),
+        1 => println!("Copied text for task: {}", text_lines[0]),
+        _ => println!("Copied text for selected tasks"),
+    };
     Ok(())
 }
 

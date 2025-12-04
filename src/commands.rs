@@ -1,5 +1,5 @@
 use crate::actions::{
-    add, archived, clear, copy, copy_archived, delete, done, edit_task, list, star, work,
+    add, archived, clear, copy, copy_archived, copy_with_markdown_links, delete, done, edit_task, list, star, work
 };
 use crate::prompter::Prompter;
 use crate::storage::TaskStorage;
@@ -48,6 +48,11 @@ pub enum Command {
     Clear,
     /// Copy tasks to the clipboard
     Copy {
+        /// The ids of the tasks to copy (will prompt if missing)
+        ids: Option<Vec<usize>>,
+    },
+    /// Copy tasks to the clipboard with markdown links
+    CopyMarkdown {
         /// The ids of the tasks to copy (will prompt if missing)
         ids: Option<Vec<usize>>,
     },
@@ -103,6 +108,13 @@ pub fn execute_command(
                 None => prompt_for_task_ids(storage, "Select tasks to copy")?,
             };
             copy(storage, &ids)?;
+        }
+        Command::CopyMarkdown { ids } => {
+            let ids = match ids {
+                Some(ids) => ids,
+                None => prompt_for_task_ids(storage, "Select tasks to copy")?,
+            };
+            copy_with_markdown_links(storage, &ids)?;
         }
         Command::CopyChecked => {
             let ids: Vec<usize> = get_all_items(storage)?
