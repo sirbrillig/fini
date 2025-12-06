@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand};
-use fini::commands::{execute_command, Command};
+use fini::commands::{Command, execute_command};
 use fini::copier::ClipboardCopier;
 use fini::prompter::InquirePrompter;
 use fini::storage::FileStorage;
@@ -79,11 +79,6 @@ enum CliCommands {
     },
     /// Copy archived tasks to the clipboard
     CopyArchived,
-    /// Copy archived tasks to the clipboard by date
-    CopyDate {
-        /// The date of the tasks to copy
-        date: String,
-    },
     /// Print the file path where the data is kept
     FilePath,
     /// List all archived tasks
@@ -148,12 +143,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             &prompter,
             &mut copier,
             Command::CopyAfterDate { date: Some(date) },
-        )?,
-        CliCommands::CopyDate { date } => execute_command(
-            &mut storage,
-            &prompter,
-            &mut copier,
-            Command::CopyDate { date: Some(date) },
         )?,
         CliCommands::CopyArchived => {
             execute_command(&mut storage, &prompter, &mut copier, Command::CopyArchived)?

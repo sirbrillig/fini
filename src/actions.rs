@@ -2,7 +2,7 @@ use crate::commands::{Command, execute_command};
 use crate::copier::Copier;
 use crate::prompter::Prompter;
 use crate::storage::TaskStorage;
-use crate::task_item::{Status, TaskItem, TaskItemCopyable, TaskItemCopyableMarkdown};
+use crate::task_item::{Status, TaskItem};
 use crate::util::{
     archived_tasks_as_markdown, get_archived_tasks, get_next_id, get_tasks_for_ids,
     sort_visible_items, tasks_as_markdown_by_date,
@@ -31,7 +31,6 @@ pub fn interactive(
             "copy-markdown",
             "copy-after",
             "copy-archived",
-            "copy-date",
             "copy-checked",
             "clear",
             "delete",
@@ -74,9 +73,6 @@ pub fn interactive(
             )?,
             "copy-checked" => execute_command(storage, prompter, copier, Command::CopyChecked)?,
             "copy-archived" => execute_command(storage, prompter, copier, Command::CopyArchived)?,
-            "copy-date" => {
-                execute_command(storage, prompter, copier, Command::CopyDate { date: None })?
-            }
             "copy-after" => execute_command(
                 storage,
                 prompter,
@@ -364,42 +360,21 @@ pub fn copy_as_markdown_list_by_date(
     Ok(())
 }
 
-pub fn copy_with_markdown_links(
+pub fn copy<F>(
     storage: &dyn TaskStorage,
     copier: &mut dyn Copier,
     ids: &[usize],
-) -> Result<(), Box<dyn std::error::Error>> {
+    format: F,
+) -> Result<(), Box<dyn std::error::Error>>
+where
+    F: Fn(&TaskItem) -> String,
+{
     let tasks = storage.read()?;
     let text_lines: Vec<String> = tasks
         .iter()
         .filter_map(|i| {
             if ids.contains(&i.id) {
-                return Some(TaskItemCopyableMarkdown(i).to_string());
-            }
-            None
-        })
-        .collect();
-    let text = text_lines.join("\n");
-    copier.copy(&text)?;
-    match text_lines.len() {
-        0 => println!("No tasks to copy"),
-        1 => println!("Copied text for task: {}", text_lines[0]),
-        _ => println!("Copied text for selected tasks"),
-    };
-    Ok(())
-}
-
-pub fn copy(
-    storage: &dyn TaskStorage,
-    copier: &mut dyn Copier,
-    ids: &[usize],
-) -> Result<(), Box<dyn std::error::Error>> {
-    let tasks = storage.read()?;
-    let text_lines: Vec<String> = tasks
-        .iter()
-        .filter_map(|i| {
-            if ids.contains(&i.id) {
-                return Some(TaskItemCopyable(i).to_string());
+                return Some(format(i));
             }
             None
         })

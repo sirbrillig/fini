@@ -390,11 +390,19 @@ mod tests {
         // Fifth task remains in Todo
 
         // Copy should ignore Todo task and task before date
-        let command = Command::CopyAfterDate { date: Some(Local::now().format("%Y-%m-%d").to_string()) };
+        let command = Command::CopyAfterDate {
+            date: Some(Local::now().format("%Y-%m-%d").to_string()),
+        };
         let result = execute_command(&mut storage, &prompter, &mut copier, command);
 
         assert!(result.is_ok());
-        let expected = format!("\n## {}\n- {}\n- {}\n- {}", Local::now().format("%Y-%m-%d"), title1, title2, title3);
+        let expected = format!(
+            "\n## {}\n- {}\n- {}\n- {}",
+            Local::now().format("%Y-%m-%d"),
+            title1,
+            title2,
+            title3
+        );
         assert_eq!(copier.text, expected);
     }
 }

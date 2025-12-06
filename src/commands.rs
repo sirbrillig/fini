@@ -1,13 +1,14 @@
 use crate::actions::{
-    add, archive, archived, clear, copy, copy_archived, copy_as_markdown_list_by_date, copy_with_markdown_links, delete, done, edit_task, list, star, work
+    add, archive, archived, clear, copy, copy_archived, copy_as_markdown_list_by_date, delete,
+    done, edit_task, list, star, work,
 };
 use crate::copier::Copier;
 use crate::prompter::Prompter;
 use crate::storage::TaskStorage;
-use crate::task_item::Status;
+use crate::task_item::{Status, TaskItemCopyable, TaskItemCopyableMarkdown};
 use crate::util::{
     get_all_items, get_data_path, get_task_ids_after_date, get_task_ids_before_date,
-    get_task_ids_for_date, prompt_for_task_id, prompt_for_task_ids,
+    prompt_for_task_id, prompt_for_task_ids,
 };
 
 pub enum Command {
@@ -71,11 +72,6 @@ pub enum Command {
         /// The date to start (will prompt if missing)
         date: Option<String>,
     },
-    /// Copy archived tasks to the clipboard by date
-    CopyDate {
-        /// The date of the tasks to copy (will prompt if missing)
-        date: Option<String>,
-    },
     /// Print the file path where the data is kept
     FilePath,
     /// List all archived tasks
@@ -122,14 +118,16 @@ pub fn execute_command(
                 Some(ids) => ids,
                 None => prompt_for_task_ids(storage, "Select tasks to copy")?,
             };
-            copy(storage, copier, &ids)?;
+            copy(storage, copier, &ids, |i| TaskItemCopyable(i).to_string())?;
         }
         Command::CopyMarkdown { ids } => {
             let ids = match ids {
                 Some(ids) => ids,
                 None => prompt_for_task_ids(storage, "Select tasks to copy")?,
             };
-            copy_with_markdown_links(storage, copier, &ids)?;
+            copy(storage, copier, &ids, |i| {
+                TaskItemCopyableMarkdown(i).to_string()
+            })?;
         }
         Command::CopyChecked => {
             let ids: Vec<usize> = get_all_items(storage)?
@@ -137,7 +135,7 @@ pub fn execute_command(
                 .filter(|i| matches!(i.status, Status::Done | Status::InProgress))
                 .map(|i| i.id)
                 .collect();
-            copy(storage, copier, &ids)?;
+            copy(storage, copier, &ids, |i| TaskItemCopyable(i).to_string())?;
         }
         Command::CopyAfterDate { date } => {
             let date = match date {
@@ -150,13 +148,6 @@ pub fn execute_command(
                 &[Status::Done, Status::InProgress, Status::Archived],
             )?;
             copy_as_markdown_list_by_date(storage, copier, &ids)?;
-        }
-        Command::CopyDate { date } => {
-            let date = match date {
-                Some(content) => content,
-                None => prompter.text("Enter date (YYYY-MM-DD):")?,
-            };
-            copy(storage, copier, &get_task_ids_for_date(storage, date)?)?;
         }
         Command::CopyArchived => copy_archived(storage, copier)?,
         Command::List => list(storage)?,
