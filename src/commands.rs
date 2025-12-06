@@ -1,6 +1,6 @@
 use crate::copier::Copier;
 use crate::prompter::Prompter;
-use crate::storage::{TaskStorage, get_default_data_path};
+use crate::storage::{get_default_data_path, TaskStorage};
 use crate::task_item::{Status, TaskItemCopyable, TaskItemCopyableMarkdown};
 use crate::util::{
     add, archive, archived, clear, copy, delete, done, edit_task, get_task_ids_after_date,
@@ -183,7 +183,15 @@ pub fn execute_command(
                 Some(ids) => ids,
                 None => prompt_for_task_ids(storage, "Select tasks to delete")?,
             };
-            // TODO: print tasks that will be deleted
+            // Print tasks that will be deleted
+            let tasks_to_delete = get_tasks_for_ids(storage, &ids)?;
+            if !tasks_to_delete.is_empty() {
+                println!("Tasks to be deleted:");
+                for task in &tasks_to_delete {
+                    println!("  - {}", task);
+                }
+                println!(); // Blank line before confirmation
+            }
             let confirm_answer =
                 prompter.confirm("Are you sure you want to delete the selected tasks?");
             if confirm_answer.is_ok_and(|x| x) {
