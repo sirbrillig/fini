@@ -2,6 +2,7 @@ use crate::actions::{
     add, archived, clear, copy, copy_archived, copy_as_markdown_list_by_date,
     copy_with_markdown_links, delete, done, edit_task, list, star, work,
 };
+use crate::copier::Copier;
 use crate::prompter::Prompter;
 use crate::storage::TaskStorage;
 use crate::task_item::Status;
@@ -85,6 +86,7 @@ pub enum Command {
 pub fn execute_command(
     storage: &mut dyn TaskStorage,
     prompter: &dyn Prompter,
+    copier: &mut dyn Copier,
     command: Command,
 ) -> Result<(), Box<dyn std::error::Error>> {
     match command {
@@ -116,14 +118,14 @@ pub fn execute_command(
                 Some(ids) => ids,
                 None => prompt_for_task_ids(storage, "Select tasks to copy")?,
             };
-            copy(storage, &ids)?;
+            copy(storage, copier, &ids)?;
         }
         Command::CopyMarkdown { ids } => {
             let ids = match ids {
                 Some(ids) => ids,
                 None => prompt_for_task_ids(storage, "Select tasks to copy")?,
             };
-            copy_with_markdown_links(storage, &ids)?;
+            copy_with_markdown_links(storage, copier, &ids)?;
         }
         Command::CopyChecked => {
             let ids: Vec<usize> = get_all_items(storage)?
@@ -131,7 +133,7 @@ pub fn execute_command(
                 .filter(|i| matches!(i.status, Status::Done | Status::InProgress))
                 .map(|i| i.id)
                 .collect();
-            copy(storage, &ids)?;
+            copy(storage, copier, &ids)?;
         }
         Command::CopyAfterDate { date } => {
             let date = match date {
@@ -143,16 +145,16 @@ pub fn execute_command(
                 date,
                 &[Status::Done, Status::InProgress, Status::Archived],
             )?;
-            copy_as_markdown_list_by_date(storage, &ids)?;
+            copy_as_markdown_list_by_date(storage, copier, &ids)?;
         }
         Command::CopyDate { date } => {
             let date = match date {
                 Some(content) => content,
                 None => prompter.text("Enter date (YYYY-MM-DD):")?,
             };
-            copy(storage, &get_task_ids_for_date(storage, date)?)?;
+            copy(storage, copier, &get_task_ids_for_date(storage, date)?)?;
         }
-        Command::CopyArchived => copy_archived(storage)?,
+        Command::CopyArchived => copy_archived(storage, copier)?,
         Command::List => list(storage)?,
         Command::Archived => archived(storage)?,
         Command::Edit { id } => {

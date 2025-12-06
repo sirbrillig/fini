@@ -1,4 +1,5 @@
-use crate::commands::{execute_command, Command};
+use crate::commands::{Command, execute_command};
+use crate::copier::Copier;
 use crate::prompter::Prompter;
 use crate::storage::TaskStorage;
 use crate::task_item::{Status, TaskItem, TaskItemCopyable, TaskItemCopyableMarkdown};
@@ -6,7 +7,6 @@ use crate::util::{
     archived_tasks_as_markdown, get_archived_tasks, get_next_id, get_tasks_for_ids,
     sort_visible_items, tasks_as_markdown_by_date,
 };
-use arboard::Clipboard;
 use chrono::Local;
 use colored::Colorize;
 use edit::edit;
@@ -15,6 +15,7 @@ use inquire::{Confirm, Select};
 pub fn interactive(
     storage: &mut dyn TaskStorage,
     prompter: &dyn Prompter,
+    copier: &mut dyn Copier,
 ) -> Result<(), Box<dyn std::error::Error>> {
     loop {
         println!("{}", "-----------------------------------------".green());
@@ -53,34 +54,46 @@ pub fn interactive(
             "list" => {
                 // Do nothing as the list will be printed when we loop.
             }
-            "list-archived" => execute_command(storage, prompter, Command::Archived)?,
-            "clear" => execute_command(storage, prompter, Command::Clear)?,
+            "list-archived" => execute_command(storage, prompter, copier, Command::Archived)?,
+            "clear" => execute_command(storage, prompter, copier, Command::Clear)?,
             "add" => execute_command(
                 storage,
                 prompter,
+                copier,
                 Command::Add {
                     title: None,
                     link: None,
                 },
             )?,
-            "copy" => execute_command(storage, prompter, Command::Copy { ids: None })?,
-            "copy-markdown" => {
-                execute_command(storage, prompter, Command::CopyMarkdown { ids: None })?
+            "copy" => execute_command(storage, prompter, copier, Command::Copy { ids: None })?,
+            "copy-markdown" => execute_command(
+                storage,
+                prompter,
+                copier,
+                Command::CopyMarkdown { ids: None },
+            )?,
+            "copy-checked" => execute_command(storage, prompter, copier, Command::CopyChecked)?,
+            "copy-archived" => execute_command(storage, prompter, copier, Command::CopyArchived)?,
+            "copy-date" => {
+                execute_command(storage, prompter, copier, Command::CopyDate { date: None })?
             }
-            "copy-checked" => execute_command(storage, prompter, Command::CopyChecked)?,
-            "copy-archived" => execute_command(storage, prompter, Command::CopyArchived)?,
-            "copy-date" => execute_command(storage, prompter, Command::CopyDate { date: None })?,
-            "copy-after" => {
-                execute_command(storage, prompter, Command::CopyAfterDate { date: None })?
-            }
-            "edit" => execute_command(storage, prompter, Command::Edit { id: None })?,
-            "check" => execute_command(storage, prompter, Command::Check { ids: None })?,
-            "star" => execute_command(storage, prompter, Command::Star { ids: None })?,
-            "delete-before" => {
-                execute_command(storage, prompter, Command::DeleteBefore { date: None })?
-            }
-            "delete" => execute_command(storage, prompter, Command::Delete { ids: None })?,
-            "begin" => execute_command(storage, prompter, Command::Begin { ids: None })?,
+            "copy-after" => execute_command(
+                storage,
+                prompter,
+                copier,
+                Command::CopyAfterDate { date: None },
+            )?,
+            "edit" => execute_command(storage, prompter, copier, Command::Edit { id: None })?,
+            "check" => execute_command(storage, prompter, copier, Command::Check { ids: None })?,
+            "star" => execute_command(storage, prompter, copier, Command::Star { ids: None })?,
+            "delete-before" => execute_command(
+                storage,
+                prompter,
+                copier,
+                Command::DeleteBefore { date: None },
+            )?,
+            "delete" => execute_command(storage, prompter, copier, Command::Delete { ids: None })?,
+            "begin" => execute_command(storage, prompter, copier, Command::Begin { ids: None })?,
             _ => println!("Unknown command"),
         }
     }
@@ -298,33 +311,35 @@ pub fn delete(
     Ok(())
 }
 
-pub fn copy_archived(storage: &dyn TaskStorage) -> Result<(), Box<dyn std::error::Error>> {
+pub fn copy_archived(
+    storage: &dyn TaskStorage,
+    copier: &mut dyn Copier,
+) -> Result<(), Box<dyn std::error::Error>> {
     let tasks = get_archived_tasks(storage)?;
     // We have to strip escape codes to remove the color.
     let text = strip_ansi_escapes::strip_str(archived_tasks_as_markdown(tasks));
-    let mut clipboard = Clipboard::new()?;
-    clipboard.set_text(text)?;
+    copier.copy(&text)?;
     println!("Copied archived tasks as Markdown");
     Ok(())
 }
 
 pub fn copy_as_markdown_list_by_date(
     storage: &dyn TaskStorage,
+    copier: &mut dyn Copier,
     ids: &[usize],
 ) -> Result<(), Box<dyn std::error::Error>> {
     let tasks = get_tasks_for_ids(storage, ids)?;
     let text = tasks_as_markdown_by_date(tasks);
-    let mut clipboard = Clipboard::new()?;
-    clipboard.set_text(text)?;
+    copier.copy(&text)?;
     println!("Copied tasks as Markdown by date");
     Ok(())
 }
 
 pub fn copy_with_markdown_links(
     storage: &dyn TaskStorage,
+    copier: &mut dyn Copier,
     ids: &[usize],
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let mut clipboard = Clipboard::new()?;
     let tasks = storage.read()?;
     let text_lines: Vec<String> = tasks
         .iter()
@@ -336,7 +351,7 @@ pub fn copy_with_markdown_links(
         })
         .collect();
     let text = text_lines.join("\n");
-    clipboard.set_text(text)?;
+    copier.copy(&text)?;
     match text_lines.len() {
         0 => println!("No tasks to copy"),
         1 => println!("Copied text for task: {}", text_lines[0]),
@@ -345,8 +360,11 @@ pub fn copy_with_markdown_links(
     Ok(())
 }
 
-pub fn copy(storage: &dyn TaskStorage, ids: &[usize]) -> Result<(), Box<dyn std::error::Error>> {
-    let mut clipboard = Clipboard::new()?;
+pub fn copy(
+    storage: &dyn TaskStorage,
+    copier: &mut dyn Copier,
+    ids: &[usize],
+) -> Result<(), Box<dyn std::error::Error>> {
     let tasks = storage.read()?;
     let text_lines: Vec<String> = tasks
         .iter()
@@ -358,7 +376,7 @@ pub fn copy(storage: &dyn TaskStorage, ids: &[usize]) -> Result<(), Box<dyn std:
         })
         .collect();
     let text = text_lines.join("\n");
-    clipboard.set_text(text)?;
+    copier.copy(&text)?;
     match text_lines.len() {
         0 => println!("No tasks to copy"),
         1 => println!("Copied text for task: {}", text_lines[0]),

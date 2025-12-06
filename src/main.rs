@@ -1,5 +1,6 @@
 use clap::{Parser, Subcommand};
 use fini::commands::{execute_command, Command};
+use fini::copier::ClipboardCopier;
 use fini::prompter::InquirePrompter;
 use fini::storage::FileStorage;
 use fini::util::{get_data_path, get_id_for_index, get_ids_for_indices};
@@ -100,24 +101,29 @@ enum CliCommands {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut storage = FileStorage::new(get_data_path());
     let prompter = InquirePrompter {};
+    let mut copier = ClipboardCopier {};
     let cli = Cli::parse();
     match cli.command {
         CliCommands::Add { title } => {
             execute_command(
                 &mut storage,
                 &prompter,
+                &mut copier,
                 Command::Add {
                     title: Some(title.join(" ")).filter(|x| !x.is_empty()),
                     link: None,
                 },
             )?;
         }
-        CliCommands::FilePath => execute_command(&mut storage, &prompter, Command::FilePath)?,
+        CliCommands::FilePath => {
+            execute_command(&mut storage, &prompter, &mut copier, Command::FilePath)?
+        }
         CliCommands::Copy { indices } => {
             let ids = get_ids_for_indices(&storage, indices)?;
             execute_command(
                 &mut storage,
                 &prompter,
+                &mut copier,
                 Command::Copy {
                     ids: Some(ids).filter(|x| !x.is_empty()),
                 },
@@ -128,36 +134,44 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             execute_command(
                 &mut storage,
                 &prompter,
+                &mut copier,
                 Command::CopyMarkdown {
                     ids: Some(ids).filter(|x| !x.is_empty()),
                 },
             )?;
         }
-        CliCommands::CopyChecked => execute_command(&mut storage, &prompter, Command::CopyChecked)?,
+        CliCommands::CopyChecked => {
+            execute_command(&mut storage, &prompter, &mut copier, Command::CopyChecked)?
+        }
         CliCommands::CopyAfterDate { date } => execute_command(
             &mut storage,
             &prompter,
+            &mut copier,
             Command::CopyAfterDate { date: Some(date) },
         )?,
         CliCommands::CopyDate { date } => execute_command(
             &mut storage,
             &prompter,
+            &mut copier,
             Command::CopyDate { date: Some(date) },
         )?,
         CliCommands::CopyArchived => {
-            execute_command(&mut storage, &prompter, Command::CopyArchived)?
+            execute_command(&mut storage, &prompter, &mut copier, Command::CopyArchived)?
         }
-        CliCommands::List => execute_command(&mut storage, &prompter, Command::List)?,
-        CliCommands::Archived => execute_command(&mut storage, &prompter, Command::Archived)?,
+        CliCommands::List => execute_command(&mut storage, &prompter, &mut copier, Command::List)?,
+        CliCommands::Archived => {
+            execute_command(&mut storage, &prompter, &mut copier, Command::Archived)?
+        }
         CliCommands::Edit { index } => {
             let id = get_id_for_index(&storage, index)?;
-            execute_command(&mut storage, &prompter, Command::Edit { id })?;
+            execute_command(&mut storage, &prompter, &mut copier, Command::Edit { id })?;
         }
         CliCommands::Begin { indices } => {
             let ids = get_ids_for_indices(&storage, indices)?;
             execute_command(
                 &mut storage,
                 &prompter,
+                &mut copier,
                 Command::Begin {
                     ids: Some(ids).filter(|x| !x.is_empty()),
                 },
@@ -168,6 +182,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             execute_command(
                 &mut storage,
                 &prompter,
+                &mut copier,
                 Command::Star {
                     ids: Some(ids).filter(|x| !x.is_empty()),
                 },
@@ -178,6 +193,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             execute_command(
                 &mut storage,
                 &prompter,
+                &mut copier,
                 Command::Check {
                     ids: Some(ids).filter(|x| !x.is_empty()),
                 },
@@ -188,18 +204,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             execute_command(
                 &mut storage,
                 &prompter,
+                &mut copier,
                 Command::Delete {
                     ids: Some(ids).filter(|x| !x.is_empty()),
                 },
             )?;
         }
-        CliCommands::Clear => execute_command(&mut storage, &prompter, Command::Clear)?,
+        CliCommands::Clear => {
+            execute_command(&mut storage, &prompter, &mut copier, Command::Clear)?
+        }
         CliCommands::DeleteBefore { date } => execute_command(
             &mut storage,
             &prompter,
+            &mut copier,
             Command::DeleteBefore { date: Some(date) },
         )?,
-        CliCommands::Interactive => fini::actions::interactive(&mut storage, &prompter)?,
+        CliCommands::Interactive => {
+            fini::actions::interactive(&mut storage, &prompter, &mut copier)?
+        }
     }
     Ok(())
 }

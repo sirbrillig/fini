@@ -21,7 +21,7 @@ impl Prompter for InquirePrompter {
 }
 
 pub struct MockPrompter {
-    pub next_text_response: String, 
+    pub next_text_response: String,
 }
 
 impl Default for MockPrompter {
