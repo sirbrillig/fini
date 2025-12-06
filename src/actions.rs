@@ -1,11 +1,11 @@
-use crate::commands::{Command, execute_command};
+use crate::commands::{execute_command, Command};
 use crate::copier::Copier;
 use crate::prompter::Prompter;
 use crate::storage::TaskStorage;
 use crate::task_item::{Status, TaskItem};
 use crate::util::{
-    archived_tasks_as_markdown, get_archived_tasks, get_next_id, get_tasks_for_ids,
-    sort_visible_items, tasks_as_markdown_by_date,
+    archived_tasks_as_markdown, get_next_id, get_tasks_for_ids, sort_visible_items,
+    tasks_as_markdown_by_date,
 };
 use chrono::Local;
 use colored::Colorize;
@@ -30,7 +30,6 @@ pub fn interactive(
             "copy",
             "copy-markdown",
             "copy-after",
-            "copy-archived",
             "copy-checked",
             "clear",
             "delete",
@@ -72,7 +71,6 @@ pub fn interactive(
                 Command::CopyMarkdown { ids: None },
             )?,
             "copy-checked" => execute_command(storage, prompter, copier, Command::CopyChecked)?,
-            "copy-archived" => execute_command(storage, prompter, copier, Command::CopyArchived)?,
             "copy-after" => execute_command(
                 storage,
                 prompter,
@@ -333,18 +331,6 @@ pub fn delete(
     let mut tasks = storage.read()?;
     tasks.retain(|i| !ids.contains(&i.id));
     storage.write(tasks)?;
-    Ok(())
-}
-
-pub fn copy_archived(
-    storage: &dyn TaskStorage,
-    copier: &mut dyn Copier,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let tasks = get_archived_tasks(storage)?;
-    // We have to strip escape codes to remove the color.
-    let text = strip_ansi_escapes::strip_str(archived_tasks_as_markdown(tasks));
-    copier.copy(&text)?;
-    println!("Copied archived tasks as Markdown");
     Ok(())
 }
 

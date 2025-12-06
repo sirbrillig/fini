@@ -65,7 +65,7 @@ enum CliCommands {
         /// The indices of the tasks to copy
         indices: Vec<usize>,
     },
-    /// Copy tasks to the clipboard (aliases: y, yank)
+    /// Copy tasks to the clipboard as markdown links
     CopyMarkdown {
         /// The indices of the tasks to copy
         indices: Vec<usize>,
@@ -77,8 +77,6 @@ enum CliCommands {
         /// The date to start (will prompt if missing)
         date: String,
     },
-    /// Copy archived tasks to the clipboard
-    CopyArchived,
     /// Print the file path where the data is kept
     FilePath,
     /// List all archived tasks
@@ -144,9 +142,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             &mut copier,
             Command::CopyAfterDate { date: Some(date) },
         )?,
-        CliCommands::CopyArchived => {
-            execute_command(&mut storage, &prompter, &mut copier, Command::CopyArchived)?
-        }
         CliCommands::List => execute_command(&mut storage, &prompter, &mut copier, Command::List)?,
         CliCommands::Archived => {
             execute_command(&mut storage, &prompter, &mut copier, Command::Archived)?

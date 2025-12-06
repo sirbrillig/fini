@@ -1,6 +1,6 @@
 use crate::actions::{
-    add, archive, archived, clear, copy, copy_archived, copy_as_markdown_list_by_date, delete,
-    done, edit_task, list, star, work,
+    add, archive, archived, clear, copy, copy_as_markdown_list_by_date, delete, done, edit_task,
+    list, star, work,
 };
 use crate::copier::Copier;
 use crate::prompter::Prompter;
@@ -65,8 +65,6 @@ pub enum Command {
     },
     /// Copy checked tasks to the clipboard
     CopyChecked,
-    /// Copy archived tasks to the clipboard
-    CopyArchived,
     /// Copy all completed, begun, or archived tasks to the clipboard after the date (inclusive)
     CopyAfterDate {
         /// The date to start (will prompt if missing)
@@ -149,7 +147,6 @@ pub fn execute_command(
             )?;
             copy_as_markdown_list_by_date(storage, copier, &ids)?;
         }
-        Command::CopyArchived => copy_archived(storage, copier)?,
         Command::List => list(storage)?,
         Command::Archived => archived(storage)?,
         Command::Edit { id } => {
