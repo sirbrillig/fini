@@ -58,25 +58,6 @@ pub fn sort_visible_items(items: &[TaskItem]) -> Vec<&TaskItem> {
         .collect()
 }
 
-pub fn get_task_ids_for_date(
-    storage: &dyn TaskStorage,
-    date: String,
-) -> Result<Vec<usize>, Box<dyn std::error::Error>> {
-    let tasks = get_all_items(storage)?;
-    // TODO: parse the input date so it can be various formats like "yesterday"
-    Ok(tasks
-        .iter()
-        .filter_map(|t| {
-            let task_date = t.active_date?;
-            if task_date.format("%Y-%m-%d").to_string() == date {
-                Some(t.id)
-            } else {
-                None
-            }
-        })
-        .collect())
-}
-
 pub fn get_task_ids_before_date(
     storage: &dyn TaskStorage,
     date: String,
@@ -118,33 +99,12 @@ pub fn get_task_ids_after_date(
         .collect())
 }
 
-pub fn get_archived_tasks(
-    storage: &dyn TaskStorage,
-) -> Result<Vec<TaskItem>, Box<dyn std::error::Error>> {
-    let tasks = get_all_items(storage)?;
-    Ok(tasks
-        .into_iter()
-        .filter(|t| t.status == Status::Archived)
-        .collect())
-}
-
 pub fn get_tasks_for_ids(
     storage: &dyn TaskStorage,
     ids: &[usize],
 ) -> Result<Vec<TaskItem>, Box<dyn std::error::Error>> {
     let tasks = get_all_items(storage)?;
     Ok(tasks.into_iter().filter(|t| ids.contains(&t.id)).collect())
-}
-
-pub fn get_archived_task_ids(
-    storage: &dyn TaskStorage,
-) -> Result<Vec<usize>, Box<dyn std::error::Error>> {
-    let tasks = get_all_items(storage)?;
-    Ok(tasks
-        .iter()
-        .filter(|t| t.status == Status::Archived)
-        .map(|t| t.id)
-        .collect())
 }
 
 pub fn prompt_for_task_id(
@@ -187,26 +147,7 @@ pub fn get_visible_items(
         .collect())
 }
 
-pub fn get_id_for_index(
-    storage: &dyn TaskStorage,
-    index: usize,
-) -> Result<Option<usize>, Box<dyn std::error::Error>> {
-    let visible = get_visible_items(storage)?;
-    Ok(get_task_id_by_index(index, &visible))
-}
-
-pub fn get_ids_for_indices(
-    storage: &dyn TaskStorage,
-    indices: Vec<usize>,
-) -> Result<Vec<usize>, Box<dyn std::error::Error>> {
-    let visible = get_visible_items(storage)?;
-    Ok(indices
-        .iter()
-        .filter_map(|index| get_task_id_by_index(*index, &visible))
-        .collect())
-}
-
-fn get_task_id_by_index(index: usize, visible: &[TaskItem]) -> Option<usize> {
+pub fn get_task_id_by_index_from_list(index: usize, visible: &[TaskItem]) -> Option<usize> {
     visible.get(index - 1).map(|i| i.id)
 }
 
@@ -231,22 +172,6 @@ pub fn add(
     tasks.push(item);
     storage.write(tasks)?;
     Ok(id)
-}
-
-pub fn link(
-    storage: &mut dyn TaskStorage,
-    id: usize,
-    link: String,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let mut tasks = storage.read()?;
-    let Some(item) = tasks.iter_mut().find(|t| t.id == id) else {
-        eprintln!("⚠️ No task found with id {id}");
-        return Ok(());
-    };
-    item.link = Some(link);
-    println!("Added link to task: {}", item.title);
-    storage.write(tasks)?;
-    Ok(())
 }
 
 pub fn list(storage: &dyn TaskStorage) -> Result<(), Box<dyn std::error::Error>> {

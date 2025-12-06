@@ -3,10 +3,10 @@ mod tests {
     use chrono::{Duration, Local};
     use fini::commands::{Command, LinkFormat, execute_command};
     use fini::copier::{Copier, MockCopier};
+    use fini::indices::get_id_for_index;
     use fini::prompter::{MockPrompter, Prompter};
     use fini::storage::{InMemoryStorage, TaskStorage};
     use fini::task_item::Status;
-    use fini::util::get_id_for_index;
 
     fn add_task(
         storage: &mut dyn TaskStorage,

@@ -1,10 +1,10 @@
 use clap::{Parser, Subcommand};
 use fini::commands::{Command, LinkFormat, execute_command};
 use fini::copier::ClipboardCopier;
+use fini::indices::{get_id_for_index, get_ids_for_indices};
 use fini::interactive::interactive;
 use fini::prompter::InquirePrompter;
 use fini::storage::{FileStorage, get_default_data_path};
-use fini::util::{get_id_for_index, get_ids_for_indices};
 
 #[derive(Parser)]
 #[command(
