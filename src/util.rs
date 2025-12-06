@@ -1,7 +1,7 @@
 use crate::{
     copier::Copier,
     storage::TaskStorage,
-    task_item::{Status, TaskItem},
+    task_item::{Status, TaskItem, TaskItemWithIndex},
 };
 use chrono::{Local, NaiveDate};
 use colored::Colorize;
@@ -181,7 +181,7 @@ pub fn list(storage: &dyn TaskStorage) -> Result<(), Box<dyn std::error::Error>>
         println!("No tasks");
     } else {
         for (index, item) in visible.iter().enumerate() {
-            item.print_with_index(index + 1);
+            println!("{}", TaskItemWithIndex(item, index + 1));
         }
     }
     Ok(())

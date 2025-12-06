@@ -13,12 +13,6 @@ pub struct TaskItem {
     pub star: Option<bool>,
 }
 
-impl TaskItem {
-    pub fn print_with_index(&self, index: usize) {
-        println!("{:>2}.{}", index, self);
-    }
-}
-
 #[derive(Serialize, Deserialize, Debug, PartialEq, Default, Clone)]
 pub enum Status {
     #[default]
@@ -64,6 +58,17 @@ impl fmt::Display for TaskItem {
         if let Some(link) = &self.link {
             write!(f, " {}", link.dimmed())?;
         }
+        Ok(())
+    }
+}
+
+pub struct TaskItemWithIndex<'a>(pub &'a TaskItem, pub usize);
+
+impl fmt::Display for TaskItemWithIndex<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let task = self.0;
+        let index = self.1;
+        write!(f, "{:>2}.{}", index, task)?;
         Ok(())
     }
 }
