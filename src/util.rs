@@ -1,6 +1,6 @@
 use crate::{
     storage::TaskStorage,
-    task_item::{Status, TaskItem},
+    task_item::{Status, TaskItem, TaskItemCopyable},
 };
 use chrono::NaiveDate;
 use colored::Colorize;
@@ -27,6 +27,23 @@ pub fn archived_tasks_as_markdown(mut items: Vec<TaskItem>) -> String {
             }
             outputs.push(format!("- {}", item));
         }
+    }
+    outputs.join("\n")
+}
+
+pub fn tasks_as_markdown_by_date(mut items: Vec<TaskItem>) -> String {
+    let mut outputs: Vec<String> = vec![];
+    items.sort_by_key(|i| i.active_date);
+    let mut current_date: NaiveDate = Default::default();
+    for item in items {
+        let Some(date) = item.active_date else {
+            continue;
+        };
+        if date != current_date {
+            outputs.push(format!("\n## {}", date));
+            current_date = date;
+        }
+        outputs.push(format!("-{}", TaskItemCopyable(&item)));
     }
     outputs.join("\n")
 }
@@ -83,6 +100,28 @@ pub fn get_task_ids_before_date(
         .collect())
 }
 
+/// Return all task IDs after the given date, inclusive
+pub fn get_task_ids_after_date(
+    storage: &dyn TaskStorage,
+    date: String,
+    statuses: &[Status],
+) -> Result<Vec<usize>, Box<dyn std::error::Error>> {
+    let tasks = get_all_items(storage)?;
+    // TODO: parse the input date so it can be various formats like "yesterday"
+    Ok(tasks
+        .iter()
+        .filter(|t| statuses.contains(&t.status))
+        .filter_map(|t| {
+            let task_date = t.active_date?;
+            if task_date.format("%Y-%m-%d").to_string() >= date {
+                Some(t.id)
+            } else {
+                None
+            }
+        })
+        .collect())
+}
+
 pub fn get_archived_tasks(
     storage: &dyn TaskStorage,
 ) -> Result<Vec<TaskItem>, Box<dyn std::error::Error>> {
@@ -91,6 +130,14 @@ pub fn get_archived_tasks(
         .into_iter()
         .filter(|t| t.status == Status::Archived)
         .collect())
+}
+
+pub fn get_tasks_for_ids(
+    storage: &dyn TaskStorage,
+    ids: &[usize],
+) -> Result<Vec<TaskItem>, Box<dyn std::error::Error>> {
+    let tasks = get_all_items(storage)?;
+    Ok(tasks.into_iter().filter(|t| ids.contains(&t.id)).collect())
 }
 
 pub fn get_archived_task_ids(

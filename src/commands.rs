@@ -1,12 +1,13 @@
 use crate::actions::{
-    add, archived, clear, copy, copy_archived, copy_with_markdown_links, delete, done, edit_task, list, star, work
+    add, archived, clear, copy, copy_archived, copy_as_markdown_list_by_date,
+    copy_with_markdown_links, delete, done, edit_task, list, star, work,
 };
 use crate::prompter::Prompter;
 use crate::storage::TaskStorage;
 use crate::task_item::Status;
 use crate::util::{
-    get_all_items, get_data_path, get_task_ids_before_date, get_task_ids_for_date,
-    prompt_for_task_id, prompt_for_task_ids,
+    get_all_items, get_data_path, get_task_ids_after_date, get_task_ids_before_date,
+    get_task_ids_for_date, prompt_for_task_id, prompt_for_task_ids,
 };
 
 pub enum Command {
@@ -31,7 +32,7 @@ pub enum Command {
     },
     /// Edit a task
     Edit {
-        /// The id of the task to edit (will prompty if missing)
+        /// The id of the task to edit (will prompt if missing)
         id: Option<usize>,
     },
     /// Toggle a task as done
@@ -60,9 +61,14 @@ pub enum Command {
     CopyChecked,
     /// Copy archived tasks to the clipboard
     CopyArchived,
+    /// Copy all completed, begun, or archived tasks to the clipboard after the date (inclusive)
+    CopyAfterDate {
+        /// The date to start (will prompt if missing)
+        date: Option<String>,
+    },
     /// Copy archived tasks to the clipboard by date
     CopyDate {
-        /// The date of the tasks to copy (will prompty if missing)
+        /// The date of the tasks to copy (will prompt if missing)
         date: Option<String>,
     },
     /// Print the file path where the data is kept
@@ -71,7 +77,7 @@ pub enum Command {
     Archived,
     /// Delete archived tasks before date
     DeleteBefore {
-        /// The date before which to delete tasks (will prompty if missing)
+        /// The date before which to delete tasks (will prompt if missing)
         date: Option<String>,
     },
 }
@@ -93,7 +99,10 @@ pub fn execute_command(
             }
             let link = match link {
                 Some(content) => Some(content),
-                None => prompter.text("(Optional) Enter link:").ok().filter(|l| !l.is_empty()),
+                None => prompter
+                    .text("(Optional) Enter link:")
+                    .ok()
+                    .filter(|l| !l.is_empty()),
             };
             add(storage, title, link)?;
         }
@@ -123,6 +132,18 @@ pub fn execute_command(
                 .map(|i| i.id)
                 .collect();
             copy(storage, &ids)?;
+        }
+        Command::CopyAfterDate { date } => {
+            let date = match date {
+                Some(content) => content,
+                None => prompter.text("Enter date (YYYY-MM-DD):")?,
+            };
+            let ids: Vec<usize> = get_task_ids_after_date(
+                storage,
+                date,
+                &[Status::Done, Status::InProgress, Status::Archived],
+            )?;
+            copy_as_markdown_list_by_date(storage, &ids)?;
         }
         Command::CopyDate { date } => {
             let date = match date {

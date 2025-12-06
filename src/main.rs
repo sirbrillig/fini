@@ -71,6 +71,11 @@ enum CliCommands {
     },
     /// Copy checked tasks to the clipboard
     CopyChecked,
+    /// Copy all completed, begun, or archived tasks to the clipboard after the date (inclusive)
+    CopyAfterDate {
+        /// The date to start (will prompt if missing)
+        date: String,
+    },
     /// Copy archived tasks to the clipboard
     CopyArchived,
     /// Copy archived tasks to the clipboard by date
@@ -129,6 +134,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             )?;
         }
         CliCommands::CopyChecked => execute_command(&mut storage, &prompter, Command::CopyChecked)?,
+        CliCommands::CopyAfterDate { date } => execute_command(
+            &mut storage,
+            &prompter,
+            Command::CopyAfterDate { date: Some(date) },
+        )?,
         CliCommands::CopyDate { date } => execute_command(
             &mut storage,
             &prompter,

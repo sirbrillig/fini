@@ -3,7 +3,8 @@ use crate::prompter::Prompter;
 use crate::storage::TaskStorage;
 use crate::task_item::{Status, TaskItem, TaskItemCopyable, TaskItemCopyableMarkdown};
 use crate::util::{
-    archived_tasks_as_markdown, get_archived_tasks, get_next_id, sort_visible_items,
+    archived_tasks_as_markdown, get_archived_tasks, get_next_id, get_tasks_for_ids,
+    sort_visible_items, tasks_as_markdown_by_date,
 };
 use arboard::Clipboard;
 use chrono::Local;
@@ -27,6 +28,7 @@ pub fn interactive(
             "star",
             "copy",
             "copy-markdown",
+            "copy-after",
             "copy-archived",
             "copy-date",
             "copy-checked",
@@ -62,10 +64,15 @@ pub fn interactive(
                 },
             )?,
             "copy" => execute_command(storage, prompter, Command::Copy { ids: None })?,
-            "copy-markdown" => execute_command(storage, prompter, Command::CopyMarkdown { ids: None })?,
+            "copy-markdown" => {
+                execute_command(storage, prompter, Command::CopyMarkdown { ids: None })?
+            }
             "copy-checked" => execute_command(storage, prompter, Command::CopyChecked)?,
             "copy-archived" => execute_command(storage, prompter, Command::CopyArchived)?,
             "copy-date" => execute_command(storage, prompter, Command::CopyDate { date: None })?,
+            "copy-after" => {
+                execute_command(storage, prompter, Command::CopyAfterDate { date: None })?
+            }
             "edit" => execute_command(storage, prompter, Command::Edit { id: None })?,
             "check" => execute_command(storage, prompter, Command::Check { ids: None })?,
             "star" => execute_command(storage, prompter, Command::Star { ids: None })?,
@@ -301,7 +308,22 @@ pub fn copy_archived(storage: &dyn TaskStorage) -> Result<(), Box<dyn std::error
     Ok(())
 }
 
-pub fn copy_with_markdown_links(storage: &dyn TaskStorage, ids: &[usize]) -> Result<(), Box<dyn std::error::Error>> {
+pub fn copy_as_markdown_list_by_date(
+    storage: &dyn TaskStorage,
+    ids: &[usize],
+) -> Result<(), Box<dyn std::error::Error>> {
+    let tasks = get_tasks_for_ids(storage, ids)?;
+    let text = tasks_as_markdown_by_date(tasks);
+    let mut clipboard = Clipboard::new()?;
+    clipboard.set_text(text)?;
+    println!("Copied tasks as Markdown by date");
+    Ok(())
+}
+
+pub fn copy_with_markdown_links(
+    storage: &dyn TaskStorage,
+    ids: &[usize],
+) -> Result<(), Box<dyn std::error::Error>> {
     let mut clipboard = Clipboard::new()?;
     let tasks = storage.read()?;
     let text_lines: Vec<String> = tasks
