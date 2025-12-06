@@ -70,7 +70,6 @@ pub fn interactive(
                 copier,
                 Command::CopyMarkdown { ids: None },
             )?,
-            "copy-checked" => execute_command(storage, prompter, copier, Command::CopyChecked)?,
             "copy-after" => execute_command(
                 storage,
                 prompter,

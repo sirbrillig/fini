@@ -63,8 +63,6 @@ pub enum Command {
         /// The ids of the tasks to copy (will prompt if missing)
         ids: Option<Vec<usize>>,
     },
-    /// Copy checked tasks to the clipboard
-    CopyChecked,
     /// Copy all completed, begun, or archived tasks to the clipboard after the date (inclusive)
     CopyAfterDate {
         /// The date to start (will prompt if missing)
@@ -126,14 +124,6 @@ pub fn execute_command(
             copy(storage, copier, &ids, |i| {
                 TaskItemCopyableMarkdown(i).to_string()
             })?;
-        }
-        Command::CopyChecked => {
-            let ids: Vec<usize> = get_all_items(storage)?
-                .iter()
-                .filter(|i| matches!(i.status, Status::Done | Status::InProgress))
-                .map(|i| i.id)
-                .collect();
-            copy(storage, copier, &ids, |i| TaskItemCopyable(i).to_string())?;
         }
         Command::CopyAfterDate { date } => {
             let date = match date {

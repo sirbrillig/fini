@@ -70,8 +70,6 @@ enum CliCommands {
         /// The indices of the tasks to copy
         indices: Vec<usize>,
     },
-    /// Copy checked tasks to the clipboard
-    CopyChecked,
     /// Copy all completed, begun, or archived tasks to the clipboard after the date (inclusive)
     CopyAfterDate {
         /// The date to start (will prompt if missing)
@@ -132,9 +130,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     ids: Some(ids).filter(|x| !x.is_empty()),
                 },
             )?;
-        }
-        CliCommands::CopyChecked => {
-            execute_command(&mut storage, &prompter, &mut copier, Command::CopyChecked)?
         }
         CliCommands::CopyAfterDate { date } => execute_command(
             &mut storage,
