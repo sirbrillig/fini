@@ -1,6 +1,7 @@
 use clap::{Parser, Subcommand};
 use fini::commands::{Command, LinkFormat, execute_command};
 use fini::copier::ClipboardCopier;
+use fini::interactive::interactive;
 use fini::prompter::InquirePrompter;
 use fini::storage::FileStorage;
 use fini::util::{get_data_path, get_id_for_index, get_ids_for_indices};
@@ -203,9 +204,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             &mut copier,
             Command::DeleteBefore { date: Some(date) },
         )?,
-        CliCommands::Interactive => {
-            fini::actions::interactive(&mut storage, &prompter, &mut copier)?
-        }
+        CliCommands::Interactive => interactive(&mut storage, &prompter, &mut copier)?,
     }
     Ok(())
 }
