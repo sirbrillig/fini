@@ -24,7 +24,6 @@ pub fn interactive(
             "copy",
             "copy-markdown",
             "copy-after",
-            "copy-checked",
             "clear",
             "delete",
             "delete-before",
