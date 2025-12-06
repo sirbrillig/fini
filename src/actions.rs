@@ -272,6 +272,35 @@ pub fn star(
     Ok(())
 }
 
+pub fn archive(
+    storage: &mut dyn TaskStorage,
+    ids: &[usize],
+) -> Result<(), Box<dyn std::error::Error>> {
+    let mut tasks = storage.read()?;
+    let mut did_change = false;
+    for id in ids {
+        let Some(item) = tasks.iter_mut().find(|t| &t.id == id) else {
+            eprintln!("⚠️ No task found with id {id}");
+            return Ok(());
+        };
+        if item.status == Status::Archived {
+            item.status = Status::Todo;
+            item.active_date = None;
+            did_change = true;
+            println!("Moved task back to todo: {}", item.title);
+        } else {
+            item.status = Status::Archived;
+            item.active_date = Some(Local::now().date_naive());
+            did_change = true;
+            println!("Archived task: {}", item.title);
+        }
+    }
+    if did_change {
+        storage.write(tasks)?;
+    }
+    Ok(())
+}
+
 pub fn done(
     storage: &mut dyn TaskStorage,
     ids: &[usize],

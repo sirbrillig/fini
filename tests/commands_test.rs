@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod tests {
+    use chrono::{Duration, Local};
     use fini::commands::{Command, execute_command};
     use fini::copier::{Copier, MockCopier};
     use fini::prompter::{MockPrompter, Prompter};
@@ -330,5 +331,70 @@ mod tests {
 
         assert!(result.is_ok());
         assert_eq!(copier.text, title1);
+    }
+
+    #[test]
+    fn test_copy_after_command() {
+        let mut storage = InMemoryStorage::new();
+        let prompter = MockPrompter::new();
+        let mut copier = MockCopier::new();
+        let title1 = "Test task 1";
+        add_task(&mut storage, &prompter, &mut copier, title1, None);
+        let title2 = "Test task 2";
+        add_task(&mut storage, &prompter, &mut copier, title2, None);
+        let title3 = "Test task 3";
+        add_task(&mut storage, &prompter, &mut copier, title3, None);
+        let title4 = "Test task 4";
+        add_task(&mut storage, &prompter, &mut copier, title4, None);
+        let title5 = "Test task 5";
+        add_task(&mut storage, &prompter, &mut copier, title5, None);
+
+        // First task is done
+        let id = get_id_for_index(&storage, 1).unwrap().unwrap();
+        let command = Command::Check {
+            ids: Some(vec![id]),
+        };
+        let result = execute_command(&mut storage, &prompter, &mut copier, command);
+        assert!(result.is_ok());
+
+        // Second task is started
+        let id = get_id_for_index(&storage, 2).unwrap().unwrap();
+        let command = Command::Begin {
+            ids: Some(vec![id]),
+        };
+        let result = execute_command(&mut storage, &prompter, &mut copier, command);
+        assert!(result.is_ok());
+
+        // Third task is archived
+        let id = get_id_for_index(&storage, 3).unwrap().unwrap();
+        let command = Command::Archive {
+            ids: Some(vec![id]),
+        };
+        let result = execute_command(&mut storage, &prompter, &mut copier, command);
+        assert!(result.is_ok());
+
+        // Foruth task is archived but before date
+        let id = get_id_for_index(&storage, 3).unwrap().unwrap();
+        let command = Command::Archive {
+            ids: Some(vec![id]),
+        };
+        let result = execute_command(&mut storage, &prompter, &mut copier, command);
+        assert!(result.is_ok());
+        // Manually set the fourth task's active_date to 2 days ago
+        let mut tasks = storage.read().unwrap();
+        if let Some(task) = tasks.iter_mut().find(|t| t.id == id) {
+            task.active_date = Some((Local::now() - Duration::days(2)).date_naive());
+        }
+        storage.write(tasks).unwrap();
+
+        // Fifth task remains in Todo
+
+        // Copy should ignore Todo task and task before date
+        let command = Command::CopyAfterDate { date: Some(Local::now().format("%Y-%m-%d").to_string()) };
+        let result = execute_command(&mut storage, &prompter, &mut copier, command);
+
+        assert!(result.is_ok());
+        let expected = format!("\n## {}\n- {}\n- {}\n- {}", Local::now().format("%Y-%m-%d"), title1, title2, title3);
+        assert_eq!(copier.text, expected);
     }
 }

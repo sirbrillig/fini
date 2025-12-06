@@ -1,6 +1,5 @@
 use crate::actions::{
-    add, archived, clear, copy, copy_archived, copy_as_markdown_list_by_date,
-    copy_with_markdown_links, delete, done, edit_task, list, star, work,
+    add, archive, archived, clear, copy, copy_archived, copy_as_markdown_list_by_date, copy_with_markdown_links, delete, done, edit_task, list, star, work
 };
 use crate::copier::Copier;
 use crate::prompter::Prompter;
@@ -38,6 +37,11 @@ pub enum Command {
     },
     /// Toggle a task as done
     Check {
+        /// The ids of the tasks to toggle (will prompt if missing)
+        ids: Option<Vec<usize>>,
+    },
+    /// Toggle a task as archived
+    Archive {
         /// The ids of the tasks to toggle (will prompt if missing)
         ids: Option<Vec<usize>>,
     },
@@ -177,6 +181,13 @@ pub fn execute_command(
                 None => prompt_for_task_ids(storage, "Select tasks to star")?,
             };
             star(storage, &ids)?;
+        }
+        Command::Archive { ids } => {
+            let ids = match ids {
+                Some(ids) => ids,
+                None => prompt_for_task_ids(storage, "Select tasks to archive")?,
+            };
+            archive(storage, &ids)?;
         }
         Command::Check { ids } => {
             let ids = match ids {

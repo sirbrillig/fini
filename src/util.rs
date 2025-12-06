@@ -43,7 +43,7 @@ pub fn tasks_as_markdown_by_date(mut items: Vec<TaskItem>) -> String {
             outputs.push(format!("\n## {}", date));
             current_date = date;
         }
-        outputs.push(format!("-{}", TaskItemCopyable(&item)));
+        outputs.push(format!("- {}", TaskItemCopyable(&item)));
     }
     outputs.join("\n")
 }
