@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use chrono::{Duration, Local};
-    use fini::commands::{Command, execute_command};
+    use fini::commands::{Command, LinkFormat, execute_command};
     use fini::copier::{Copier, MockCopier};
     use fini::prompter::{MockPrompter, Prompter};
     use fini::storage::{InMemoryStorage, TaskStorage};
@@ -326,6 +326,7 @@ mod tests {
         let id = get_id_for_index(&storage, 1).unwrap().unwrap();
         let command = Command::Copy {
             ids: Some(vec![id]),
+            format: LinkFormat::Adjacent,
         };
         let result = execute_command(&mut storage, &prompter, &mut copier, command);
 
@@ -392,6 +393,7 @@ mod tests {
         // Copy should ignore Todo task and task before date
         let command = Command::CopyAfterDate {
             date: Some(Local::now().format("%Y-%m-%d").to_string()),
+            format: LinkFormat::Adjacent,
         };
         let result = execute_command(&mut storage, &prompter, &mut copier, command);
 

@@ -3,10 +3,7 @@ use crate::copier::Copier;
 use crate::prompter::Prompter;
 use crate::storage::TaskStorage;
 use crate::task_item::{Status, TaskItem};
-use crate::util::{
-    archived_tasks_as_markdown, get_next_id, get_tasks_for_ids, sort_visible_items,
-    tasks_as_markdown_by_date,
-};
+use crate::util::{archived_tasks_as_markdown, get_next_id, sort_visible_items};
 use chrono::Local;
 use colored::Colorize;
 use edit::edit;
@@ -85,7 +82,10 @@ pub fn interactive(
                 storage,
                 prompter,
                 copier,
-                Command::CopyAfterDate { date: None },
+                Command::CopyAfterDate {
+                    date: None,
+                    format: LinkFormat::Adjacent,
+                },
             )?,
             "edit" => execute_command(storage, prompter, copier, Command::Edit { id: None })?,
             "check" => execute_command(storage, prompter, copier, Command::Check { ids: None })?,
@@ -341,18 +341,6 @@ pub fn delete(
     let mut tasks = storage.read()?;
     tasks.retain(|i| !ids.contains(&i.id));
     storage.write(tasks)?;
-    Ok(())
-}
-
-pub fn copy_as_markdown_list_by_date(
-    storage: &dyn TaskStorage,
-    copier: &mut dyn Copier,
-    ids: &[usize],
-) -> Result<(), Box<dyn std::error::Error>> {
-    let tasks = get_tasks_for_ids(storage, ids)?;
-    let text = tasks_as_markdown_by_date(tasks);
-    copier.copy(&text)?;
-    println!("Copied tasks as Markdown by date");
     Ok(())
 }
 

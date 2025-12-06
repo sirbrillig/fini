@@ -1,14 +1,13 @@
 use crate::actions::{
-    add, archive, archived, clear, copy, copy_as_markdown_list_by_date, delete, done, edit_task,
-    list, star, work,
+    add, archive, archived, clear, copy, delete, done, edit_task, list, star, work,
 };
 use crate::copier::Copier;
 use crate::prompter::Prompter;
 use crate::storage::TaskStorage;
 use crate::task_item::{Status, TaskItemCopyable, TaskItemCopyableMarkdown};
 use crate::util::{
-    get_data_path, get_task_ids_after_date, get_task_ids_before_date, prompt_for_task_id,
-    prompt_for_task_ids,
+    get_data_path, get_task_ids_after_date, get_task_ids_before_date, get_tasks_for_ids,
+    prompt_for_task_id, prompt_for_task_ids, tasks_as_markdown_by_date,
 };
 
 /// The way that links will be formatted by an action
@@ -72,6 +71,8 @@ pub enum Command {
     CopyAfterDate {
         /// The date to start (will prompt if missing)
         date: Option<String>,
+        /// The format of the copied links
+        format: LinkFormat,
     },
     /// Print the file path where the data is kept
     FilePath,
@@ -124,7 +125,7 @@ pub fn execute_command(
                 LinkFormat::Markdown => TaskItemCopyableMarkdown(i).to_string(),
             })?;
         }
-        Command::CopyAfterDate { date } => {
+        Command::CopyAfterDate { date, format } => {
             let date = match date {
                 Some(content) => content,
                 None => prompter.text("Enter date (YYYY-MM-DD):")?,
@@ -134,7 +135,13 @@ pub fn execute_command(
                 date,
                 &[Status::Done, Status::InProgress, Status::Archived],
             )?;
-            copy_as_markdown_list_by_date(storage, copier, &ids)?;
+            let tasks = get_tasks_for_ids(storage, &ids)?;
+            let text = tasks_as_markdown_by_date(tasks, |i| match format {
+                LinkFormat::Adjacent => TaskItemCopyable(i).to_string(),
+                LinkFormat::Markdown => TaskItemCopyableMarkdown(i).to_string(),
+            });
+            copier.copy(&text)?;
+            println!("Copied tasks as Markdown by date");
         }
         Command::List => list(storage)?,
         Command::Archived => archived(storage)?,

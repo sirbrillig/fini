@@ -1,6 +1,6 @@
 use crate::{
     storage::TaskStorage,
-    task_item::{Status, TaskItem, TaskItemCopyable},
+    task_item::{Status, TaskItem},
 };
 use chrono::NaiveDate;
 use colored::Colorize;
@@ -31,7 +31,10 @@ pub fn archived_tasks_as_markdown(mut items: Vec<TaskItem>) -> String {
     outputs.join("\n")
 }
 
-pub fn tasks_as_markdown_by_date(mut items: Vec<TaskItem>) -> String {
+pub fn tasks_as_markdown_by_date<F>(mut items: Vec<TaskItem>, format: F) -> String
+where
+    F: Fn(&TaskItem) -> String,
+{
     let mut outputs: Vec<String> = vec![];
     items.sort_by_key(|i| i.active_date);
     let mut current_date: NaiveDate = Default::default();
@@ -43,7 +46,7 @@ pub fn tasks_as_markdown_by_date(mut items: Vec<TaskItem>) -> String {
             outputs.push(format!("\n## {}", date));
             current_date = date;
         }
-        outputs.push(format!("- {}", TaskItemCopyable(&item)));
+        outputs.push(format!("- {}", format(&item)));
     }
     outputs.join("\n")
 }

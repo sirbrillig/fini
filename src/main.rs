@@ -137,7 +137,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             &mut storage,
             &prompter,
             &mut copier,
-            Command::CopyAfterDate { date: Some(date) },
+            Command::CopyAfterDate {
+                date: Some(date),
+                format: LinkFormat::Adjacent,
+            },
         )?,
         CliCommands::List => execute_command(&mut storage, &prompter, &mut copier, Command::List)?,
         CliCommands::Archived => {
