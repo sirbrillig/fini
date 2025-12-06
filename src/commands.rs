@@ -7,9 +7,17 @@ use crate::prompter::Prompter;
 use crate::storage::TaskStorage;
 use crate::task_item::{Status, TaskItemCopyable, TaskItemCopyableMarkdown};
 use crate::util::{
-    get_all_items, get_data_path, get_task_ids_after_date, get_task_ids_before_date,
-    prompt_for_task_id, prompt_for_task_ids,
+    get_data_path, get_task_ids_after_date, get_task_ids_before_date, prompt_for_task_id,
+    prompt_for_task_ids,
 };
+
+/// The way that links will be formatted by an action
+pub enum LinkFormat {
+    /// Print the link after the task title
+    Adjacent,
+    /// Make the task title into a markdown link
+    Markdown,
+}
 
 pub enum Command {
     /// Add a new task
@@ -57,11 +65,8 @@ pub enum Command {
     Copy {
         /// The ids of the tasks to copy (will prompt if missing)
         ids: Option<Vec<usize>>,
-    },
-    /// Copy tasks to the clipboard with markdown links
-    CopyMarkdown {
-        /// The ids of the tasks to copy (will prompt if missing)
-        ids: Option<Vec<usize>>,
+        /// The format of the copied links
+        format: LinkFormat,
     },
     /// Copy all completed, begun, or archived tasks to the clipboard after the date (inclusive)
     CopyAfterDate {
@@ -109,20 +114,14 @@ pub fn execute_command(
                 println!("{}", path);
             }
         }
-        Command::Copy { ids } => {
+        Command::Copy { ids, format } => {
             let ids = match ids {
                 Some(ids) => ids,
                 None => prompt_for_task_ids(storage, "Select tasks to copy")?,
             };
-            copy(storage, copier, &ids, |i| TaskItemCopyable(i).to_string())?;
-        }
-        Command::CopyMarkdown { ids } => {
-            let ids = match ids {
-                Some(ids) => ids,
-                None => prompt_for_task_ids(storage, "Select tasks to copy")?,
-            };
-            copy(storage, copier, &ids, |i| {
-                TaskItemCopyableMarkdown(i).to_string()
+            copy(storage, copier, &ids, |i| match format {
+                LinkFormat::Adjacent => TaskItemCopyable(i).to_string(),
+                LinkFormat::Markdown => TaskItemCopyableMarkdown(i).to_string(),
             })?;
         }
         Command::CopyAfterDate { date } => {

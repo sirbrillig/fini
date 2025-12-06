@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand};
-use fini::commands::{Command, execute_command};
+use fini::commands::{Command, LinkFormat, execute_command};
 use fini::copier::ClipboardCopier;
 use fini::prompter::InquirePrompter;
 use fini::storage::FileStorage;
@@ -117,6 +117,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 &mut copier,
                 Command::Copy {
                     ids: Some(ids).filter(|x| !x.is_empty()),
+                    format: LinkFormat::Adjacent,
                 },
             )?;
         }
@@ -126,8 +127,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 &mut storage,
                 &prompter,
                 &mut copier,
-                Command::CopyMarkdown {
+                Command::Copy {
                     ids: Some(ids).filter(|x| !x.is_empty()),
+                    format: LinkFormat::Markdown,
                 },
             )?;
         }

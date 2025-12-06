@@ -1,4 +1,4 @@
-use crate::commands::{execute_command, Command};
+use crate::commands::{Command, LinkFormat, execute_command};
 use crate::copier::Copier;
 use crate::prompter::Prompter;
 use crate::storage::TaskStorage;
@@ -63,12 +63,23 @@ pub fn interactive(
                     link: None,
                 },
             )?,
-            "copy" => execute_command(storage, prompter, copier, Command::Copy { ids: None })?,
+            "copy" => execute_command(
+                storage,
+                prompter,
+                copier,
+                Command::Copy {
+                    ids: None,
+                    format: LinkFormat::Adjacent,
+                },
+            )?,
             "copy-markdown" => execute_command(
                 storage,
                 prompter,
                 copier,
-                Command::CopyMarkdown { ids: None },
+                Command::Copy {
+                    ids: None,
+                    format: LinkFormat::Markdown,
+                },
             )?,
             "copy-after" => execute_command(
                 storage,
