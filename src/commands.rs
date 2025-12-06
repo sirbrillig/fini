@@ -1,11 +1,11 @@
 use crate::copier::Copier;
 use crate::prompter::Prompter;
-use crate::storage::TaskStorage;
+use crate::storage::{TaskStorage, get_default_data_path};
 use crate::task_item::{Status, TaskItemCopyable, TaskItemCopyableMarkdown};
 use crate::util::{
-    add, archive, archived, clear, copy, delete, done, edit_task, get_data_path,
-    get_task_ids_after_date, get_task_ids_before_date, get_tasks_for_ids, list, prompt_for_task_id,
-    prompt_for_task_ids, star, tasks_as_markdown_by_date, work,
+    add, archive, archived, clear, copy, delete, done, edit_task, get_task_ids_after_date,
+    get_task_ids_before_date, get_tasks_for_ids, list, prompt_for_task_id, prompt_for_task_ids,
+    star, tasks_as_markdown_by_date, work,
 };
 
 /// The way that links will be formatted by an action
@@ -109,7 +109,7 @@ pub fn execute_command(
             add(storage, title, link)?;
         }
         Command::FilePath => {
-            if let Some(path) = get_data_path().to_str() {
+            if let Some(path) = get_default_data_path().to_str() {
                 println!("{}", path);
             }
         }

@@ -5,10 +5,8 @@ use crate::{
 };
 use chrono::{Local, NaiveDate};
 use colored::Colorize;
-use directories::BaseDirs;
 use edit::edit;
 use inquire::{Confirm, MultiSelect, Select};
-use std::path::PathBuf;
 
 pub const SELECT_PAGE_SIZE: usize = 20;
 
@@ -51,13 +49,6 @@ where
         outputs.push(format!("- {}", format(&item)));
     }
     outputs.join("\n")
-}
-
-pub fn get_data_path() -> PathBuf {
-    let data_dir = BaseDirs::new()
-        .map(|b| b.data_dir().to_path_buf())
-        .unwrap_or_else(|| PathBuf::from("."));
-    data_dir.join("fini_data.json")
 }
 
 pub fn sort_visible_items(items: &[TaskItem]) -> Vec<&TaskItem> {

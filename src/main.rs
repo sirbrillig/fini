@@ -3,8 +3,8 @@ use fini::commands::{Command, LinkFormat, execute_command};
 use fini::copier::ClipboardCopier;
 use fini::interactive::interactive;
 use fini::prompter::InquirePrompter;
-use fini::storage::FileStorage;
-use fini::util::{get_data_path, get_id_for_index, get_ids_for_indices};
+use fini::storage::{FileStorage, get_default_data_path};
+use fini::util::{get_id_for_index, get_ids_for_indices};
 
 #[derive(Parser)]
 #[command(
@@ -91,7 +91,7 @@ enum CliCommands {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut storage = FileStorage::new(get_data_path());
+    let mut storage = FileStorage::new(get_default_data_path());
     let prompter = InquirePrompter {};
     let mut copier = ClipboardCopier {};
     let cli = Cli::parse();

@@ -1,7 +1,15 @@
 use crate::task_item::TaskItem;
+use directories::BaseDirs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use tempfile::NamedTempFile;
+
+pub fn get_default_data_path() -> PathBuf {
+    let data_dir = BaseDirs::new()
+        .map(|b| b.data_dir().to_path_buf())
+        .unwrap_or_else(|| PathBuf::from("."));
+    data_dir.join("fini_data.json")
+}
 
 pub trait TaskStorage {
     fn read(&self) -> Result<Vec<TaskItem>, Box<dyn std::error::Error>>;
