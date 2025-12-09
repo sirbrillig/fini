@@ -1,3 +1,5 @@
+use std::cmp::Reverse;
+
 use crate::{
     copier::Copier,
     storage::TaskStorage,
@@ -52,10 +54,12 @@ where
 }
 
 pub fn sort_visible_items(items: &[TaskItem]) -> Vec<&TaskItem> {
-    items
+    let mut visible: Vec<_> = items
         .iter()
         .filter(|i| matches!(i.status, Status::Todo | Status::InProgress | Status::Done))
-        .collect()
+        .collect();
+    visible.sort_by_key(|i| Reverse(i.star));
+    visible
 }
 
 pub fn get_task_ids_before_date(
