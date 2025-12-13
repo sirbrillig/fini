@@ -2,7 +2,6 @@ use clap::{Parser, Subcommand};
 use fini::commands::{Command, LinkFormat, execute_command};
 use fini::copier::ClipboardCopier;
 use fini::indices::{get_id_for_index, get_ids_for_indices};
-use fini::interactive::interactive;
 use fini::prompter::InquirePrompter;
 use fini::storage::{FileStorage, get_default_data_path};
 
@@ -10,7 +9,7 @@ use fini::storage::{FileStorage, get_default_data_path};
 #[command(
     name = "fini",
     version,
-    about = "An interactive CLI todo list tool with links"
+    about = "An interactive CLI task list with links"
 )]
 struct Cli {
     #[command(subcommand)]
@@ -101,127 +100,70 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let prompter = InquirePrompter {};
     let mut copier = ClipboardCopier {};
     let cli = Cli::parse();
-    match cli.command {
-        CliCommands::Add { title } => {
-            execute_command(
-                &mut storage,
-                &prompter,
-                &mut copier,
-                Command::Add {
-                    title: Some(title.join(" ")).filter(|x| !x.is_empty()),
-                    link: None,
-                },
-            )?;
-        }
-        CliCommands::FilePath => {
-            execute_command(&mut storage, &prompter, &mut copier, Command::FilePath)?
-        }
+    let command = match cli.command {
+        CliCommands::Add { title } => Command::Add {
+            title: Some(title.join(" ")).filter(|x| !x.is_empty()),
+            link: None,
+        },
+        CliCommands::FilePath => Command::FilePath,
         CliCommands::Copy { indices } => {
             let ids = get_ids_for_indices(&storage, indices)?;
-            execute_command(
-                &mut storage,
-                &prompter,
-                &mut copier,
-                Command::Copy {
-                    ids: Some(ids).filter(|x| !x.is_empty()),
-                    format: LinkFormat::Adjacent,
-                },
-            )?;
+            Command::Copy {
+                ids: Some(ids).filter(|x| !x.is_empty()),
+                format: LinkFormat::Adjacent,
+            }
         }
         CliCommands::CopyMarkdown { indices } => {
             let ids = get_ids_for_indices(&storage, indices)?;
-            execute_command(
-                &mut storage,
-                &prompter,
-                &mut copier,
-                Command::Copy {
-                    ids: Some(ids).filter(|x| !x.is_empty()),
-                    format: LinkFormat::Markdown,
-                },
-            )?;
+            Command::Copy {
+                ids: Some(ids).filter(|x| !x.is_empty()),
+                format: LinkFormat::Markdown,
+            }
         }
-        CliCommands::CopyAfterDate { date } => execute_command(
-            &mut storage,
-            &prompter,
-            &mut copier,
-            Command::CopyAfterDate {
-                date: Some(date),
-                format: LinkFormat::Adjacent,
-            },
-        )?,
-        CliCommands::List => execute_command(
-            &mut storage,
-            &prompter,
-            &mut copier,
-            Command::List {
-                format: LinkFormat::Hyperlink,
-            },
-        )?,
-        CliCommands::Archived => {
-            execute_command(&mut storage, &prompter, &mut copier, Command::Archived)?
-        }
+        CliCommands::CopyAfterDate { date } => Command::CopyAfterDate {
+            date: Some(date),
+            format: LinkFormat::Adjacent,
+        },
+        CliCommands::List => Command::List {
+            format: LinkFormat::Hyperlink,
+        },
+        CliCommands::Archived => Command::Archived,
         CliCommands::Edit { index } => {
             let id = get_id_for_index(&storage, index)?;
-            execute_command(&mut storage, &prompter, &mut copier, Command::Edit { id })?;
+            Command::Edit { id }
         }
         CliCommands::Open { index } => {
             let id = get_id_for_index(&storage, index)?;
-            execute_command(&mut storage, &prompter, &mut copier, Command::Open { id })?;
+            Command::Open { id }
         }
         CliCommands::Begin { indices } => {
             let ids = get_ids_for_indices(&storage, indices)?;
-            execute_command(
-                &mut storage,
-                &prompter,
-                &mut copier,
-                Command::Begin {
-                    ids: Some(ids).filter(|x| !x.is_empty()),
-                },
-            )?;
+            Command::Begin {
+                ids: Some(ids).filter(|x| !x.is_empty()),
+            }
         }
         CliCommands::Star { indices } => {
             let ids = get_ids_for_indices(&storage, indices)?;
-            execute_command(
-                &mut storage,
-                &prompter,
-                &mut copier,
-                Command::Star {
-                    ids: Some(ids).filter(|x| !x.is_empty()),
-                },
-            )?;
+            Command::Star {
+                ids: Some(ids).filter(|x| !x.is_empty()),
+            }
         }
         CliCommands::Check { indices } => {
             let ids = get_ids_for_indices(&storage, indices)?;
-            execute_command(
-                &mut storage,
-                &prompter,
-                &mut copier,
-                Command::Check {
-                    ids: Some(ids).filter(|x| !x.is_empty()),
-                },
-            )?;
+            Command::Check {
+                ids: Some(ids).filter(|x| !x.is_empty()),
+            }
         }
         CliCommands::Delete { indices } => {
             let ids = get_ids_for_indices(&storage, indices)?;
-            execute_command(
-                &mut storage,
-                &prompter,
-                &mut copier,
-                Command::Delete {
-                    ids: Some(ids).filter(|x| !x.is_empty()),
-                },
-            )?;
+            Command::Delete {
+                ids: Some(ids).filter(|x| !x.is_empty()),
+            }
         }
-        CliCommands::Clear => {
-            execute_command(&mut storage, &prompter, &mut copier, Command::Clear)?
-        }
-        CliCommands::DeleteBefore { date } => execute_command(
-            &mut storage,
-            &prompter,
-            &mut copier,
-            Command::DeleteBefore { date: Some(date) },
-        )?,
-        CliCommands::Interactive => interactive(&mut storage, &prompter, &mut copier)?,
-    }
+        CliCommands::Clear => Command::Clear,
+        CliCommands::DeleteBefore { date } => Command::DeleteBefore { date: Some(date) },
+        CliCommands::Interactive => Command::Interactive,
+    };
+    execute_command(&mut storage, &prompter, &mut copier, command)?;
     Ok(())
 }
