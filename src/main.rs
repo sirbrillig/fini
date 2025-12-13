@@ -143,7 +143,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 format: LinkFormat::Adjacent,
             },
         )?,
-        CliCommands::List => execute_command(&mut storage, &prompter, &mut copier, Command::List)?,
+        CliCommands::List => execute_command(
+            &mut storage,
+            &prompter,
+            &mut copier,
+            Command::List {
+                format: LinkFormat::Hyperlink,
+            },
+        )?,
         CliCommands::Archived => {
             execute_command(&mut storage, &prompter, &mut copier, Command::Archived)?
         }

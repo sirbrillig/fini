@@ -1,4 +1,4 @@
-use crate::commands::{Command, execute_command};
+use crate::commands::{Command, LinkFormat, execute_command};
 use crate::copier::Copier;
 use crate::prompter::Prompter;
 use crate::storage::TaskStorage;
@@ -13,7 +13,7 @@ pub fn interactive(
 ) -> Result<(), Box<dyn std::error::Error>> {
     loop {
         println!("{}", "-----------------------------------------".green());
-        list(storage)?;
+        list(storage, LinkFormat::Hyperlink)?;
         let commands = vec![
             "quit",
             "list",

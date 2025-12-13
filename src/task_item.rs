@@ -1,4 +1,4 @@
-use crate::util::format_hyperlink;
+use crate::{commands::LinkFormat, util::format_hyperlink};
 use chrono::NaiveDate;
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
@@ -63,13 +63,19 @@ impl fmt::Display for TaskItem {
     }
 }
 
-pub struct TaskItemWithIndex<'a>(pub &'a TaskItem, pub usize);
+pub struct TaskItemWithIndex<'a>(pub &'a TaskItem, pub usize, pub LinkFormat);
 
 impl fmt::Display for TaskItemWithIndex<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let task = self.0;
         let index = self.1;
-        write!(f, "{:>2}.{}", index, task)?;
+        let format = self.2;
+        let text = match format {
+            LinkFormat::Adjacent => TaskItemCopyable(task).to_string(),
+            LinkFormat::Hyperlink => task.to_string(),
+            LinkFormat::Markdown => TaskItemCopyableMarkdown(task).to_string(),
+        };
+        write!(f, "{:>2}.{}", index, text)?;
         Ok(())
     }
 }

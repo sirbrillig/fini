@@ -1,6 +1,6 @@
 use crate::copier::Copier;
 use crate::prompter::Prompter;
-use crate::storage::{get_default_data_path, TaskStorage};
+use crate::storage::{TaskStorage, get_default_data_path};
 use crate::task_item::{Status, TaskItemCopyable, TaskItemCopyableMarkdown};
 use crate::util::{
     add, archive, archived, clear, copy, delete, done, edit_task, get_task_ids_after_date,
@@ -10,9 +10,12 @@ use crate::util::{
 use inquire::DateSelect;
 
 /// The way that links will be formatted by an action
+#[derive(Clone, Copy, Debug)]
 pub enum LinkFormat {
     /// Print the link after the task title
     Adjacent,
+    /// Print the link as an OSC 8 hyperlink after the task title
+    Hyperlink,
     /// Make the task title into a markdown link
     Markdown,
 }
@@ -26,7 +29,10 @@ pub enum Command {
         link: Option<String>,
     },
     /// List all current tasks
-    List,
+    List {
+        /// The format of the printed links
+        format: LinkFormat,
+    },
     /// Toggle a task as in-progress
     Begin {
         /// The ids of the tasks to toggle (will prompt if missing)
@@ -121,6 +127,7 @@ pub fn execute_command(
             };
             copy(storage, copier, &ids, |i| match format {
                 LinkFormat::Adjacent => TaskItemCopyable(i).to_string(),
+                LinkFormat::Hyperlink => i.to_string(),
                 LinkFormat::Markdown => TaskItemCopyableMarkdown(i).to_string(),
             })?;
         }
@@ -139,12 +146,13 @@ pub fn execute_command(
             let tasks = get_tasks_for_ids(storage, &ids)?;
             let text = tasks_as_markdown_by_date(tasks, |i| match format {
                 LinkFormat::Adjacent => TaskItemCopyable(i).to_string(),
+                LinkFormat::Hyperlink => i.to_string(),
                 LinkFormat::Markdown => TaskItemCopyableMarkdown(i).to_string(),
             });
             copier.copy(&text)?;
             println!("Copied tasks as Markdown by date starting at {}", date);
         }
-        Command::List => list(storage)?,
+        Command::List { format } => list(storage, format)?,
         Command::Archived => archived(storage)?,
         Command::Edit { id } => {
             let id = match id {

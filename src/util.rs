@@ -1,6 +1,7 @@
 use std::cmp::Reverse;
 
 use crate::{
+    commands::LinkFormat,
     copier::Copier,
     storage::TaskStorage,
     task_item::{Status, TaskItem, TaskItemWithIndex},
@@ -178,14 +179,17 @@ pub fn add(
     Ok(id)
 }
 
-pub fn list(storage: &dyn TaskStorage) -> Result<(), Box<dyn std::error::Error>> {
+pub fn list(
+    storage: &dyn TaskStorage,
+    format: LinkFormat,
+) -> Result<(), Box<dyn std::error::Error>> {
     let tasks = storage.read()?;
     let visible = sort_visible_items(&tasks);
     if visible.is_empty() {
         println!("No tasks");
     } else {
         for (index, item) in visible.iter().enumerate() {
-            println!("{}", TaskItemWithIndex(item, index + 1));
+            println!("{}", TaskItemWithIndex(item, index + 1, format));
         }
     }
     Ok(())
