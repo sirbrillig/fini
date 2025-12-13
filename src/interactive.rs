@@ -32,7 +32,6 @@ pub fn interactive(
         ];
         println!("{}", "-----------------------------------------".dimmed());
         let answer = Select::new("Select a command:", commands)
-            .with_help_message("Testing")
             .with_page_size(4)
             .prompt();
 

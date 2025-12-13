@@ -7,6 +7,7 @@ use crate::util::{
     get_task_ids_before_date, get_tasks_for_ids, list, prompt_for_task_id, prompt_for_task_ids,
     star, tasks_as_markdown_by_date, work,
 };
+use inquire::DateSelect;
 
 /// The way that links will be formatted by an action
 pub enum LinkFormat {
@@ -126,11 +127,13 @@ pub fn execute_command(
         Command::CopyAfterDate { date, format } => {
             let date = match date {
                 Some(content) => content,
-                None => prompter.text("Enter date (YYYY-MM-DD):")?,
+                None => DateSelect::new("Select date to start copying begun and completed tasks:")
+                    .prompt()?
+                    .to_string(),
             };
             let ids: Vec<usize> = get_task_ids_after_date(
                 storage,
-                date,
+                &date,
                 &[Status::Done, Status::InProgress, Status::Archived],
             )?;
             let tasks = get_tasks_for_ids(storage, &ids)?;
@@ -139,7 +142,7 @@ pub fn execute_command(
                 LinkFormat::Markdown => TaskItemCopyableMarkdown(i).to_string(),
             });
             copier.copy(&text)?;
-            println!("Copied tasks as Markdown by date");
+            println!("Copied tasks as Markdown by date starting at {}", date);
         }
         Command::List => list(storage)?,
         Command::Archived => archived(storage)?,
@@ -208,14 +211,16 @@ pub fn execute_command(
         Command::DeleteBefore { date } => {
             let date = match date {
                 Some(content) => content,
-                None => prompter.text("Enter date (YYYY-MM-DD):")?,
+                None => DateSelect::new("Select date to before which to delete archived tasks:")
+                    .prompt()?
+                    .to_string(),
             };
             let confirm_answer = prompter.confirm(&format!(
                 "Are you sure you want to delete all archived tasks before {}?",
                 date
             ));
             if confirm_answer.is_ok_and(|x| x) {
-                let tasks = &get_task_ids_before_date(storage, date)?;
+                let tasks = &get_task_ids_before_date(storage, &date)?;
                 delete(storage, tasks)?;
             }
         }
