@@ -3,9 +3,7 @@ use crate::prompter::Prompter;
 use crate::storage::{TaskStorage, get_default_data_path};
 use crate::task_item::{Status, TaskItemCopyable, TaskItemCopyableMarkdown};
 use crate::util::{
-    add, archive, archived, clear, copy, delete, done, edit_task, get_task_ids_after_date,
-    get_task_ids_before_date, get_tasks_for_ids, list, prompt_for_task_id, prompt_for_task_ids,
-    star, tasks_as_markdown_by_date, work,
+    add, archive, archived, clear, copy, delete, done, edit_task, get_task_for_id, get_task_ids_after_date, get_task_ids_before_date, get_tasks_for_ids, list, prompt_for_task_id, prompt_for_task_ids, star, tasks_as_markdown_by_date, work
 };
 use inquire::DateSelect;
 
@@ -32,6 +30,11 @@ pub enum Command {
     List {
         /// The format of the printed links
         format: LinkFormat,
+    },
+    /// Open a task link in the browser
+    Open {
+        /// The id of the task to open (will prompt if missing)
+        id: Option<usize>,
     },
     /// Toggle a task as in-progress
     Begin {
@@ -154,6 +157,18 @@ pub fn execute_command(
         }
         Command::List { format } => list(storage, format)?,
         Command::Archived => archived(storage)?,
+        Command::Open { id } => {
+            let id = match id {
+                Some(id) => id,
+                None => prompt_for_task_id(storage, "Select task to open")?,
+            };
+            let task = get_task_for_id(storage, id)?;
+            let Some(link) = task.link else {
+                println!("That task does not have a link");
+                return Ok(());
+            };
+            webbrowser::open(&link)?;
+        }
         Command::Edit { id } => {
             let id = match id {
                 Some(id) => id,

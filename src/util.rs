@@ -104,6 +104,17 @@ pub fn get_task_ids_after_date(
         .collect())
 }
 
+pub fn get_task_for_id(
+    storage: &dyn TaskStorage,
+    id: usize,
+) -> Result<TaskItem, Box<dyn std::error::Error>> {
+    let tasks = storage.read()?;
+    let Some(item) = tasks.into_iter().find(|t| t.id == id) else {
+        return Err("Task not found".into());
+    };
+    Ok(item)
+}
+
 pub fn get_tasks_for_ids(
     storage: &dyn TaskStorage,
     ids: &[usize],

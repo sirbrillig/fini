@@ -21,6 +21,7 @@ pub fn interactive(
             "check",
             "begin",
             "star",
+            "open",
             "copy",
             "copy-markdown",
             "copy-after",
@@ -84,6 +85,7 @@ pub fn interactive(
                 },
             )?,
             "edit" => execute_command(storage, prompter, copier, Command::Edit { id: None })?,
+            "open" => execute_command(storage, prompter, copier, Command::Open { id: None })?,
             "check" => execute_command(storage, prompter, copier, Command::Check { ids: None })?,
             "star" => execute_command(storage, prompter, copier, Command::Star { ids: None })?,
             "delete-before" => execute_command(

@@ -46,6 +46,12 @@ enum CliCommands {
         /// The index of the task to edit
         index: usize,
     },
+    /// Open a task in your web browser (alias: o)
+    #[command(alias = "o")]
+    Open {
+        /// The index of the task to open
+        index: usize,
+    },
     /// Toggle a task as done (aliases: c)
     #[command(aliases=["c"])]
     Check {
@@ -157,6 +163,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         CliCommands::Edit { index } => {
             let id = get_id_for_index(&storage, index)?;
             execute_command(&mut storage, &prompter, &mut copier, Command::Edit { id })?;
+        }
+        CliCommands::Open { index } => {
+            let id = get_id_for_index(&storage, index)?;
+            execute_command(&mut storage, &prompter, &mut copier, Command::Open { id })?;
         }
         CliCommands::Begin { indices } => {
             let ids = get_ids_for_indices(&storage, indices)?;
