@@ -1,4 +1,4 @@
-use crate::commands::{Command, LinkFormat, execute_command};
+use crate::commands::{execute_command, Command, LinkFormat};
 use crate::copier::Copier;
 use crate::prompter::Prompter;
 use crate::storage::TaskStorage;
@@ -41,62 +41,45 @@ pub fn interactive(
             Err(_) => break, // Handle ctrl-c by quitting
         };
 
-        match answer {
-            "quit" => break,
-            "list" => {
-                // Do nothing as the list will be printed when we loop.
+        if answer == "quit" {
+            break;
+        }
+
+        let command: Option<Command> = match answer {
+            // Do nothing as the list will be printed when we loop.
+            "list" => None,
+            "list-archived" => Some(Command::Archived),
+            "clear" => Some(Command::Clear),
+            "add" => Some(Command::Add {
+                title: None,
+                link: None,
+            }),
+            "copy" => Some(Command::Copy {
+                ids: None,
+                format: crate::commands::LinkFormat::Adjacent,
+            }),
+            "copy-markdown" => Some(Command::Copy {
+                ids: None,
+                format: crate::commands::LinkFormat::Markdown,
+            }),
+            "copy-after" => Some(Command::CopyAfterDate {
+                date: None,
+                format: crate::commands::LinkFormat::Adjacent,
+            }),
+            "edit" => Some(Command::Edit { id: None }),
+            "open" => Some(Command::Open { id: None }),
+            "check" => Some(Command::Check { ids: None }),
+            "star" => Some(Command::Star { ids: None }),
+            "delete-before" => Some(Command::DeleteBefore { date: None }),
+            "delete" => Some(Command::Delete { ids: None }),
+            "begin" => Some(Command::Begin { ids: None }),
+            _ => {
+                println!("Unknown command");
+                None
             }
-            "list-archived" => execute_command(storage, prompter, copier, Command::Archived)?,
-            "clear" => execute_command(storage, prompter, copier, Command::Clear)?,
-            "add" => execute_command(
-                storage,
-                prompter,
-                copier,
-                Command::Add {
-                    title: None,
-                    link: None,
-                },
-            )?,
-            "copy" => execute_command(
-                storage,
-                prompter,
-                copier,
-                Command::Copy {
-                    ids: None,
-                    format: crate::commands::LinkFormat::Adjacent,
-                },
-            )?,
-            "copy-markdown" => execute_command(
-                storage,
-                prompter,
-                copier,
-                Command::Copy {
-                    ids: None,
-                    format: crate::commands::LinkFormat::Markdown,
-                },
-            )?,
-            "copy-after" => execute_command(
-                storage,
-                prompter,
-                copier,
-                Command::CopyAfterDate {
-                    date: None,
-                    format: crate::commands::LinkFormat::Adjacent,
-                },
-            )?,
-            "edit" => execute_command(storage, prompter, copier, Command::Edit { id: None })?,
-            "open" => execute_command(storage, prompter, copier, Command::Open { id: None })?,
-            "check" => execute_command(storage, prompter, copier, Command::Check { ids: None })?,
-            "star" => execute_command(storage, prompter, copier, Command::Star { ids: None })?,
-            "delete-before" => execute_command(
-                storage,
-                prompter,
-                copier,
-                Command::DeleteBefore { date: None },
-            )?,
-            "delete" => execute_command(storage, prompter, copier, Command::Delete { ids: None })?,
-            "begin" => execute_command(storage, prompter, copier, Command::Begin { ids: None })?,
-            _ => println!("Unknown command"),
+        };
+        if let Some(command) = command {
+            execute_command(storage, prompter, copier, command)?;
         }
     }
     Ok(())
