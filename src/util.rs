@@ -445,3 +445,8 @@ pub fn edit_task(
     }
     Ok(())
 }
+
+/// Format a URL as an OSC 8 hyperlink for terminal display.
+pub fn format_hyperlink(url: &str, display_text: &str) -> String {
+    format!("\x1b]8;;{}\x1b\\{}\x1b]8;;\x1b\\", url, display_text)
+}

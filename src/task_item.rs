@@ -1,3 +1,4 @@
+use crate::util::format_hyperlink;
 use chrono::NaiveDate;
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
@@ -56,7 +57,7 @@ impl fmt::Display for TaskItem {
             }
         }
         if let Some(link) = &self.link {
-            write!(f, " {}", link.dimmed())?;
+            write!(f, " {}", format_hyperlink(link, "[link]").dimmed())?;
         }
         Ok(())
     }
