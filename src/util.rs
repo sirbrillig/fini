@@ -280,16 +280,13 @@ pub fn archive(
             return Ok(());
         };
         if item.status == Status::Archived {
-            item.status = Status::Todo;
-            item.active_date = None;
-            did_change = true;
-            println!("Moved task back to todo: {}", item.title);
-        } else {
-            item.status = Status::Archived;
-            item.active_date = Some(Local::now().date_naive());
-            did_change = true;
-            println!("Archived task: {}", item.title);
+            eprintln!("Task already archived");
+            return Ok(());
         }
+        item.status = Status::Archived;
+        item.active_date = Some(Local::now().date_naive());
+        did_change = true;
+        println!("Archived task: {}", item.title);
     }
     if did_change {
         storage.write(tasks)?;

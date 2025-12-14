@@ -59,9 +59,9 @@ pub enum Command {
         /// The ids of the tasks to toggle (will prompt if missing)
         ids: Option<Vec<usize>>,
     },
-    /// Toggle a task as archived
+    /// Mark a task as archived
     Archive {
-        /// The ids of the tasks to toggle (will prompt if missing)
+        /// The ids of the tasks to archive (will prompt if missing)
         ids: Option<Vec<usize>>,
     },
     /// Delete tasks entirely
