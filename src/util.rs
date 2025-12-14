@@ -345,13 +345,25 @@ where
 
 pub fn clear(storage: &mut dyn TaskStorage) -> Result<(), Box<dyn std::error::Error>> {
     let mut tasks = storage.read_tasks()?;
-    let mut copies: Vec<TaskItem> = vec![];
+    let mut archived: Vec<TaskItem> = Vec::new();
     let mut next_id = get_next_id(&tasks);
+
     for item in tasks.iter_mut() {
         // Unstar all tasks.
         item.star = None;
         match item.status {
-            Status::Done => item.status = Status::Archived,
+            Status::Done => {
+                item.status = Status::Archived;
+                let copy = TaskItem {
+                    id: item.id,
+                    title: item.title.clone(),
+                    link: item.link.clone(),
+                    status: Status::Archived,
+                    active_date: item.active_date,
+                    ..Default::default()
+                };
+                archived.push(copy);
+            }
             Status::InProgress => {
                 // Duplicate in-progress tasks and complete one of them so you can see that this
                 // task was worked on today.
@@ -364,15 +376,21 @@ pub fn clear(storage: &mut dyn TaskStorage) -> Result<(), Box<dyn std::error::Er
                     ..Default::default()
                 };
                 next_id += 1;
-                copies.push(copy);
+                archived.push(copy);
                 // Return in-progress tasks to To do
                 item.status = Status::Todo;
             }
             _ => {}
         }
     }
-    tasks.extend(copies);
-    storage.write_tasks(tasks)?;
+
+    storage.write_tasks(
+        tasks
+            .into_iter()
+            .filter(|t| !matches!(t.status, Status::Archived))
+            .collect(),
+    )?;
+    storage.write_archived(archived)?;
     println!("Archived completed tasks");
     Ok(())
 }

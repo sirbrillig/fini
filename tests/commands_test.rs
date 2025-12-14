@@ -276,18 +276,48 @@ mod tests {
         let mut storage = InMemoryStorage::new();
         let prompter = MockPrompter::new();
         let mut copier = MockCopier::new();
+
+        // Add tasks
         let title1 = "Test task 1";
         add_task(&mut storage, &prompter, &mut copier, title1, None);
+
         let title2 = "Test task 2";
         add_task(&mut storage, &prompter, &mut copier, title2, None);
+
         let title3 = "Test task 3";
         add_task(&mut storage, &prompter, &mut copier, title3, None);
+
+        let title4 = "Test task 4";
+        let link4 = Some("https://example4.com".to_string());
+        add_task(&mut storage, &prompter, &mut copier, title4, link4.clone());
+
+        let title5 = "Test task 5";
+        let link5 = Some("https://example5.com".to_string());
+        add_task(&mut storage, &prompter, &mut copier, title5, link5.clone());
+
+        // Check first task
         let id = get_id_for_index(&storage, 1).unwrap().unwrap();
         let command = Command::Check {
             ids: Some(vec![id]),
         };
         execute_command(&mut storage, &prompter, &mut copier, command).unwrap();
+
+        // Begin second task
         let id = get_id_for_index(&storage, 2).unwrap().unwrap();
+        let command = Command::Begin {
+            ids: Some(vec![id]),
+        };
+        execute_command(&mut storage, &prompter, &mut copier, command).unwrap();
+
+        // Check fourth task
+        let id = get_id_for_index(&storage, 4).unwrap().unwrap();
+        let command = Command::Check {
+            ids: Some(vec![id]),
+        };
+        execute_command(&mut storage, &prompter, &mut copier, command).unwrap();
+
+        // Begin fifth task
+        let id = get_id_for_index(&storage, 5).unwrap().unwrap();
         let command = Command::Begin {
             ids: Some(vec![id]),
         };
@@ -298,19 +328,44 @@ mod tests {
 
         assert!(result.is_ok());
         let tasks = storage.read_tasks().unwrap();
-        assert_eq!(tasks.len(), 4);
+        let archived = storage.read_archived().unwrap();
+        assert_eq!(tasks.len(), 3);
+        assert_eq!(archived.len(), 4);
+
         // The first task (at done) was archived
-        assert_eq!(tasks[0].title, title1);
-        assert_eq!(tasks[0].status, Status::Archived);
+        assert_eq!(archived[0].title, title1);
+        assert_eq!(archived[0].status, Status::Archived);
+        assert_eq!(archived[0].link, None);
+
         // The second task (at begin) was changed back to Todo
-        assert_eq!(tasks[1].title, title2);
-        assert_eq!(tasks[1].status, Status::Todo);
+        assert_eq!(tasks[0].title, title2);
+        assert_eq!(tasks[0].status, Status::Todo);
+        assert_eq!(tasks[0].link, None);
+
         // The third task (at todo) remains unchanged
-        assert_eq!(tasks[2].title, title3);
+        assert_eq!(tasks[1].title, title3);
+        assert_eq!(tasks[1].status, Status::Todo);
+        assert_eq!(tasks[1].link, None);
+
+        // The fifth task (at begin) was changed back to Todo
+        assert_eq!(tasks[2].title, title5);
         assert_eq!(tasks[2].status, Status::Todo);
+        assert_eq!(tasks[2].link, link5);
+
         // The second task (since it was at begin) was duplicated and archived
-        assert_eq!(tasks[3].title, title2);
-        assert_eq!(tasks[3].status, Status::Archived);
+        assert_eq!(archived[1].title, title2);
+        assert_eq!(archived[1].status, Status::Archived);
+        assert_eq!(archived[1].link, None);
+
+        // The fourth task (at done) was archived
+        assert_eq!(archived[2].title, title4);
+        assert_eq!(archived[2].status, Status::Archived);
+        assert_eq!(archived[2].link, link4);
+
+        // The fifth task (since it was at begin) was duplicated and archived
+        assert_eq!(archived[3].title, title5);
+        assert_eq!(archived[3].status, Status::Archived);
+        assert_eq!(archived[3].link, link5);
     }
 
     #[test]
