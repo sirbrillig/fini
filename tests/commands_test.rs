@@ -369,6 +369,63 @@ mod tests {
     }
 
     #[test]
+    fn test_clear_command_twice() {
+        let mut storage = InMemoryStorage::new();
+        let prompter = MockPrompter::new();
+        let mut copier = MockCopier::new();
+
+        // Add tasks
+        let title1 = "Test task 1";
+        add_task(&mut storage, &prompter, &mut copier, title1, None);
+
+        let title2 = "Test task 2";
+        add_task(&mut storage, &prompter, &mut copier, title2, None);
+
+        // Check first task
+        let id = get_id_for_index(&storage, 1).unwrap().unwrap();
+        let command = Command::Check {
+            ids: Some(vec![id]),
+        };
+        execute_command(&mut storage, &prompter, &mut copier, command).unwrap();
+
+        // Begin second task
+        let id = get_id_for_index(&storage, 2).unwrap().unwrap();
+        let command = Command::Begin {
+            ids: Some(vec![id]),
+        };
+        execute_command(&mut storage, &prompter, &mut copier, command).unwrap();
+
+        let command = Command::Clear {};
+        let result = execute_command(&mut storage, &prompter, &mut copier, command);
+
+        assert!(result.is_ok());
+        let tasks = storage.read_tasks().unwrap();
+        let archived = storage.read_archived().unwrap();
+        assert_eq!(tasks.len(), 1);
+        assert_eq!(archived.len(), 2);
+
+        // Add more tasks
+        let title3 = "Test task 3";
+        add_task(&mut storage, &prompter, &mut copier, title3, None);
+
+        // Check task
+        let id = get_id_for_index(&storage, 1).unwrap().unwrap();
+        let command = Command::Check {
+            ids: Some(vec![id]),
+        };
+        execute_command(&mut storage, &prompter, &mut copier, command).unwrap();
+
+        let command = Command::Clear {};
+        let result = execute_command(&mut storage, &prompter, &mut copier, command);
+
+        assert!(result.is_ok());
+        let tasks = storage.read_tasks().unwrap();
+        let archived = storage.read_archived().unwrap();
+        assert_eq!(tasks.len(), 1);
+        assert_eq!(archived.len(), 3);
+    }
+
+    #[test]
     fn test_copy_command() {
         let mut storage = InMemoryStorage::new();
         let prompter = MockPrompter::new();

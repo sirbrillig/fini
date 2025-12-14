@@ -4,35 +4,13 @@ use crate::{
     commands::LinkFormat,
     copier::Copier,
     storage::TaskStorage,
-    task_item::{Status, TaskItem, TaskItemWithIndex},
+    task_item::{Status, TaskItem, TaskItemCopyable, TaskItemWithIndex},
 };
 use chrono::{Local, NaiveDate};
-use colored::Colorize;
 use edit::edit;
 use inquire::{Confirm, MultiSelect, Select};
 
 pub const SELECT_PAGE_SIZE: usize = 20;
-
-pub fn archived_tasks_as_markdown(mut items: Vec<TaskItem>) -> String {
-    // Markdown can't have color codes so we should always remove those if copying this text but I
-    // would like them when printing in the terminal so I'm leaving that to the caller.
-    let mut outputs: Vec<String> = vec![];
-    items.sort_by_key(|i| i.active_date);
-    let mut current_date: NaiveDate = Default::default();
-    for item in items {
-        if item.status == Status::Archived {
-            let Some(date) = item.active_date else {
-                continue;
-            };
-            if date != current_date {
-                outputs.push(format!("\n## {}", date.to_string().green()));
-                current_date = date;
-            }
-            outputs.push(format!("- {}", item));
-        }
-    }
-    outputs.join("\n")
-}
 
 pub fn tasks_as_markdown_by_date<F>(mut items: Vec<TaskItem>, format: F) -> String
 where
@@ -188,8 +166,11 @@ pub fn list(
 }
 
 pub fn archived(storage: &dyn TaskStorage) -> Result<(), Box<dyn std::error::Error>> {
-    let tasks = storage.read_tasks()?;
-    print!("{}", archived_tasks_as_markdown(tasks));
+    let tasks = storage.read_archived()?;
+    print!(
+        "{}",
+        tasks_as_markdown_by_date(tasks, |t| TaskItemCopyable(t).to_string())
+    );
     Ok(())
 }
 
@@ -249,32 +230,6 @@ pub fn star(
     Ok(())
 }
 
-pub fn archive(
-    storage: &mut dyn TaskStorage,
-    ids: &[usize],
-) -> Result<(), Box<dyn std::error::Error>> {
-    let mut tasks = storage.read_tasks()?;
-    let mut did_change = false;
-    for id in ids {
-        let Some(item) = tasks.iter_mut().find(|t| &t.id == id) else {
-            eprintln!("⚠️ No task found with id {id}");
-            return Ok(());
-        };
-        if item.status == Status::Archived {
-            eprintln!("Task already archived");
-            return Ok(());
-        }
-        item.status = Status::Archived;
-        item.active_date = Some(Local::now().date_naive());
-        did_change = true;
-        println!("Archived task: {}", item.title);
-    }
-    if did_change {
-        storage.write_tasks(tasks)?;
-    }
-    Ok(())
-}
-
 pub fn done(
     storage: &mut dyn TaskStorage,
     ids: &[usize],
@@ -314,6 +269,32 @@ pub fn delete(
     Ok(())
 }
 
+pub fn archive(
+    storage: &mut dyn TaskStorage,
+    ids: &[usize],
+) -> Result<(), Box<dyn std::error::Error>> {
+    let mut tasks = storage.read_tasks()?;
+    let mut did_change = false;
+    for id in ids {
+        let Some(item) = tasks.iter_mut().find(|t| &t.id == id) else {
+            eprintln!("⚠️ No task found with id {id}");
+            return Ok(());
+        };
+        if item.status == Status::Archived {
+            eprintln!("Task already archived");
+            return Ok(());
+        }
+        item.status = Status::Archived;
+        item.active_date = Some(Local::now().date_naive());
+        did_change = true;
+        println!("Archived task: {}", item.title);
+    }
+    if did_change {
+        storage.write_tasks(tasks)?;
+    }
+    Ok(())
+}
+
 pub fn copy<F>(
     storage: &dyn TaskStorage,
     copier: &mut dyn Copier,
@@ -345,13 +326,26 @@ where
 
 pub fn clear(storage: &mut dyn TaskStorage) -> Result<(), Box<dyn std::error::Error>> {
     let mut tasks = storage.read_tasks()?;
-    let mut archived: Vec<TaskItem> = Vec::new();
+    let mut archived: Vec<TaskItem> = storage.read_archived()?;
     let mut next_id = get_next_id(&tasks);
 
     for item in tasks.iter_mut() {
         // Unstar all tasks.
         item.star = None;
         match item.status {
+            Status::Archived => {
+                // In case there are any archived tasks still in task storage, move them to
+                // archived storage.
+                let copy = TaskItem {
+                    id: item.id,
+                    title: item.title.clone(),
+                    link: item.link.clone(),
+                    status: Status::Archived,
+                    active_date: item.active_date,
+                    ..Default::default()
+                };
+                archived.push(copy);
+            }
             Status::Done => {
                 item.status = Status::Archived;
                 let copy = TaskItem {

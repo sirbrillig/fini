@@ -48,7 +48,7 @@ impl TaskStorage for FileStorage {
         serde_json::to_writer_pretty(&mut tmp, &tasks)?;
         tmp.as_file_mut().flush()?;
         tmp.as_file().sync_all()?;
-        tmp.persist(&path)?;
+        tmp.persist(path)?;
         Ok(())
     }
 
@@ -66,7 +66,7 @@ impl TaskStorage for FileStorage {
         fs::write(path, markdown)?;
         tmp.as_file_mut().flush()?;
         tmp.as_file().sync_all()?;
-        tmp.persist(&path)?;
+        tmp.persist(path)?;
         Ok(())
     }
 }
@@ -102,7 +102,7 @@ impl TaskStorage for InMemoryStorage {
     }
 
     fn read_archived(&self) -> Result<Vec<TaskItem>, Box<dyn std::error::Error>> {
-        Ok(parse_markdown_archive(&self.archived)?)
+        parse_markdown_archive(&self.archived)
     }
 
     fn write_archived(&mut self, tasks: Vec<TaskItem>) -> Result<(), Box<dyn std::error::Error>> {
