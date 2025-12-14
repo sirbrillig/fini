@@ -63,25 +63,6 @@ pub fn sort_visible_items(items: &[TaskItem]) -> Vec<&TaskItem> {
     visible
 }
 
-pub fn get_task_ids_before_date(
-    storage: &dyn TaskStorage,
-    date: &str,
-) -> Result<Vec<usize>, Box<dyn std::error::Error>> {
-    let filter_date = NaiveDate::parse_from_str(date, "%Y-%m-%d")?;
-    let tasks = get_all_items(storage)?;
-    Ok(tasks
-        .iter()
-        .filter_map(|t| {
-            let task_date = t.active_date?;
-            if task_date < filter_date {
-                Some(t.id)
-            } else {
-                None
-            }
-        })
-        .collect())
-}
-
 /// Return all task IDs after the given date, inclusive
 pub fn get_task_ids_after_date(
     storage: &dyn TaskStorage,

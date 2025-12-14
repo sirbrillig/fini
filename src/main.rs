@@ -85,11 +85,6 @@ enum CliCommands {
     FilePath,
     /// List all archived tasks
     Archived,
-    /// Delete archived tasks before date
-    DeleteBefore {
-        /// The date before which to delete tasks
-        date: String,
-    },
     /// Enter interactive mode (alias: i)
     #[command(alias = "i")]
     Interactive,
@@ -161,7 +156,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
         CliCommands::Clear => Command::Clear,
-        CliCommands::DeleteBefore { date } => Command::DeleteBefore { date: Some(date) },
         CliCommands::Interactive => Command::Interactive,
     };
     execute_command(&mut storage, &prompter, &mut copier, command)?;

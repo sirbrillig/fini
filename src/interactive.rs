@@ -1,4 +1,4 @@
-use crate::commands::{execute_command, Command, LinkFormat};
+use crate::commands::{Command, LinkFormat, execute_command};
 use crate::copier::Copier;
 use crate::prompter::Prompter;
 use crate::storage::TaskStorage;
@@ -27,7 +27,6 @@ pub fn interactive(
             "copy-after",
             "clear",
             "delete",
-            "delete-before",
             "edit",
             "list-archived",
         ];
@@ -70,7 +69,6 @@ pub fn interactive(
             "open" => Some(Command::Open { id: None }),
             "check" => Some(Command::Check { ids: None }),
             "star" => Some(Command::Star { ids: None }),
-            "delete-before" => Some(Command::DeleteBefore { date: None }),
             "delete" => Some(Command::Delete { ids: None }),
             "begin" => Some(Command::Begin { ids: None }),
             _ => {

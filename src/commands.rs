@@ -5,8 +5,8 @@ use crate::storage::{TaskStorage, get_default_data_path};
 use crate::task_item::{Status, TaskItemCopyable, TaskItemCopyableMarkdown};
 use crate::util::{
     add, archive, archived, clear, copy, delete, done, edit_task, get_task_for_id,
-    get_task_ids_after_date, get_task_ids_before_date, get_tasks_for_ids, list, prompt_for_task_id,
-    prompt_for_task_ids, star, tasks_as_markdown_by_date, work,
+    get_task_ids_after_date, get_tasks_for_ids, list, prompt_for_task_id, prompt_for_task_ids,
+    star, tasks_as_markdown_by_date, work,
 };
 use inquire::DateSelect;
 
@@ -89,11 +89,6 @@ pub enum Command {
     FilePath,
     /// List all archived tasks
     Archived,
-    /// Delete archived tasks before date
-    DeleteBefore {
-        /// The date before which to delete tasks (will prompt if missing)
-        date: Option<String>,
-    },
     /// Enter interactive mode
     Interactive,
 }
@@ -234,22 +229,6 @@ pub fn execute_command(
                 prompter.confirm("Are you sure you want to archive all complete tasks?");
             if confirm_answer.is_ok_and(|x| x) {
                 clear(storage)?;
-            }
-        }
-        Command::DeleteBefore { date } => {
-            let date = match date {
-                Some(content) => content,
-                None => DateSelect::new("Select date to before which to delete archived tasks:")
-                    .prompt()?
-                    .to_string(),
-            };
-            let confirm_answer = prompter.confirm(&format!(
-                "Are you sure you want to delete all archived tasks before {}?",
-                date
-            ));
-            if confirm_answer.is_ok_and(|x| x) {
-                let tasks = &get_task_ids_before_date(storage, &date)?;
-                delete(storage, tasks)?;
             }
         }
         Command::Interactive => {
