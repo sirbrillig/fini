@@ -3,7 +3,7 @@ use fini::commands::{Command, LinkFormat, execute_command};
 use fini::copier::ClipboardCopier;
 use fini::indices::{get_id_for_index, get_ids_for_indices};
 use fini::prompter::InquirePrompter;
-use fini::storage::{FileStorage, get_default_data_path};
+use fini::storage::{FileStorage, get_default_storage_path};
 
 #[derive(Parser)]
 #[command(
@@ -81,8 +81,6 @@ enum CliCommands {
         /// The date to start (will prompt if missing)
         date: String,
     },
-    /// Print the file path where the data is kept
-    FilePath,
     /// List all archived tasks
     Archived,
     /// Enter interactive mode (alias: i)
@@ -91,7 +89,7 @@ enum CliCommands {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut storage = FileStorage::new(get_default_data_path());
+    let mut storage = FileStorage::new(get_default_storage_path());
     let prompter = InquirePrompter {};
     let mut copier = ClipboardCopier {};
     let cli = Cli::parse();
@@ -100,7 +98,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             title: Some(title.join(" ")).filter(|x| !x.is_empty()),
             link: None,
         },
-        CliCommands::FilePath => Command::FilePath,
         CliCommands::Copy { indices } => {
             let ids = get_ids_for_indices(&storage, indices)?;
             Command::Copy {

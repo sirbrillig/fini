@@ -89,7 +89,7 @@ pub fn get_task_for_id(
     storage: &dyn TaskStorage,
     id: usize,
 ) -> Result<TaskItem, Box<dyn std::error::Error>> {
-    let tasks = storage.read()?;
+    let tasks = storage.read_tasks()?;
     let Some(item) = tasks.into_iter().find(|t| t.id == id) else {
         return Err("Task not found".into());
     };
@@ -108,7 +108,7 @@ pub fn prompt_for_task_id(
     storage: &dyn TaskStorage,
     message: &str,
 ) -> Result<usize, Box<dyn std::error::Error>> {
-    let items = storage.read()?;
+    let items = storage.read_tasks()?;
     let visible = sort_visible_items(&items);
     let val = Select::new(message, visible)
         .with_page_size(SELECT_PAGE_SIZE)
@@ -120,7 +120,7 @@ pub fn prompt_for_task_ids(
     storage: &dyn TaskStorage,
     message: &str,
 ) -> Result<Vec<usize>, Box<dyn std::error::Error>> {
-    let items = storage.read()?;
+    let items = storage.read_tasks()?;
     let visible = sort_visible_items(&items);
     let val = MultiSelect::new(message, visible)
         .with_page_size(SELECT_PAGE_SIZE)
@@ -131,13 +131,13 @@ pub fn prompt_for_task_ids(
 pub fn get_all_items(
     storage: &dyn TaskStorage,
 ) -> Result<Vec<TaskItem>, Box<dyn std::error::Error>> {
-    storage.read()
+    storage.read_tasks()
 }
 
 pub fn get_visible_items(
     storage: &dyn TaskStorage,
 ) -> Result<Vec<TaskItem>, Box<dyn std::error::Error>> {
-    let items = storage.read()?;
+    let items = storage.read_tasks()?;
     Ok(items
         .into_iter()
         .filter(|i| matches!(i.status, Status::Todo | Status::InProgress | Status::Done))
@@ -157,7 +157,7 @@ pub fn add(
     title: String,
     link: Option<String>,
 ) -> Result<usize, Box<dyn std::error::Error>> {
-    let mut tasks = storage.read()?;
+    let mut tasks = storage.read_tasks()?;
     let id = get_next_id(&tasks);
     let item = TaskItem {
         id,
@@ -167,7 +167,7 @@ pub fn add(
     };
     println!("Added task: {}", &item.title);
     tasks.push(item);
-    storage.write(tasks)?;
+    storage.write_tasks(tasks)?;
     Ok(id)
 }
 
@@ -175,7 +175,7 @@ pub fn list(
     storage: &dyn TaskStorage,
     format: LinkFormat,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let tasks = storage.read()?;
+    let tasks = storage.read_tasks()?;
     let visible = sort_visible_items(&tasks);
     if visible.is_empty() {
         println!("No tasks");
@@ -188,7 +188,7 @@ pub fn list(
 }
 
 pub fn archived(storage: &dyn TaskStorage) -> Result<(), Box<dyn std::error::Error>> {
-    let tasks = storage.read()?;
+    let tasks = storage.read_tasks()?;
     print!("{}", archived_tasks_as_markdown(tasks));
     Ok(())
 }
@@ -197,7 +197,7 @@ pub fn work(
     storage: &mut dyn TaskStorage,
     ids: &[usize],
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let mut tasks = storage.read()?;
+    let mut tasks = storage.read_tasks()?;
     let mut did_change = false;
     for id in ids {
         let Some(item) = tasks.iter_mut().find(|t| &t.id == id) else {
@@ -217,7 +217,7 @@ pub fn work(
         }
     }
     if did_change {
-        storage.write(tasks)?;
+        storage.write_tasks(tasks)?;
     }
     Ok(())
 }
@@ -226,7 +226,7 @@ pub fn star(
     storage: &mut dyn TaskStorage,
     ids: &[usize],
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let mut tasks = storage.read()?;
+    let mut tasks = storage.read_tasks()?;
     let mut did_change = false;
     for id in ids {
         let Some(item) = tasks.iter_mut().find(|t| &t.id == id) else {
@@ -241,7 +241,7 @@ pub fn star(
         did_change = true;
     }
     if did_change {
-        storage.write(tasks)?;
+        storage.write_tasks(tasks)?;
         println!("Starred the selected tasks");
     } else {
         println!("No tasks selected");
@@ -253,7 +253,7 @@ pub fn archive(
     storage: &mut dyn TaskStorage,
     ids: &[usize],
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let mut tasks = storage.read()?;
+    let mut tasks = storage.read_tasks()?;
     let mut did_change = false;
     for id in ids {
         let Some(item) = tasks.iter_mut().find(|t| &t.id == id) else {
@@ -270,7 +270,7 @@ pub fn archive(
         println!("Archived task: {}", item.title);
     }
     if did_change {
-        storage.write(tasks)?;
+        storage.write_tasks(tasks)?;
     }
     Ok(())
 }
@@ -279,7 +279,7 @@ pub fn done(
     storage: &mut dyn TaskStorage,
     ids: &[usize],
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let mut tasks = storage.read()?;
+    let mut tasks = storage.read_tasks()?;
     let mut did_change = false;
     for id in ids {
         let Some(item) = tasks.iter_mut().find(|t| &t.id == id) else {
@@ -299,7 +299,7 @@ pub fn done(
         }
     }
     if did_change {
-        storage.write(tasks)?;
+        storage.write_tasks(tasks)?;
     }
     Ok(())
 }
@@ -308,9 +308,9 @@ pub fn delete(
     storage: &mut dyn TaskStorage,
     ids: &[usize],
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let mut tasks = storage.read()?;
+    let mut tasks = storage.read_tasks()?;
     tasks.retain(|i| !ids.contains(&i.id));
-    storage.write(tasks)?;
+    storage.write_tasks(tasks)?;
     Ok(())
 }
 
@@ -323,7 +323,7 @@ pub fn copy<F>(
 where
     F: Fn(&TaskItem) -> String,
 {
-    let tasks = storage.read()?;
+    let tasks = storage.read_tasks()?;
     let text_lines: Vec<String> = tasks
         .iter()
         .filter_map(|i| {
@@ -344,7 +344,7 @@ where
 }
 
 pub fn clear(storage: &mut dyn TaskStorage) -> Result<(), Box<dyn std::error::Error>> {
-    let mut tasks = storage.read()?;
+    let mut tasks = storage.read_tasks()?;
     let mut copies: Vec<TaskItem> = vec![];
     let mut next_id = get_next_id(&tasks);
     for item in tasks.iter_mut() {
@@ -372,7 +372,7 @@ pub fn clear(storage: &mut dyn TaskStorage) -> Result<(), Box<dyn std::error::Er
         }
     }
     tasks.extend(copies);
-    storage.write(tasks)?;
+    storage.write_tasks(tasks)?;
     println!("Archived completed tasks");
     Ok(())
 }
@@ -381,7 +381,7 @@ pub fn edit_link(
     storage: &mut dyn TaskStorage,
     id: usize,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let mut tasks = storage.read()?;
+    let mut tasks = storage.read_tasks()?;
     let Some(item) = tasks.iter_mut().find(|t| t.id == id) else {
         eprintln!("⚠️ No task found with id {id}");
         return Ok(());
@@ -403,7 +403,7 @@ pub fn edit_link(
     // Update the task
     println!("Updated task: {}", new_link);
     item.link = Some(new_link);
-    storage.write(tasks)?;
+    storage.write_tasks(tasks)?;
     Ok(())
 }
 
@@ -411,7 +411,7 @@ pub fn edit_task(
     storage: &mut dyn TaskStorage,
     id: usize,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let mut tasks = storage.read()?;
+    let mut tasks = storage.read_tasks()?;
     let Some(item) = tasks.iter_mut().find(|t| t.id == id) else {
         return Err("No task found to edit".into());
     };
@@ -425,7 +425,7 @@ pub fn edit_task(
 
     if new_title != item.title {
         item.title = new_title.clone();
-        storage.write(tasks)?;
+        storage.write_tasks(tasks)?;
         println!("Updated task: {}", new_title);
     }
 

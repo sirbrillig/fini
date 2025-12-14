@@ -37,7 +37,7 @@ mod tests {
         let result = execute_command(&mut storage, &prompter, &mut copier, command);
 
         assert!(result.is_ok());
-        let tasks = storage.read().unwrap();
+        let tasks = storage.read_tasks().unwrap();
         assert_eq!(tasks.len(), 1);
         assert_eq!(tasks[0].title, title);
         assert_eq!(tasks[0].link, Some(link.to_string()));
@@ -59,7 +59,7 @@ mod tests {
         let result = execute_command(&mut storage, &prompter, &mut copier, command);
 
         assert!(result.is_ok());
-        let tasks = storage.read().unwrap();
+        let tasks = storage.read_tasks().unwrap();
         assert_eq!(tasks.len(), 1);
         assert_eq!(tasks[0].title, title);
         assert_eq!(tasks[0].link, Some(link.to_string()));
@@ -81,7 +81,7 @@ mod tests {
         let result = execute_command(&mut storage, &prompter, &mut copier, command);
 
         assert!(result.is_ok());
-        let tasks = storage.read().unwrap();
+        let tasks = storage.read_tasks().unwrap();
         assert_eq!(tasks.len(), 1);
         assert_eq!(tasks[0].title, title);
         assert_eq!(tasks[0].link, Some(link.to_string()));
@@ -101,7 +101,7 @@ mod tests {
         let result = execute_command(&mut storage, &prompter, &mut copier, command);
 
         assert!(result.is_ok());
-        let tasks = storage.read().unwrap();
+        let tasks = storage.read_tasks().unwrap();
         assert_eq!(tasks.len(), 1);
         assert_eq!(tasks[0].title, title);
         assert_eq!(tasks[0].link, None);
@@ -123,7 +123,7 @@ mod tests {
         let result = execute_command(&mut storage, &prompter, &mut copier, command);
 
         assert!(result.is_ok());
-        let tasks = storage.read().unwrap();
+        let tasks = storage.read_tasks().unwrap();
         assert_eq!(tasks.len(), 1);
         assert_eq!(tasks[0].title, title);
         assert_eq!(tasks[0].status, Status::Done);
@@ -148,7 +148,7 @@ mod tests {
         let result = execute_command(&mut storage, &prompter, &mut copier, command);
 
         assert!(result.is_ok());
-        let tasks = storage.read().unwrap();
+        let tasks = storage.read_tasks().unwrap();
         assert_eq!(tasks.len(), 1);
         assert_eq!(tasks[0].title, title);
         assert_eq!(tasks[0].status, Status::Todo);
@@ -169,7 +169,7 @@ mod tests {
         let result = execute_command(&mut storage, &prompter, &mut copier, command);
 
         assert!(result.is_ok());
-        let tasks = storage.read().unwrap();
+        let tasks = storage.read_tasks().unwrap();
         assert_eq!(tasks.len(), 1);
         assert_eq!(tasks[0].title, title);
         assert_eq!(tasks[0].status, Status::InProgress);
@@ -194,7 +194,7 @@ mod tests {
         let result = execute_command(&mut storage, &prompter, &mut copier, command);
 
         assert!(result.is_ok());
-        let tasks = storage.read().unwrap();
+        let tasks = storage.read_tasks().unwrap();
         assert_eq!(tasks.len(), 1);
         assert_eq!(tasks[0].title, title);
         assert_eq!(tasks[0].status, Status::Todo);
@@ -215,7 +215,7 @@ mod tests {
         let result = execute_command(&mut storage, &prompter, &mut copier, command);
 
         assert!(result.is_ok());
-        let tasks = storage.read().unwrap();
+        let tasks = storage.read_tasks().unwrap();
         assert_eq!(tasks.len(), 1);
         assert_eq!(tasks[0].title, title);
         assert_eq!(tasks[0].status, Status::Todo);
@@ -241,7 +241,7 @@ mod tests {
         let result = execute_command(&mut storage, &prompter, &mut copier, command);
 
         assert!(result.is_ok());
-        let tasks = storage.read().unwrap();
+        let tasks = storage.read_tasks().unwrap();
         assert_eq!(tasks.len(), 1);
         assert_eq!(tasks[0].title, title);
         assert_eq!(tasks[0].status, Status::Todo);
@@ -265,7 +265,7 @@ mod tests {
         let result = execute_command(&mut storage, &prompter, &mut copier, command);
 
         assert!(result.is_ok());
-        let tasks = storage.read().unwrap();
+        let tasks = storage.read_tasks().unwrap();
         assert_eq!(tasks.len(), 1);
         assert_eq!(tasks[0].title, title2);
         assert_eq!(tasks[0].status, Status::Todo);
@@ -297,7 +297,7 @@ mod tests {
         let result = execute_command(&mut storage, &prompter, &mut copier, command);
 
         assert!(result.is_ok());
-        let tasks = storage.read().unwrap();
+        let tasks = storage.read_tasks().unwrap();
         assert_eq!(tasks.len(), 4);
         // The first task (at done) was archived
         assert_eq!(tasks[0].title, title1);
@@ -382,11 +382,11 @@ mod tests {
         let result = execute_command(&mut storage, &prompter, &mut copier, command);
         assert!(result.is_ok());
         // Manually set the fourth task's active_date to 2 days ago
-        let mut tasks = storage.read().unwrap();
+        let mut tasks = storage.read_tasks().unwrap();
         if let Some(task) = tasks.iter_mut().find(|t| t.id == id) {
             task.active_date = Some((Local::now() - Duration::days(2)).date_naive());
         }
-        storage.write(tasks).unwrap();
+        storage.write_tasks(tasks).unwrap();
 
         // Fifth task remains in Todo
 

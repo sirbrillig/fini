@@ -1,7 +1,7 @@
 use crate::copier::Copier;
 use crate::interactive::interactive;
 use crate::prompter::Prompter;
-use crate::storage::{TaskStorage, get_default_data_path};
+use crate::storage::TaskStorage;
 use crate::task_item::{Status, TaskItemCopyable, TaskItemCopyableMarkdown};
 use crate::util::{
     add, archive, archived, clear, copy, delete, done, edit_task, get_task_for_id,
@@ -85,8 +85,6 @@ pub enum Command {
         /// The format of the copied links
         format: LinkFormat,
     },
-    /// Print the file path where the data is kept
-    FilePath,
     /// List all archived tasks
     Archived,
     /// Enter interactive mode
@@ -117,11 +115,6 @@ pub fn execute_command(
                     .filter(|l| !l.is_empty()),
             };
             add(storage, title, link)?;
-        }
-        Command::FilePath => {
-            if let Some(path) = get_default_data_path().to_str() {
-                println!("{}", path);
-            }
         }
         Command::Copy { ids, format } => {
             let ids = match ids {

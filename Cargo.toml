@@ -13,6 +13,7 @@ colored = "2.1.0"
 directories = "6.0.0"
 edit = "0.1.5"
 inquire = { version = "0.9.1", features = ["editor", "date"] }
+regex = "1.12.2"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.145"
 strip-ansi-escapes = "0.2.1"
