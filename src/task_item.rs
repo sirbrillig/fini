@@ -72,6 +72,9 @@ impl fmt::Display for TaskItemWithIndex<'_> {
         let format = self.2;
         let text = match format {
             LinkFormat::Adjacent => TaskItemCopyable(task).to_string(),
+            // TODO: these three types differ not only because of the link format; Hyperlink here
+            // also shows the status and star whereas the others do not. We are conflating link
+            // format with task format and they should be separate.
             LinkFormat::Hyperlink => task.to_string(),
             LinkFormat::Markdown => TaskItemCopyableMarkdown(task).to_string(),
         };

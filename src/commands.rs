@@ -1,5 +1,6 @@
 use crate::copier::Copier;
 use crate::interactive::interactive;
+use crate::printer::Printer;
 use crate::prompter::Prompter;
 use crate::storage::TaskStorage;
 use crate::task_item::{Status, TaskItemCopyable, TaskItemCopyableMarkdown};
@@ -95,6 +96,7 @@ pub fn execute_command(
     storage: &mut dyn TaskStorage,
     prompter: &dyn Prompter,
     copier: &mut dyn Copier,
+    printer: &mut dyn Printer,
     command: Command,
 ) -> Result<(), Box<dyn std::error::Error>> {
     match command {
@@ -104,7 +106,7 @@ pub fn execute_command(
                 None => prompter.text("Enter task title:")?,
             };
             if title.is_empty() {
-                println!("The title of the task cannot be empty.");
+                printer.print("The title of the task cannot be empty.");
                 return Ok(());
             }
             let link = match link {
@@ -114,14 +116,14 @@ pub fn execute_command(
                     .ok()
                     .filter(|l| !l.is_empty()),
             };
-            add(storage, title, link)?;
+            add(storage, printer, title, link)?;
         }
         Command::Copy { ids, format } => {
             let ids = match ids {
                 Some(ids) => ids,
                 None => prompt_for_task_ids(storage, "Select tasks to copy")?,
             };
-            copy(storage, copier, &ids, |i| match format {
+            copy(storage, copier, printer, &ids, |i| match format {
                 LinkFormat::Adjacent => TaskItemCopyable(i).to_string(),
                 LinkFormat::Hyperlink => i.to_string(),
                 LinkFormat::Markdown => TaskItemCopyableMarkdown(i).to_string(),
@@ -134,6 +136,7 @@ pub fn execute_command(
                     .prompt()?
                     .to_string(),
             };
+            // FIXME: this needs to find tasks in the archive also
             let ids: Vec<usize> = get_task_ids_after_date(
                 storage,
                 &date,
@@ -146,10 +149,11 @@ pub fn execute_command(
                 LinkFormat::Markdown => TaskItemCopyableMarkdown(i).to_string(),
             });
             copier.copy(&text)?;
-            println!("Copied tasks as Markdown by date starting at {}", date);
+            printer
+                .print(format!("Copied tasks as Markdown by date starting at {}", date).as_str());
         }
-        Command::List { format } => list(storage, format)?,
-        Command::Archived => archived(storage)?,
+        Command::List { format } => list(storage, printer, format)?,
+        Command::Archived => archived(storage, printer)?,
         Command::Open { id } => {
             let id = match id {
                 Some(id) => id,
@@ -157,7 +161,7 @@ pub fn execute_command(
             };
             let task = get_task_for_id(storage, id)?;
             let Some(link) = task.link else {
-                println!("That task does not have a link");
+                printer.print("That task does not have a link");
                 return Ok(());
             };
             webbrowser::open(&link)?;
@@ -167,35 +171,35 @@ pub fn execute_command(
                 Some(id) => id,
                 None => prompt_for_task_id(storage, "Select task to edit")?,
             };
-            edit_task(storage, id)?;
+            edit_task(storage, printer, id)?;
         }
         Command::Begin { ids } => {
             let ids = match ids {
                 Some(ids) => ids,
                 None => prompt_for_task_ids(storage, "Select tasks to begin")?,
             };
-            work(storage, &ids)?;
+            work(storage, printer, &ids)?;
         }
         Command::Star { ids } => {
             let ids = match ids {
                 Some(ids) => ids,
                 None => prompt_for_task_ids(storage, "Select tasks to star")?,
             };
-            star(storage, &ids)?;
+            star(storage, printer, &ids)?;
         }
         Command::Archive { ids } => {
             let ids = match ids {
                 Some(ids) => ids,
                 None => prompt_for_task_ids(storage, "Select tasks to archive")?,
             };
-            archive(storage, &ids)?;
+            archive(storage, printer, &ids)?;
         }
         Command::Check { ids } => {
             let ids = match ids {
                 Some(ids) => ids,
                 None => prompt_for_task_ids(storage, "Select tasks to check")?,
             };
-            done(storage, &ids)?;
+            done(storage, printer, &ids)?;
         }
         Command::Delete { ids } => {
             let ids = match ids {
@@ -205,11 +209,11 @@ pub fn execute_command(
             // Print tasks that will be deleted
             let tasks_to_delete = get_tasks_for_ids(storage, &ids)?;
             if !tasks_to_delete.is_empty() {
-                println!("Tasks to be deleted:");
+                printer.print("Tasks to be deleted:");
                 for task in &tasks_to_delete {
-                    println!("  - {}", task);
+                    printer.print(format!("  - {}", task).as_str());
                 }
-                println!(); // Blank line before confirmation
+                printer.print(""); // Blank line before confirmation
             }
             let confirm_answer =
                 prompter.confirm("Are you sure you want to delete the selected tasks?");
@@ -221,11 +225,11 @@ pub fn execute_command(
             let confirm_answer =
                 prompter.confirm("Are you sure you want to archive all complete tasks?");
             if confirm_answer.is_ok_and(|x| x) {
-                clear(storage)?;
+                clear(storage, printer)?;
             }
         }
         Command::Interactive => {
-            interactive(storage, prompter, copier)?;
+            interactive(storage, prompter, copier, printer)?;
         }
     }
     Ok(())

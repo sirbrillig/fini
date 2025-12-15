@@ -1,17 +1,20 @@
 #[cfg(test)]
 mod tests {
     use chrono::{Duration, Local};
-    use fini::commands::{execute_command, Command, LinkFormat};
+    use fini::commands::{Command, LinkFormat, execute_command};
     use fini::copier::MockCopier;
     use fini::indices::get_id_for_index;
+    use fini::printer::MockPrinter;
     use fini::prompter::MockPrompter;
     use fini::storage::{InMemoryStorage, TaskStorage};
     use fini::task_item::Status;
+    use strip_ansi_escapes::strip_str;
 
     struct TestContext {
         storage: InMemoryStorage,
         prompter: MockPrompter,
         copier: MockCopier,
+        printer: MockPrinter,
     }
 
     impl TestContext {
@@ -20,19 +23,22 @@ mod tests {
                 storage: InMemoryStorage::new(),
                 prompter: MockPrompter::new(),
                 copier: MockCopier::new(),
+                printer: MockPrinter::new(),
             }
         }
 
         // Convenience method that handles all the borrowing
         fn execute(&mut self, command: Command) -> Result<(), Box<dyn std::error::Error>> {
-            execute_command(&mut self.storage, &self.prompter, &mut self.copier, command)
+            execute_command(
+                &mut self.storage,
+                &self.prompter,
+                &mut self.copier,
+                &mut self.printer,
+                command,
+            )
         }
 
-        fn add_task(
-            &mut self,
-            title: &str,
-            link: Option<String>,
-        ) {
+        fn add_task(&mut self, title: &str, link: Option<String>) {
             let command = Command::Add {
                 title: Some(title.to_string()),
                 link,
@@ -266,6 +272,65 @@ mod tests {
         assert_eq!(tasks.len(), 1);
         assert_eq!(tasks[0].title, title2);
         assert_eq!(tasks[0].status, Status::Todo);
+    }
+
+    #[test]
+    fn test_list_command() {
+        let mut ctx = TestContext::new();
+        let title1 = "Test task 1";
+        ctx.add_task(title1, None);
+
+        let title2 = "Test task 2";
+        ctx.add_task(title2, None);
+
+        let title3 = "Test task 3";
+        ctx.add_task(title3, None);
+
+        let id = get_id_for_index(&ctx.storage, 3).unwrap().unwrap();
+        let command = Command::Archive {
+            ids: Some(vec![id]),
+        };
+        ctx.execute(command).unwrap();
+        let id = get_id_for_index(&ctx.storage, 1).unwrap().unwrap();
+        let command = Command::Check {
+            ids: Some(vec![id]),
+        };
+        ctx.execute(command).unwrap();
+
+        ctx.printer.clear();
+
+        let command = Command::List {
+            format: LinkFormat::Hyperlink,
+        };
+        let result = ctx.execute(command);
+
+        assert!(result.is_ok());
+        let expected = format!(" 1.  ✔  {}\n 2.  ☐  {}\n", title1, title2,);
+        assert_eq!(strip_str(ctx.printer.text), expected);
+    }
+
+    #[test]
+    fn test_archived_command() {
+        let mut ctx = TestContext::new();
+        let title1 = "Test task 1";
+        ctx.add_task(title1, None);
+
+        let title2 = "Test task 2";
+        ctx.add_task(title2, None);
+
+        let id = get_id_for_index(&ctx.storage, 1).unwrap().unwrap();
+        let command = Command::Archive {
+            ids: Some(vec![id]),
+        };
+        ctx.execute(command).unwrap();
+        ctx.printer.clear();
+
+        let command = Command::Archived {};
+        let result = ctx.execute(command);
+
+        assert!(result.is_ok());
+        let expected = format!("\n## {}\n- {}\n", Local::now().format("%Y-%m-%d"), title1);
+        assert_eq!(strip_str(ctx.printer.text), expected);
     }
 
     #[test]

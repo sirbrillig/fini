@@ -3,6 +3,7 @@ pub mod copier;
 pub mod indices;
 mod interactive;
 mod markdown;
+pub mod printer;
 pub mod prompter;
 pub mod storage;
 pub mod task_item;

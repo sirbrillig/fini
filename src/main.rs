@@ -2,6 +2,7 @@ use clap::{Parser, Subcommand};
 use fini::commands::{Command, LinkFormat, execute_command};
 use fini::copier::ClipboardCopier;
 use fini::indices::{get_id_for_index, get_ids_for_indices};
+use fini::printer::StdoutPrinter;
 use fini::prompter::InquirePrompter;
 use fini::storage::{FileStorage, get_default_storage_path};
 
@@ -92,6 +93,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut storage = FileStorage::new(get_default_storage_path());
     let prompter = InquirePrompter {};
     let mut copier = ClipboardCopier {};
+    let mut printer = StdoutPrinter {};
     let cli = Cli::parse();
     let command = match cli.command {
         CliCommands::Add { title } => Command::Add {
@@ -155,6 +157,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         CliCommands::Clear => Command::Clear,
         CliCommands::Interactive => Command::Interactive,
     };
-    execute_command(&mut storage, &prompter, &mut copier, command)?;
+    execute_command(&mut storage, &prompter, &mut copier, &mut printer, command)?;
     Ok(())
 }

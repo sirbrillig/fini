@@ -1,5 +1,6 @@
 use crate::commands::{Command, LinkFormat, execute_command};
 use crate::copier::Copier;
+use crate::printer::Printer;
 use crate::prompter::Prompter;
 use crate::storage::TaskStorage;
 use crate::util::list;
@@ -10,10 +11,11 @@ pub fn interactive(
     storage: &mut dyn TaskStorage,
     prompter: &dyn Prompter,
     copier: &mut dyn Copier,
+    printer: &mut dyn Printer,
 ) -> Result<(), Box<dyn std::error::Error>> {
     loop {
         println!("{}", "-----------------------------------------".green());
-        list(storage, LinkFormat::Hyperlink)?;
+        list(storage, printer, LinkFormat::Hyperlink)?;
         let commands = vec![
             "quit",
             "list",
@@ -77,7 +79,7 @@ pub fn interactive(
             }
         };
         if let Some(command) = command {
-            execute_command(storage, prompter, copier, command)?;
+            execute_command(storage, prompter, copier, printer, command)?;
         }
     }
     Ok(())

@@ -3,6 +3,7 @@ use std::cmp::Reverse;
 use crate::{
     commands::LinkFormat,
     copier::Copier,
+    printer::Printer,
     storage::TaskStorage,
     task_item::{Status, TaskItem, TaskItemCopyable, TaskItemWithIndex},
 };
@@ -132,6 +133,7 @@ pub fn get_next_id(items: &[TaskItem]) -> usize {
 
 pub fn add(
     storage: &mut dyn TaskStorage,
+    printer: &mut dyn Printer,
     title: String,
     link: Option<String>,
 ) -> Result<usize, Box<dyn std::error::Error>> {
@@ -143,7 +145,7 @@ pub fn add(
         link,
         ..Default::default()
     };
-    println!("Added task: {}", &item.title);
+    printer.print(format!("Added task: {}", &item.title).as_str());
     tasks.push(item);
     storage.write_tasks(tasks)?;
     Ok(id)
@@ -151,31 +153,32 @@ pub fn add(
 
 pub fn list(
     storage: &dyn TaskStorage,
+    printer: &mut dyn Printer,
     format: LinkFormat,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let tasks = storage.read_tasks()?;
     let visible = sort_visible_items(&tasks);
     if visible.is_empty() {
-        println!("No tasks");
+        printer.print("No tasks");
     } else {
         for (index, item) in visible.iter().enumerate() {
-            println!("{}", TaskItemWithIndex(item, index + 1, format));
+            printer.print(format!("{}", TaskItemWithIndex(item, index + 1, format)).as_str());
         }
     }
     Ok(())
 }
 
-pub fn archived(storage: &dyn TaskStorage) -> Result<(), Box<dyn std::error::Error>> {
+pub fn archived(storage: &dyn TaskStorage, printer: &mut dyn Printer) -> Result<(), Box<dyn std::error::Error>> {
     let tasks = storage.read_archived()?;
-    print!(
-        "{}",
-        tasks_as_markdown_by_date(tasks, |t| TaskItemCopyable(t).to_string())
+    printer.print(
+        &tasks_as_markdown_by_date(tasks, |t| TaskItemCopyable(t).to_string())
     );
     Ok(())
 }
 
 pub fn work(
     storage: &mut dyn TaskStorage,
+    printer: &mut dyn Printer,
     ids: &[usize],
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut tasks = storage.read_tasks()?;
@@ -189,12 +192,12 @@ pub fn work(
             item.status = Status::Todo;
             item.active_date = None;
             did_change = true;
-            println!("Moved task back to todo: {}", item.title);
+            printer.print(format!("Moved task back to todo: {}", item.title).as_str());
         } else {
             item.status = Status::InProgress;
             item.active_date = Some(Local::now().date_naive());
             did_change = true;
-            println!("Started task: {}", item.title);
+            printer.print(format!("Started task: {}", item.title).as_str());
         }
     }
     if did_change {
@@ -205,6 +208,7 @@ pub fn work(
 
 pub fn star(
     storage: &mut dyn TaskStorage,
+    printer: &mut dyn Printer,
     ids: &[usize],
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut tasks = storage.read_tasks()?;
@@ -223,15 +227,16 @@ pub fn star(
     }
     if did_change {
         storage.write_tasks(tasks)?;
-        println!("Starred the selected tasks");
+        printer.print("Starred the selected tasks");
     } else {
-        println!("No tasks selected");
+        printer.print("No tasks selected");
     }
     Ok(())
 }
 
 pub fn done(
     storage: &mut dyn TaskStorage,
+    printer: &mut dyn Printer,
     ids: &[usize],
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut tasks = storage.read_tasks()?;
@@ -245,12 +250,12 @@ pub fn done(
             item.status = Status::Todo;
             item.active_date = None;
             did_change = true;
-            println!("Moved task back to todo: {}", item.title);
+            printer.print(format!("Moved task back to todo: {}", item.title).as_str());
         } else {
             item.status = Status::Done;
             item.active_date = Some(Local::now().date_naive());
             did_change = true;
-            println!("Completed task: {}", item.title);
+            printer.print(format!("Completed task: {}", item.title).as_str());
         }
     }
     if did_change {
@@ -271,9 +276,11 @@ pub fn delete(
 
 pub fn archive(
     storage: &mut dyn TaskStorage,
+    printer: &mut dyn Printer,
     ids: &[usize],
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut tasks = storage.read_tasks()?;
+    let mut archived: Vec<TaskItem> = storage.read_archived()?;
     let mut did_change = false;
     for id in ids {
         let Some(item) = tasks.iter_mut().find(|t| &t.id == id) else {
@@ -286,11 +293,26 @@ pub fn archive(
         }
         item.status = Status::Archived;
         item.active_date = Some(Local::now().date_naive());
+        let copy = TaskItem {
+            id: item.id,
+            title: item.title.clone(),
+            link: item.link.clone(),
+            status: Status::Archived,
+            active_date: item.active_date,
+            ..Default::default()
+        };
+        archived.push(copy);
         did_change = true;
-        println!("Archived task: {}", item.title);
+        printer.print(format!("Archived task: {}", item.title).as_str());
     }
     if did_change {
-        storage.write_tasks(tasks)?;
+        storage.write_tasks(
+            tasks
+                .into_iter()
+                .filter(|t| !matches!(t.status, Status::Archived))
+                .collect(),
+        )?;
+        storage.write_archived(archived)?;
     }
     Ok(())
 }
@@ -298,6 +320,7 @@ pub fn archive(
 pub fn copy<F>(
     storage: &dyn TaskStorage,
     copier: &mut dyn Copier,
+    printer: &mut dyn Printer,
     ids: &[usize],
     format: F,
 ) -> Result<(), Box<dyn std::error::Error>>
@@ -317,14 +340,17 @@ where
     let text = text_lines.join("\n");
     copier.copy(&text)?;
     match text_lines.len() {
-        0 => println!("No tasks to copy"),
-        1 => println!("Copied text for task: {}", text_lines[0]),
-        _ => println!("Copied text for selected tasks"),
+        0 => printer.print("No tasks to copy"),
+        1 => printer.print(format!("Copied text for task: {}", text_lines[0]).as_str()),
+        _ => printer.print("Copied text for selected tasks"),
     };
     Ok(())
 }
 
-pub fn clear(storage: &mut dyn TaskStorage) -> Result<(), Box<dyn std::error::Error>> {
+pub fn clear(
+    storage: &mut dyn TaskStorage,
+    printer: &mut dyn Printer,
+) -> Result<(), Box<dyn std::error::Error>> {
     let mut tasks = storage.read_tasks()?;
     let mut archived: Vec<TaskItem> = storage.read_archived()?;
     let mut next_id = get_next_id(&tasks);
@@ -385,12 +411,13 @@ pub fn clear(storage: &mut dyn TaskStorage) -> Result<(), Box<dyn std::error::Er
             .collect(),
     )?;
     storage.write_archived(archived)?;
-    println!("Archived completed tasks");
+    printer.print("Archived completed tasks");
     Ok(())
 }
 
 pub fn edit_link(
     storage: &mut dyn TaskStorage,
+    printer: &mut dyn Printer,
     id: usize,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut tasks = storage.read_tasks()?;
@@ -408,12 +435,12 @@ pub fn edit_link(
     }
 
     if new_link == current_link {
-        println!("No changes made");
+        printer.print("No changes made");
         return Ok(());
     }
 
     // Update the task
-    println!("Updated task: {}", new_link);
+    printer.print(format!("Updated task: {}", new_link).as_str());
     item.link = Some(new_link);
     storage.write_tasks(tasks)?;
     Ok(())
@@ -421,6 +448,7 @@ pub fn edit_link(
 
 pub fn edit_task(
     storage: &mut dyn TaskStorage,
+    printer: &mut dyn Printer,
     id: usize,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut tasks = storage.read_tasks()?;
@@ -438,7 +466,7 @@ pub fn edit_task(
     if new_title != item.title {
         item.title = new_title.clone();
         storage.write_tasks(tasks)?;
-        println!("Updated task: {}", new_title);
+        printer.print(format!("Updated task: {}", new_title).as_str());
     }
 
     let confirm_answer = Confirm::new("Do you want to edit the link?")
@@ -446,7 +474,7 @@ pub fn edit_task(
         .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
         .prompt();
     if confirm_answer.is_ok_and(|x| x) {
-        edit_link(storage, id)?;
+        edit_link(storage, printer, id)?;
     }
     Ok(())
 }
