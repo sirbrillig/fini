@@ -1,43 +1,60 @@
 #[cfg(test)]
 mod tests {
     use chrono::{Duration, Local};
-    use fini::commands::{Command, LinkFormat, execute_command};
-    use fini::copier::{Copier, MockCopier};
+    use fini::commands::{execute_command, Command, LinkFormat};
+    use fini::copier::MockCopier;
     use fini::indices::get_id_for_index;
-    use fini::prompter::{MockPrompter, Prompter};
+    use fini::prompter::MockPrompter;
     use fini::storage::{InMemoryStorage, TaskStorage};
     use fini::task_item::Status;
 
-    fn add_task(
-        storage: &mut dyn TaskStorage,
-        prompter: &dyn Prompter,
-        copier: &mut dyn Copier,
-        title: &str,
-        link: Option<String>,
-    ) {
-        let command = Command::Add {
-            title: Some(title.to_string()),
-            link,
-        };
-        let result = execute_command(storage, prompter, copier, command);
-        assert!(result.is_ok());
+    struct TestContext {
+        storage: InMemoryStorage,
+        prompter: MockPrompter,
+        copier: MockCopier,
+    }
+
+    impl TestContext {
+        fn new() -> Self {
+            Self {
+                storage: InMemoryStorage::new(),
+                prompter: MockPrompter::new(),
+                copier: MockCopier::new(),
+            }
+        }
+
+        // Convenience method that handles all the borrowing
+        fn execute(&mut self, command: Command) -> Result<(), Box<dyn std::error::Error>> {
+            execute_command(&mut self.storage, &self.prompter, &mut self.copier, command)
+        }
+
+        fn add_task(
+            &mut self,
+            title: &str,
+            link: Option<String>,
+        ) {
+            let command = Command::Add {
+                title: Some(title.to_string()),
+                link,
+            };
+            let result = self.execute(command);
+            assert!(result.is_ok());
+        }
     }
 
     #[test]
     fn test_add_command_with_link() {
-        let mut storage = InMemoryStorage::new();
-        let prompter = MockPrompter::new();
-        let mut copier = MockCopier::new();
+        let mut ctx = TestContext::new();
         let title = "Test task";
         let link = "https://example.com";
         let command = Command::Add {
             title: Some(title.to_string()),
             link: Some(link.to_string()),
         };
-        let result = execute_command(&mut storage, &prompter, &mut copier, command);
+        let result = ctx.execute(command);
 
         assert!(result.is_ok());
-        let tasks = storage.read_tasks().unwrap();
+        let tasks = ctx.storage.read_tasks().unwrap();
         assert_eq!(tasks.len(), 1);
         assert_eq!(tasks[0].title, title);
         assert_eq!(tasks[0].link, Some(link.to_string()));
@@ -46,20 +63,18 @@ mod tests {
 
     #[test]
     fn test_add_command_with_prompted_title() {
-        let mut storage = InMemoryStorage::new();
-        let mut prompter = MockPrompter::new();
-        let mut copier = MockCopier::new();
+        let mut ctx = TestContext::new();
         let title = "Test task";
         let link = "https://example.com";
-        prompter.next_text_response = title.to_string();
+        ctx.prompter.next_text_response = title.to_string();
         let command = Command::Add {
             title: None,
             link: Some(link.to_string()),
         };
-        let result = execute_command(&mut storage, &prompter, &mut copier, command);
+        let result = ctx.execute(command);
 
         assert!(result.is_ok());
-        let tasks = storage.read_tasks().unwrap();
+        let tasks = ctx.storage.read_tasks().unwrap();
         assert_eq!(tasks.len(), 1);
         assert_eq!(tasks[0].title, title);
         assert_eq!(tasks[0].link, Some(link.to_string()));
@@ -68,20 +83,18 @@ mod tests {
 
     #[test]
     fn test_add_command_with_prompted_link() {
-        let mut storage = InMemoryStorage::new();
-        let mut prompter = MockPrompter::new();
-        let mut copier = MockCopier::new();
+        let mut ctx = TestContext::new();
         let title = "Test task";
         let link = "https://example.com";
-        prompter.next_text_response = link.to_string();
+        ctx.prompter.next_text_response = link.to_string();
         let command = Command::Add {
             title: Some(title.to_string()),
             link: None,
         };
-        let result = execute_command(&mut storage, &prompter, &mut copier, command);
+        let result = ctx.execute(command);
 
         assert!(result.is_ok());
-        let tasks = storage.read_tasks().unwrap();
+        let tasks = ctx.storage.read_tasks().unwrap();
         assert_eq!(tasks.len(), 1);
         assert_eq!(tasks[0].title, title);
         assert_eq!(tasks[0].link, Some(link.to_string()));
@@ -90,18 +103,16 @@ mod tests {
 
     #[test]
     fn test_add_command_without_link() {
-        let mut storage = InMemoryStorage::new();
+        let mut ctx = TestContext::new();
         let title = "Test task";
-        let prompter = MockPrompter::new();
-        let mut copier = MockCopier::new();
         let command = Command::Add {
             title: Some(title.to_string()),
             link: None,
         };
-        let result = execute_command(&mut storage, &prompter, &mut copier, command);
+        let result = ctx.execute(command);
 
         assert!(result.is_ok());
-        let tasks = storage.read_tasks().unwrap();
+        let tasks = ctx.storage.read_tasks().unwrap();
         assert_eq!(tasks.len(), 1);
         assert_eq!(tasks[0].title, title);
         assert_eq!(tasks[0].link, None);
@@ -110,20 +121,18 @@ mod tests {
 
     #[test]
     fn test_check_command_from_todo() {
-        let mut storage = InMemoryStorage::new();
-        let prompter = MockPrompter::new();
-        let mut copier = MockCopier::new();
+        let mut ctx = TestContext::new();
         let title = "Test task";
-        add_task(&mut storage, &prompter, &mut copier, title, None);
+        ctx.add_task(title, None);
 
-        let id = get_id_for_index(&storage, 1).unwrap().unwrap();
+        let id = get_id_for_index(&ctx.storage, 1).unwrap().unwrap();
         let command = Command::Check {
             ids: Some(vec![id]),
         };
-        let result = execute_command(&mut storage, &prompter, &mut copier, command);
+        let result = ctx.execute(command);
 
         assert!(result.is_ok());
-        let tasks = storage.read_tasks().unwrap();
+        let tasks = ctx.storage.read_tasks().unwrap();
         assert_eq!(tasks.len(), 1);
         assert_eq!(tasks[0].title, title);
         assert_eq!(tasks[0].status, Status::Done);
@@ -131,24 +140,22 @@ mod tests {
 
     #[test]
     fn test_check_command_from_done() {
-        let mut storage = InMemoryStorage::new();
-        let prompter = MockPrompter::new();
-        let mut copier = MockCopier::new();
+        let mut ctx = TestContext::new();
         let title = "Test task";
-        add_task(&mut storage, &prompter, &mut copier, title, None);
+        ctx.add_task(title, None);
 
-        let id = get_id_for_index(&storage, 1).unwrap().unwrap();
+        let id = get_id_for_index(&ctx.storage, 1).unwrap().unwrap();
         let command = Command::Check {
             ids: Some(vec![id]),
         };
-        execute_command(&mut storage, &prompter, &mut copier, command).unwrap();
+        ctx.execute(command).unwrap();
         let command = Command::Check {
             ids: Some(vec![id]),
         };
-        let result = execute_command(&mut storage, &prompter, &mut copier, command);
+        let result = ctx.execute(command);
 
         assert!(result.is_ok());
-        let tasks = storage.read_tasks().unwrap();
+        let tasks = ctx.storage.read_tasks().unwrap();
         assert_eq!(tasks.len(), 1);
         assert_eq!(tasks[0].title, title);
         assert_eq!(tasks[0].status, Status::Todo);
@@ -156,20 +163,18 @@ mod tests {
 
     #[test]
     fn test_begin_command_from_todo() {
-        let mut storage = InMemoryStorage::new();
-        let prompter = MockPrompter::new();
-        let mut copier = MockCopier::new();
+        let mut ctx = TestContext::new();
         let title = "Test task";
-        add_task(&mut storage, &prompter, &mut copier, title, None);
+        ctx.add_task(title, None);
 
-        let id = get_id_for_index(&storage, 1).unwrap().unwrap();
+        let id = get_id_for_index(&ctx.storage, 1).unwrap().unwrap();
         let command = Command::Begin {
             ids: Some(vec![id]),
         };
-        let result = execute_command(&mut storage, &prompter, &mut copier, command);
+        let result = ctx.execute(command);
 
         assert!(result.is_ok());
-        let tasks = storage.read_tasks().unwrap();
+        let tasks = ctx.storage.read_tasks().unwrap();
         assert_eq!(tasks.len(), 1);
         assert_eq!(tasks[0].title, title);
         assert_eq!(tasks[0].status, Status::InProgress);
@@ -177,24 +182,22 @@ mod tests {
 
     #[test]
     fn test_begin_command_from_in_progess() {
-        let mut storage = InMemoryStorage::new();
-        let prompter = MockPrompter::new();
-        let mut copier = MockCopier::new();
+        let mut ctx = TestContext::new();
         let title = "Test task";
-        add_task(&mut storage, &prompter, &mut copier, title, None);
+        ctx.add_task(title, None);
 
-        let id = get_id_for_index(&storage, 1).unwrap().unwrap();
+        let id = get_id_for_index(&ctx.storage, 1).unwrap().unwrap();
         let command = Command::Begin {
             ids: Some(vec![id]),
         };
-        execute_command(&mut storage, &prompter, &mut copier, command).unwrap();
+        ctx.execute(command).unwrap();
         let command = Command::Begin {
             ids: Some(vec![id]),
         };
-        let result = execute_command(&mut storage, &prompter, &mut copier, command);
+        let result = ctx.execute(command);
 
         assert!(result.is_ok());
-        let tasks = storage.read_tasks().unwrap();
+        let tasks = ctx.storage.read_tasks().unwrap();
         assert_eq!(tasks.len(), 1);
         assert_eq!(tasks[0].title, title);
         assert_eq!(tasks[0].status, Status::Todo);
@@ -202,20 +205,18 @@ mod tests {
 
     #[test]
     fn test_star_command_from_todo() {
-        let mut storage = InMemoryStorage::new();
-        let prompter = MockPrompter::new();
-        let mut copier = MockCopier::new();
+        let mut ctx = TestContext::new();
         let title = "Test task";
-        add_task(&mut storage, &prompter, &mut copier, title, None);
+        ctx.add_task(title, None);
 
-        let id = get_id_for_index(&storage, 1).unwrap().unwrap();
+        let id = get_id_for_index(&ctx.storage, 1).unwrap().unwrap();
         let command = Command::Star {
             ids: Some(vec![id]),
         };
-        let result = execute_command(&mut storage, &prompter, &mut copier, command);
+        let result = ctx.execute(command);
 
         assert!(result.is_ok());
-        let tasks = storage.read_tasks().unwrap();
+        let tasks = ctx.storage.read_tasks().unwrap();
         assert_eq!(tasks.len(), 1);
         assert_eq!(tasks[0].title, title);
         assert_eq!(tasks[0].status, Status::Todo);
@@ -224,24 +225,22 @@ mod tests {
 
     #[test]
     fn test_star_command_from_starred() {
-        let mut storage = InMemoryStorage::new();
-        let prompter = MockPrompter::new();
-        let mut copier = MockCopier::new();
+        let mut ctx = TestContext::new();
         let title = "Test task";
-        add_task(&mut storage, &prompter, &mut copier, title, None);
+        ctx.add_task(title, None);
 
-        let id = get_id_for_index(&storage, 1).unwrap().unwrap();
+        let id = get_id_for_index(&ctx.storage, 1).unwrap().unwrap();
         let command = Command::Star {
             ids: Some(vec![id]),
         };
-        execute_command(&mut storage, &prompter, &mut copier, command).unwrap();
+        ctx.execute(command).unwrap();
         let command = Command::Star {
             ids: Some(vec![id]),
         };
-        let result = execute_command(&mut storage, &prompter, &mut copier, command);
+        let result = ctx.execute(command);
 
         assert!(result.is_ok());
-        let tasks = storage.read_tasks().unwrap();
+        let tasks = ctx.storage.read_tasks().unwrap();
         assert_eq!(tasks.len(), 1);
         assert_eq!(tasks[0].title, title);
         assert_eq!(tasks[0].status, Status::Todo);
@@ -250,22 +249,20 @@ mod tests {
 
     #[test]
     fn test_delete_command() {
-        let mut storage = InMemoryStorage::new();
-        let prompter = MockPrompter::new();
-        let mut copier = MockCopier::new();
+        let mut ctx = TestContext::new();
         let title1 = "Test task 1";
-        add_task(&mut storage, &prompter, &mut copier, title1, None);
+        ctx.add_task(title1, None);
         let title2 = "Test task 2";
-        add_task(&mut storage, &prompter, &mut copier, title2, None);
+        ctx.add_task(title2, None);
 
-        let id = get_id_for_index(&storage, 1).unwrap().unwrap();
+        let id = get_id_for_index(&ctx.storage, 1).unwrap().unwrap();
         let command = Command::Delete {
             ids: Some(vec![id]),
         };
-        let result = execute_command(&mut storage, &prompter, &mut copier, command);
+        let result = ctx.execute(command);
 
         assert!(result.is_ok());
-        let tasks = storage.read_tasks().unwrap();
+        let tasks = ctx.storage.read_tasks().unwrap();
         assert_eq!(tasks.len(), 1);
         assert_eq!(tasks[0].title, title2);
         assert_eq!(tasks[0].status, Status::Todo);
@@ -273,62 +270,60 @@ mod tests {
 
     #[test]
     fn test_clear_command() {
-        let mut storage = InMemoryStorage::new();
-        let prompter = MockPrompter::new();
-        let mut copier = MockCopier::new();
+        let mut ctx = TestContext::new();
 
         // Add tasks
         let title1 = "Test task 1";
-        add_task(&mut storage, &prompter, &mut copier, title1, None);
+        ctx.add_task(title1, None);
 
         let title2 = "Test task 2";
-        add_task(&mut storage, &prompter, &mut copier, title2, None);
+        ctx.add_task(title2, None);
 
         let title3 = "Test task 3";
-        add_task(&mut storage, &prompter, &mut copier, title3, None);
+        ctx.add_task(title3, None);
 
         let title4 = "Test task 4";
         let link4 = Some("https://example4.com".to_string());
-        add_task(&mut storage, &prompter, &mut copier, title4, link4.clone());
+        ctx.add_task(title4, link4.clone());
 
         let title5 = "Test task 5";
         let link5 = Some("https://example5.com".to_string());
-        add_task(&mut storage, &prompter, &mut copier, title5, link5.clone());
+        ctx.add_task(title5, link5.clone());
 
         // Check first task
-        let id = get_id_for_index(&storage, 1).unwrap().unwrap();
+        let id = get_id_for_index(&ctx.storage, 1).unwrap().unwrap();
         let command = Command::Check {
             ids: Some(vec![id]),
         };
-        execute_command(&mut storage, &prompter, &mut copier, command).unwrap();
+        ctx.execute(command).unwrap();
 
         // Begin second task
-        let id = get_id_for_index(&storage, 2).unwrap().unwrap();
+        let id = get_id_for_index(&ctx.storage, 2).unwrap().unwrap();
         let command = Command::Begin {
             ids: Some(vec![id]),
         };
-        execute_command(&mut storage, &prompter, &mut copier, command).unwrap();
+        ctx.execute(command).unwrap();
 
         // Check fourth task
-        let id = get_id_for_index(&storage, 4).unwrap().unwrap();
+        let id = get_id_for_index(&ctx.storage, 4).unwrap().unwrap();
         let command = Command::Check {
             ids: Some(vec![id]),
         };
-        execute_command(&mut storage, &prompter, &mut copier, command).unwrap();
+        ctx.execute(command).unwrap();
 
         // Begin fifth task
-        let id = get_id_for_index(&storage, 5).unwrap().unwrap();
+        let id = get_id_for_index(&ctx.storage, 5).unwrap().unwrap();
         let command = Command::Begin {
             ids: Some(vec![id]),
         };
-        execute_command(&mut storage, &prompter, &mut copier, command).unwrap();
+        ctx.execute(command).unwrap();
 
         let command = Command::Clear {};
-        let result = execute_command(&mut storage, &prompter, &mut copier, command);
+        let result = ctx.execute(command);
 
         assert!(result.is_ok());
-        let tasks = storage.read_tasks().unwrap();
-        let archived = storage.read_archived().unwrap();
+        let tasks = ctx.storage.read_tasks().unwrap();
+        let archived = ctx.storage.read_archived().unwrap();
         assert_eq!(tasks.len(), 3);
         assert_eq!(archived.len(), 4);
 
@@ -370,135 +365,129 @@ mod tests {
 
     #[test]
     fn test_clear_command_twice() {
-        let mut storage = InMemoryStorage::new();
-        let prompter = MockPrompter::new();
-        let mut copier = MockCopier::new();
+        let mut ctx = TestContext::new();
 
         // Add tasks
         let title1 = "Test task 1";
-        add_task(&mut storage, &prompter, &mut copier, title1, None);
+        ctx.add_task(title1, None);
 
         let title2 = "Test task 2";
-        add_task(&mut storage, &prompter, &mut copier, title2, None);
+        ctx.add_task(title2, None);
 
         // Check first task
-        let id = get_id_for_index(&storage, 1).unwrap().unwrap();
+        let id = get_id_for_index(&ctx.storage, 1).unwrap().unwrap();
         let command = Command::Check {
             ids: Some(vec![id]),
         };
-        execute_command(&mut storage, &prompter, &mut copier, command).unwrap();
+        ctx.execute(command).unwrap();
 
         // Begin second task
-        let id = get_id_for_index(&storage, 2).unwrap().unwrap();
+        let id = get_id_for_index(&ctx.storage, 2).unwrap().unwrap();
         let command = Command::Begin {
             ids: Some(vec![id]),
         };
-        execute_command(&mut storage, &prompter, &mut copier, command).unwrap();
+        ctx.execute(command).unwrap();
 
         let command = Command::Clear {};
-        let result = execute_command(&mut storage, &prompter, &mut copier, command);
+        let result = ctx.execute(command);
 
         assert!(result.is_ok());
-        let tasks = storage.read_tasks().unwrap();
-        let archived = storage.read_archived().unwrap();
+        let tasks = ctx.storage.read_tasks().unwrap();
+        let archived = ctx.storage.read_archived().unwrap();
         assert_eq!(tasks.len(), 1);
         assert_eq!(archived.len(), 2);
 
         // Add more tasks
         let title3 = "Test task 3";
-        add_task(&mut storage, &prompter, &mut copier, title3, None);
+        ctx.add_task(title3, None);
 
         // Check task
-        let id = get_id_for_index(&storage, 1).unwrap().unwrap();
+        let id = get_id_for_index(&ctx.storage, 1).unwrap().unwrap();
         let command = Command::Check {
             ids: Some(vec![id]),
         };
-        execute_command(&mut storage, &prompter, &mut copier, command).unwrap();
+        ctx.execute(command).unwrap();
 
         let command = Command::Clear {};
-        let result = execute_command(&mut storage, &prompter, &mut copier, command);
+        let result = ctx.execute(command);
 
         assert!(result.is_ok());
-        let tasks = storage.read_tasks().unwrap();
-        let archived = storage.read_archived().unwrap();
+        let tasks = ctx.storage.read_tasks().unwrap();
+        let archived = ctx.storage.read_archived().unwrap();
         assert_eq!(tasks.len(), 1);
         assert_eq!(archived.len(), 3);
     }
 
     #[test]
     fn test_copy_command() {
-        let mut storage = InMemoryStorage::new();
-        let prompter = MockPrompter::new();
-        let mut copier = MockCopier::new();
+        let mut ctx = TestContext::new();
         let title1 = "Test task 1";
-        add_task(&mut storage, &prompter, &mut copier, title1, None);
+        ctx.add_task(title1, None);
         let title2 = "Test task 2";
-        add_task(&mut storage, &prompter, &mut copier, title2, None);
+        ctx.add_task(title2, None);
 
-        let id = get_id_for_index(&storage, 1).unwrap().unwrap();
+        let id = get_id_for_index(&ctx.storage, 1).unwrap().unwrap();
         let command = Command::Copy {
             ids: Some(vec![id]),
             format: LinkFormat::Adjacent,
         };
-        let result = execute_command(&mut storage, &prompter, &mut copier, command);
+        let result = ctx.execute(command);
 
         assert!(result.is_ok());
-        assert_eq!(copier.text, title1);
+        assert_eq!(ctx.copier.text, title1);
     }
 
     #[test]
     fn test_copy_after_command() {
-        let mut storage = InMemoryStorage::new();
-        let prompter = MockPrompter::new();
-        let mut copier = MockCopier::new();
+        let mut ctx = TestContext::new();
         let title1 = "Test task 1";
-        add_task(&mut storage, &prompter, &mut copier, title1, None);
+        ctx.add_task(title1, None);
         let title2 = "Test task 2";
-        add_task(&mut storage, &prompter, &mut copier, title2, None);
+        ctx.add_task(title2, None);
         let title3 = "Test task 3";
-        add_task(&mut storage, &prompter, &mut copier, title3, None);
+        ctx.add_task(title3, None);
         let title4 = "Test task 4";
-        add_task(&mut storage, &prompter, &mut copier, title4, None);
+        ctx.add_task(title4, None);
         let title5 = "Test task 5";
-        add_task(&mut storage, &prompter, &mut copier, title5, None);
+        ctx.add_task(title5, None);
 
         // First task is done
-        let id = get_id_for_index(&storage, 1).unwrap().unwrap();
+        let id = get_id_for_index(&ctx.storage, 1).unwrap().unwrap();
         let command = Command::Check {
             ids: Some(vec![id]),
         };
-        let result = execute_command(&mut storage, &prompter, &mut copier, command);
+        let result = ctx.execute(command);
         assert!(result.is_ok());
 
         // Second task is started
-        let id = get_id_for_index(&storage, 2).unwrap().unwrap();
+        let id = get_id_for_index(&ctx.storage, 2).unwrap().unwrap();
         let command = Command::Begin {
             ids: Some(vec![id]),
         };
-        let result = execute_command(&mut storage, &prompter, &mut copier, command);
+        let result = ctx.execute(command);
         assert!(result.is_ok());
 
         // Third task is archived
-        let id = get_id_for_index(&storage, 3).unwrap().unwrap();
+        let id = get_id_for_index(&ctx.storage, 3).unwrap().unwrap();
         let command = Command::Archive {
             ids: Some(vec![id]),
         };
-        let result = execute_command(&mut storage, &prompter, &mut copier, command);
+        let result = ctx.execute(command);
         assert!(result.is_ok());
 
         // Foruth task is archived but before date
-        let id = get_id_for_index(&storage, 3).unwrap().unwrap();
+        let id = get_id_for_index(&ctx.storage, 3).unwrap().unwrap();
         let command = Command::Archive {
             ids: Some(vec![id]),
         };
-        let result = execute_command(&mut storage, &prompter, &mut copier, command);
+        let result = ctx.execute(command);
         assert!(result.is_ok());
         // Manually set the fourth task's active_date to 2 days ago
-        let mut tasks = storage.read_tasks().unwrap();
+        let mut tasks = ctx.storage.read_tasks().unwrap();
         if let Some(task) = tasks.iter_mut().find(|t| t.id == id) {
             task.active_date = Some((Local::now() - Duration::days(2)).date_naive());
         }
-        storage.write_tasks(tasks).unwrap();
+        ctx.storage.write_tasks(tasks).unwrap();
 
         // Fifth task remains in Todo
 
@@ -507,7 +496,7 @@ mod tests {
             date: Some(Local::now().format("%Y-%m-%d").to_string()),
             format: LinkFormat::Adjacent,
         };
-        let result = execute_command(&mut storage, &prompter, &mut copier, command);
+        let result = ctx.execute(command);
 
         assert!(result.is_ok());
         let expected = format!(
@@ -517,6 +506,6 @@ mod tests {
             title2,
             title3
         );
-        assert_eq!(copier.text, expected);
+        assert_eq!(ctx.copier.text, expected);
     }
 }
