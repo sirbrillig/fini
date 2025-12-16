@@ -540,19 +540,24 @@ mod tests {
         let result = ctx.execute(command);
         assert!(result.is_ok());
 
-        // Foruth task is archived but before date
+        // Fourth task is archived but before date (note that index is 3 because the third task was
+        // already archived).
+        //
+        // Manually set the fourth task's active_date to 2 days ago.
         let id = get_id_for_index(&ctx.storage, 3).unwrap().unwrap();
+        let mut tasks = ctx.storage.read_tasks().unwrap();
+        let Some(task) = tasks.iter_mut().find(|t| t.id == id) else {
+            panic!("Cannot find last task in archive");
+        };
+        task.active_date = Some((Local::now() - Duration::days(2)).date_naive());
+        ctx.storage.write_tasks(tasks).unwrap();
         let command = Command::Archive {
             ids: Some(vec![id]),
         };
         let result = ctx.execute(command);
         assert!(result.is_ok());
-        // Manually set the fourth task's active_date to 2 days ago
-        let mut tasks = ctx.storage.read_tasks().unwrap();
-        if let Some(task) = tasks.iter_mut().find(|t| t.id == id) {
-            task.active_date = Some((Local::now() - Duration::days(2)).date_naive());
-        }
-        ctx.storage.write_tasks(tasks).unwrap();
+        let archived = ctx.storage.read_archived().unwrap();
+        assert_eq!(archived.len(), 2);
 
         // Fifth task remains in Todo
 

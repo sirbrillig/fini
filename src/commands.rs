@@ -136,13 +136,15 @@ pub fn execute_command(
                     .prompt()?
                     .to_string(),
             };
-            // FIXME: this needs to find tasks in the archive also
+            let mut tasks = storage.read_tasks()?;
+            let mut archived = storage.read_archived()?;
+            tasks.append(&mut archived);
             let ids: Vec<usize> = get_task_ids_after_date(
-                storage,
+                &tasks,
                 &date,
                 &[Status::Done, Status::InProgress, Status::Archived],
             )?;
-            let tasks = get_tasks_for_ids(storage, &ids)?;
+            let tasks = get_tasks_for_ids(tasks, &ids)?;
             let text = tasks_as_markdown_by_date(tasks, |i| match format {
                 LinkFormat::Adjacent => TaskItemCopyable(i).to_string(),
                 LinkFormat::Hyperlink => i.to_string(),
@@ -207,7 +209,8 @@ pub fn execute_command(
                 None => prompt_for_task_ids(storage, "Select tasks to delete")?,
             };
             // Print tasks that will be deleted
-            let tasks_to_delete = get_tasks_for_ids(storage, &ids)?;
+            let tasks = storage.read_tasks()?;
+            let tasks_to_delete = get_tasks_for_ids(tasks, &ids)?;
             if !tasks_to_delete.is_empty() {
                 printer.print("Tasks to be deleted:");
                 for task in &tasks_to_delete {

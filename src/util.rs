@@ -44,12 +44,11 @@ pub fn sort_visible_items(items: &[TaskItem]) -> Vec<&TaskItem> {
 
 /// Return all task IDs after the given date, inclusive
 pub fn get_task_ids_after_date(
-    storage: &dyn TaskStorage,
+    tasks: &[TaskItem],
     date: &str,
     statuses: &[Status],
 ) -> Result<Vec<usize>, Box<dyn std::error::Error>> {
     let filter_date = NaiveDate::parse_from_str(date, "%Y-%m-%d")?;
-    let tasks = get_all_items(storage)?;
     Ok(tasks
         .iter()
         .filter(|t| statuses.contains(&t.status))
@@ -76,10 +75,9 @@ pub fn get_task_for_id(
 }
 
 pub fn get_tasks_for_ids(
-    storage: &dyn TaskStorage,
+    tasks: Vec<TaskItem>,
     ids: &[usize],
 ) -> Result<Vec<TaskItem>, Box<dyn std::error::Error>> {
-    let tasks = get_all_items(storage)?;
     Ok(tasks.into_iter().filter(|t| ids.contains(&t.id)).collect())
 }
 
@@ -105,12 +103,6 @@ pub fn prompt_for_task_ids(
         .with_page_size(SELECT_PAGE_SIZE)
         .prompt()?;
     Ok(val.iter().map(|i| i.id).collect())
-}
-
-pub fn get_all_items(
-    storage: &dyn TaskStorage,
-) -> Result<Vec<TaskItem>, Box<dyn std::error::Error>> {
-    storage.read_tasks()
 }
 
 pub fn get_visible_items(
@@ -168,11 +160,14 @@ pub fn list(
     Ok(())
 }
 
-pub fn archived(storage: &dyn TaskStorage, printer: &mut dyn Printer) -> Result<(), Box<dyn std::error::Error>> {
+pub fn archived(
+    storage: &dyn TaskStorage,
+    printer: &mut dyn Printer,
+) -> Result<(), Box<dyn std::error::Error>> {
     let tasks = storage.read_archived()?;
-    printer.print(
-        &tasks_as_markdown_by_date(tasks, |t| TaskItemCopyable(t).to_string())
-    );
+    printer.print(&tasks_as_markdown_by_date(tasks, |t| {
+        TaskItemCopyable(t).to_string()
+    }));
     Ok(())
 }
 
@@ -292,7 +287,9 @@ pub fn archive(
             return Ok(());
         }
         item.status = Status::Archived;
-        item.active_date = Some(Local::now().date_naive());
+        if item.active_date.is_none() {
+            item.active_date = Some(Local::now().date_naive());
+        }
         let copy = TaskItem {
             id: item.id,
             title: item.title.clone(),
