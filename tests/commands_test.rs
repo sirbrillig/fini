@@ -168,6 +168,42 @@ mod tests {
     }
 
     #[test]
+    fn test_check_command_for_starred_tasks() {
+        let mut ctx = TestContext::new();
+        let title1 = "Test task 1";
+        ctx.add_task(title1, None);
+
+        let title2 = "Test task 2";
+        ctx.add_task(title2, None);
+
+        let title3 = "Test task 3";
+        ctx.add_task(title3, None);
+
+        // Starring the second item should cause it to become the first one
+        let id = get_id_for_index(&ctx.storage, 2).unwrap().unwrap();
+        let command = Command::Star {
+            ids: Some(vec![id]),
+        };
+        let result = ctx.execute(command);
+        assert!(result.is_ok());
+
+        ctx.printer.clear();
+
+        // This should check the second item because it's now the first
+        let id = get_id_for_index(&ctx.storage, 1).unwrap().unwrap();
+        let command = Command::Check {
+            ids: Some(vec![id]),
+        };
+        let result = ctx.execute(command);
+
+        assert!(result.is_ok());
+        let tasks = ctx.storage.read_tasks().unwrap();
+        assert_eq!(tasks.len(), 3);
+        assert_eq!(tasks[0].title, title2);
+        assert_eq!(tasks[0].status, Status::Done);
+    }
+
+    #[test]
     fn test_begin_command_from_todo() {
         let mut ctx = TestContext::new();
         let title = "Test task";
@@ -306,6 +342,38 @@ mod tests {
 
         assert!(result.is_ok());
         let expected = format!(" 1.  ✔  {}\n 2.  ☐  {}\n", title1, title2,);
+        assert_eq!(strip_str(ctx.printer.text), expected);
+    }
+
+    #[test]
+    fn test_list_command_for_starred_tasks() {
+        let mut ctx = TestContext::new();
+        let title1 = "Test task 1";
+        ctx.add_task(title1, None);
+
+        let title2 = "Test task 2";
+        ctx.add_task(title2, None);
+
+        let title3 = "Test task 3";
+        ctx.add_task(title3, None);
+
+        // Starring the second item should cause it to become the first one
+        let id = get_id_for_index(&ctx.storage, 2).unwrap().unwrap();
+        let command = Command::Star {
+            ids: Some(vec![id]),
+        };
+        let result = ctx.execute(command);
+        assert!(result.is_ok());
+
+        ctx.printer.clear();
+
+        let command = Command::List {
+            format: LinkFormat::Hyperlink,
+        };
+        let result = ctx.execute(command);
+
+        assert!(result.is_ok());
+        let expected = format!(" 1.★ ☐  {}\n 2.  ☐  {}\n 3.  ☐  {}\n", title2, title1, title3);
         assert_eq!(strip_str(ctx.printer.text), expected);
     }
 
