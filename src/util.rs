@@ -221,6 +221,7 @@ pub fn star(
         did_change = true;
     }
     if did_change {
+        tasks.sort_by_key(|i| Reverse(i.star));
         storage.write_tasks(tasks)?;
         printer.print("Starred the selected tasks");
     } else {
