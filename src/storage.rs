@@ -1,7 +1,11 @@
 use crate::markdown::parse_markdown_archive;
 use crate::task_item::{TaskItem, TaskItemCopyableMarkdown};
 use crate::util::tasks_as_markdown_by_date;
+use chrono::Datelike;
 use directories::BaseDirs;
+use glob::glob;
+use regex::Regex;
+use std::collections::HashMap;
 use std::fs;
 use std::io::Write;
 use std::path::PathBuf;
@@ -10,8 +14,20 @@ use tempfile::NamedTempFile;
 pub fn get_default_storage_path() -> PathBuf {
     let data_dir = BaseDirs::new()
         .map(|b| b.data_dir().to_path_buf())
-        .unwrap_or_else(|| PathBuf::from("."));
+        .unwrap_or(PathBuf::from("."));
     data_dir.join("fini")
+}
+
+#[derive(Eq, Hash, PartialEq)]
+struct YearMonth {
+    year: i32,
+    month: u32,
+}
+
+impl YearMonth {
+    pub fn get_archive_filename(&self) -> String {
+        format!("archived-{:04}-{:02}.md", self.year, self.month)
+    }
 }
 
 pub trait TaskStorage {
@@ -24,12 +40,50 @@ pub trait TaskStorage {
 pub struct FileStorage {
     path: PathBuf,
     data_filename: String,
-    archive_filename: String,
 }
 
 impl FileStorage {
     pub fn new(path: PathBuf) -> Self {
-        Self { path, data_filename: "fini_data.json".to_string(), archive_filename: "archived.md".to_string() }
+        Self {
+            path,
+            data_filename: "fini_data.json".to_string(),
+        }
+    }
+
+    fn find_all_archive_files(&self) -> Result<Vec<PathBuf>, Box<dyn std::error::Error>> {
+        let archived_file_glob = self.path.join("archived-*.md");
+        let archived_file_pattern = Regex::new(r"^archived-\d{4}-\d{2}\.md$").unwrap();
+        let paths: Vec<PathBuf> = glob(archived_file_glob.to_str().unwrap())?
+            .filter_map(|p| p.ok())
+            .filter(|p| {
+                let file_name = p.file_name();
+                let Some(file_name) = file_name else {
+                    return false;
+                };
+                let Some(file_name) = file_name.to_str() else {
+                    return false;
+                };
+                archived_file_pattern.is_match(file_name)
+            })
+            .collect();
+        Ok(paths)
+    }
+
+    fn group_tasks_by_month(&self, tasks: Vec<TaskItem>) -> HashMap<YearMonth, Vec<TaskItem>> {
+        // Note: i32 is the default type of date.year() and u32 is date.month()
+        let mut grouped: HashMap<YearMonth, Vec<TaskItem>> = HashMap::new();
+        for task in tasks {
+            if let Some(date) = task.active_date {
+                let key = YearMonth {
+                    year: date.year(),
+                    month: date.month(),
+                };
+                grouped.entry(key).or_default().push(task);
+            } else {
+                eprintln!("Warning: archived task without active_date: {}", task.title);
+            }
+        }
+        grouped
     }
 }
 
@@ -54,23 +108,30 @@ impl TaskStorage for FileStorage {
     }
 
     fn read_archived(&self) -> Result<Vec<TaskItem>, Box<dyn std::error::Error>> {
-        let path = &self.path.join(&self.archive_filename);
-        let Ok(data) = std::fs::read_to_string(path) else {
-            return Ok(Vec::new());
-        };
-        parse_markdown_archive(&data)
+        let archive_files = self.find_all_archive_files()?;
+        let mut all_tasks: Vec<TaskItem> = Vec::new();
+        for file_path in archive_files {
+            let data = fs::read_to_string(&file_path)?;
+            let mut tasks = parse_markdown_archive(&data)?;
+            all_tasks.append(&mut tasks);
+        }
+        Ok(all_tasks)
     }
 
     fn write_archived(&mut self, tasks: Vec<TaskItem>) -> Result<(), Box<dyn std::error::Error>> {
-        let markdown =
-            tasks_as_markdown_by_date(tasks, |t| TaskItemCopyableMarkdown(t).to_string());
-        let dir = &self.path;
-        let path = &self.path.join(&self.archive_filename);
-        let mut tmp = NamedTempFile::new_in(dir)?;
-        fs::write(&tmp, markdown)?;
-        tmp.as_file_mut().flush()?;
-        tmp.as_file().sync_all()?;
-        tmp.persist(path)?;
+        let grouped = self.group_tasks_by_month(tasks);
+        // Write each month's tasks to its own file
+        for (key, month_tasks) in grouped {
+            let filename = key.get_archive_filename();
+            let path = self.path.join(&filename);
+            let markdown =
+                tasks_as_markdown_by_date(month_tasks, |t| TaskItemCopyableMarkdown(t).to_string());
+            let mut tmp = NamedTempFile::new_in(&self.path)?;
+            fs::write(&tmp, markdown)?;
+            tmp.as_file_mut().flush()?;
+            tmp.as_file().sync_all()?;
+            tmp.persist(&path)?;
+        }
         Ok(())
     }
 }

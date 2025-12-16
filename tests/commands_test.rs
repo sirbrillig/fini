@@ -373,7 +373,10 @@ mod tests {
         let result = ctx.execute(command);
 
         assert!(result.is_ok());
-        let expected = format!(" 1.★ ☐  {}\n 2.  ☐  {}\n 3.  ☐  {}\n", title2, title1, title3);
+        let expected = format!(
+            " 1.★ ☐  {}\n 2.  ☐  {}\n 3.  ☐  {}\n",
+            title2, title1, title3
+        );
         assert_eq!(strip_str(ctx.printer.text), expected);
     }
 
