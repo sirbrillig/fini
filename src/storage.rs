@@ -23,26 +23,27 @@ pub trait TaskStorage {
 
 pub struct FileStorage {
     path: PathBuf,
+    data_filename: String,
+    archive_filename: String,
 }
 
 impl FileStorage {
     pub fn new(path: PathBuf) -> Self {
-        Self { path }
+        Self { path, data_filename: "fini_data.json".to_string(), archive_filename: "archived.md".to_string() }
     }
 }
 
 impl TaskStorage for FileStorage {
     fn read_tasks(&self) -> Result<Vec<TaskItem>, Box<dyn std::error::Error>> {
-        let path = &self.path.join("fini_data.json");
-        if let Ok(data) = std::fs::read_to_string(path) {
-            Ok(serde_json::from_str(&data)?)
-        } else {
-            Ok(Vec::new())
-        }
+        let path = &self.path.join(&self.data_filename);
+        let Ok(data) = std::fs::read_to_string(path) else {
+            return Ok(Vec::new());
+        };
+        Ok(serde_json::from_str(&data)?)
     }
 
     fn write_tasks(&mut self, tasks: Vec<TaskItem>) -> Result<(), Box<dyn std::error::Error>> {
-        let path = &self.path.join("fini_data.json");
+        let path = &self.path.join(&self.data_filename);
         let dir = &self.path;
         let mut tmp = NamedTempFile::new_in(dir)?;
         serde_json::to_writer_pretty(&mut tmp, &tasks)?;
@@ -53,15 +54,18 @@ impl TaskStorage for FileStorage {
     }
 
     fn read_archived(&self) -> Result<Vec<TaskItem>, Box<dyn std::error::Error>> {
-        // TODO: implement
-        Ok(Vec::new())
+        let path = &self.path.join(&self.archive_filename);
+        let Ok(data) = std::fs::read_to_string(path) else {
+            return Ok(Vec::new());
+        };
+        parse_markdown_archive(&data)
     }
 
     fn write_archived(&mut self, tasks: Vec<TaskItem>) -> Result<(), Box<dyn std::error::Error>> {
         let markdown =
             tasks_as_markdown_by_date(tasks, |t| TaskItemCopyableMarkdown(t).to_string());
         let dir = &self.path;
-        let path = &self.path.join("archived.md");
+        let path = &self.path.join(&self.archive_filename);
         let mut tmp = NamedTempFile::new_in(dir)?;
         fs::write(path, markdown)?;
         tmp.as_file_mut().flush()?;
