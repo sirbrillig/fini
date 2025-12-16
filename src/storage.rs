@@ -67,7 +67,7 @@ impl TaskStorage for FileStorage {
         let dir = &self.path;
         let path = &self.path.join(&self.archive_filename);
         let mut tmp = NamedTempFile::new_in(dir)?;
-        fs::write(path, markdown)?;
+        fs::write(&tmp, markdown)?;
         tmp.as_file_mut().flush()?;
         tmp.as_file().sync_all()?;
         tmp.persist(path)?;
