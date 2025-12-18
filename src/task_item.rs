@@ -42,15 +42,12 @@ impl fmt::Display for Status {
 impl fmt::Display for TaskItem {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.title)?;
-        if let Some(link) = &self.link {
-            write!(f, " {}", format_hyperlink(link, "[link]").dimmed())?;
-        }
         Ok(())
     }
 }
 
+// An intermediate format of a task with a number before it and status icons.
 pub struct TaskItemWithIndex<'a>(pub &'a TaskItem, pub usize, pub LinkFormat);
-
 impl fmt::Display for TaskItemWithIndex<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let task = self.0;
@@ -61,15 +58,15 @@ impl fmt::Display for TaskItemWithIndex<'_> {
     }
 }
 
+// An intermediate format of a task with the status and star icons included.
 pub struct TaskItemWithStatus<'a>(pub &'a TaskItem, pub LinkFormat);
-
 impl fmt::Display for TaskItemWithStatus<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let task = self.0;
         let format = self.1;
         let text = match format {
             LinkFormat::Adjacent => TaskItemCopyable(task).to_string(),
-            LinkFormat::Hyperlink => task.to_string(),
+            LinkFormat::Hyperlink => TaskItemHyperlinked(task).to_string(),
             LinkFormat::Markdown => TaskItemCopyableMarkdown(task).to_string(),
         };
         match task.status {
@@ -91,8 +88,9 @@ impl fmt::Display for TaskItemWithStatus<'_> {
     }
 }
 
+// A version of the task where the link is adjacent to the text, corresponding to
+// `LinkFormat::Adjacent`.
 pub struct TaskItemCopyable<'a>(pub &'a TaskItem);
-
 impl fmt::Display for TaskItemCopyable<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0.title)?;
@@ -103,14 +101,28 @@ impl fmt::Display for TaskItemCopyable<'_> {
     }
 }
 
+// A version of the task where the link is markdown linked to the text, corresponding to
+// `LinkFormat::Markdown`.
 pub struct TaskItemCopyableMarkdown<'a>(pub &'a TaskItem);
-
 impl fmt::Display for TaskItemCopyableMarkdown<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let Some(link) = &self.0.link {
             write!(f, "[{}]({})", self.0.title, link)?;
         } else {
             write!(f, "{}", self.0.title)?;
+        }
+        Ok(())
+    }
+}
+
+// A version of the task where the link is OSC 8 linked to the text, corresponding to
+// `LinkFormat::Hyperlink`.
+pub struct TaskItemHyperlinked<'a>(pub &'a TaskItem);
+impl fmt::Display for TaskItemHyperlinked<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", &self.0.title)?;
+        if let Some(link) = &self.0.link {
+            write!(f, " {}", format_hyperlink(link, "[link]").dimmed())?;
         }
         Ok(())
     }
