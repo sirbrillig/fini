@@ -1,4 +1,7 @@
-use crate::{commands::LinkFormat, util::format_hyperlink};
+use crate::{
+    commands::LinkFormat,
+    util::{format_hyperlink, get_task_link_for_format},
+};
 use chrono::NaiveDate;
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
@@ -64,12 +67,7 @@ impl fmt::Display for TaskItemWithStatus<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let task = self.0;
         let format = self.1;
-        let text = match format {
-            LinkFormat::None => task.to_string(),
-            LinkFormat::Adjacent => TaskItemCopyable(task).to_string(),
-            LinkFormat::Hyperlink => TaskItemHyperlinked(task).to_string(),
-            LinkFormat::Markdown => TaskItemCopyableMarkdown(task).to_string(),
-        };
+        let text = get_task_link_for_format(task, format);
         match task.status {
             // Archived status doesn't require any extra formatting because it will never be mixed
             // with other statuses and will never be starred.

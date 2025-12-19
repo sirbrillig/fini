@@ -3,11 +3,11 @@ use crate::interactive::interactive;
 use crate::printer::Printer;
 use crate::prompter::Prompter;
 use crate::storage::TaskStorage;
-use crate::task_item::{Status, TaskItemCopyable, TaskItemCopyableMarkdown, TaskItemHyperlinked};
+use crate::task_item::Status;
 use crate::util::{
     add, archive, archived, clear, copy, delete, done, edit_task, get_task_for_id,
-    get_task_ids_after_date, get_tasks_for_ids, list, prompt_for_task_id, prompt_for_task_ids,
-    star, tasks_as_markdown_by_date, work,
+    get_task_ids_after_date, get_task_link_for_format, get_tasks_for_ids, list, prompt_for_task_id,
+    prompt_for_task_ids, star, tasks_as_markdown_by_date, work,
 };
 use inquire::DateSelect;
 
@@ -125,11 +125,8 @@ pub fn execute_command(
                 Some(ids) => ids,
                 None => prompt_for_task_ids(storage, "Select tasks to copy")?,
             };
-            copy(storage, copier, printer, &ids, |i| match format {
-                LinkFormat::None => i.to_string(),
-                LinkFormat::Adjacent => TaskItemCopyable(i).to_string(),
-                LinkFormat::Hyperlink => TaskItemHyperlinked(i).to_string(),
-                LinkFormat::Markdown => TaskItemCopyableMarkdown(i).to_string(),
+            copy(storage, copier, printer, &ids, |i| {
+                get_task_link_for_format(i, format)
             })?;
         }
         Command::CopyAfterDate { date, format } => {
@@ -148,12 +145,7 @@ pub fn execute_command(
                 &[Status::Done, Status::InProgress, Status::Archived],
             )?;
             let tasks = get_tasks_for_ids(tasks, &ids)?;
-            let text = tasks_as_markdown_by_date(tasks, |i| match format {
-                LinkFormat::None => i.to_string(),
-                LinkFormat::Adjacent => TaskItemCopyable(i).to_string(),
-                LinkFormat::Hyperlink => TaskItemHyperlinked(i).to_string(),
-                LinkFormat::Markdown => TaskItemCopyableMarkdown(i).to_string(),
-            });
+            let text = tasks_as_markdown_by_date(tasks, |i| get_task_link_for_format(i, format));
             copier.copy(&text)?;
             printer
                 .print(format!("Copied tasks as Markdown by date starting at {}", date).as_str());

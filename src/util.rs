@@ -5,13 +5,25 @@ use crate::{
     copier::Copier,
     printer::Printer,
     storage::TaskStorage,
-    task_item::{Status, TaskItem, TaskItemCopyable, TaskItemWithIndex, TaskItemWithStatus},
+    task_item::{
+        Status, TaskItem, TaskItemCopyable, TaskItemCopyableMarkdown, TaskItemHyperlinked,
+        TaskItemWithIndex, TaskItemWithStatus,
+    },
 };
 use chrono::{Local, NaiveDate};
 use edit::edit;
 use inquire::{Confirm, MultiSelect, Select};
 
 const SELECT_PAGE_SIZE: usize = 20;
+
+pub fn get_task_link_for_format(task: &TaskItem, format: LinkFormat) -> String {
+    match format {
+        LinkFormat::None => task.to_string(),
+        LinkFormat::Adjacent => TaskItemCopyable(task).to_string(),
+        LinkFormat::Hyperlink => TaskItemHyperlinked(task).to_string(),
+        LinkFormat::Markdown => TaskItemCopyableMarkdown(task).to_string(),
+    }
+}
 
 pub fn tasks_as_markdown_by_date<F>(mut items: Vec<TaskItem>, format: F) -> String
 where
