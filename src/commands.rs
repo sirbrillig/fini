@@ -3,7 +3,7 @@ use crate::interactive::interactive;
 use crate::printer::Printer;
 use crate::prompter::Prompter;
 use crate::storage::TaskStorage;
-use crate::task_item::{Status, TaskItemCopyable, TaskItemCopyableMarkdown};
+use crate::task_item::{Status, TaskItemCopyable, TaskItemCopyableMarkdown, TaskItemHyperlinked};
 use crate::util::{
     add, archive, archived, clear, copy, delete, done, edit_task, get_task_for_id,
     get_task_ids_after_date, get_tasks_for_ids, list, prompt_for_task_id, prompt_for_task_ids,
@@ -14,6 +14,8 @@ use inquire::DateSelect;
 /// The way that links will be formatted by an action
 #[derive(Clone, Copy, Debug)]
 pub enum LinkFormat {
+    /// Do not print the link
+    None,
     /// Print the link after the task title
     Adjacent,
     /// Print the link as an OSC 8 hyperlink after the task title
@@ -124,8 +126,9 @@ pub fn execute_command(
                 None => prompt_for_task_ids(storage, "Select tasks to copy")?,
             };
             copy(storage, copier, printer, &ids, |i| match format {
+                LinkFormat::None => i.to_string(),
                 LinkFormat::Adjacent => TaskItemCopyable(i).to_string(),
-                LinkFormat::Hyperlink => i.to_string(),
+                LinkFormat::Hyperlink => TaskItemHyperlinked(i).to_string(),
                 LinkFormat::Markdown => TaskItemCopyableMarkdown(i).to_string(),
             })?;
         }
@@ -146,8 +149,9 @@ pub fn execute_command(
             )?;
             let tasks = get_tasks_for_ids(tasks, &ids)?;
             let text = tasks_as_markdown_by_date(tasks, |i| match format {
+                LinkFormat::None => i.to_string(),
                 LinkFormat::Adjacent => TaskItemCopyable(i).to_string(),
-                LinkFormat::Hyperlink => i.to_string(),
+                LinkFormat::Hyperlink => TaskItemHyperlinked(i).to_string(),
                 LinkFormat::Markdown => TaskItemCopyableMarkdown(i).to_string(),
             });
             copier.copy(&text)?;

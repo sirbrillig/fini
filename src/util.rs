@@ -5,13 +5,13 @@ use crate::{
     copier::Copier,
     printer::Printer,
     storage::TaskStorage,
-    task_item::{Status, TaskItem, TaskItemCopyable, TaskItemWithIndex},
+    task_item::{Status, TaskItem, TaskItemCopyable, TaskItemWithIndex, TaskItemWithStatus},
 };
 use chrono::{Local, NaiveDate};
 use edit::edit;
 use inquire::{Confirm, MultiSelect, Select};
 
-pub const SELECT_PAGE_SIZE: usize = 20;
+const SELECT_PAGE_SIZE: usize = 20;
 
 pub fn tasks_as_markdown_by_date<F>(mut items: Vec<TaskItem>, format: F) -> String
 where
@@ -87,10 +87,14 @@ pub fn prompt_for_task_id(
 ) -> Result<usize, Box<dyn std::error::Error>> {
     let items = storage.read_tasks()?;
     let visible = sort_visible_items(&items);
-    let val = Select::new(message, visible)
+    let formatted: Vec<_> = visible
+        .iter()
+        .map(|t| TaskItemWithStatus(t, LinkFormat::None))
+        .collect();
+    let val = Select::new(message, formatted)
         .with_page_size(SELECT_PAGE_SIZE)
         .prompt()?;
-    Ok(val.id)
+    Ok(val.0.id)
 }
 
 pub fn prompt_for_task_ids(
@@ -99,10 +103,14 @@ pub fn prompt_for_task_ids(
 ) -> Result<Vec<usize>, Box<dyn std::error::Error>> {
     let items = storage.read_tasks()?;
     let visible = sort_visible_items(&items);
-    let val = MultiSelect::new(message, visible)
+    let formatted: Vec<_> = visible
+        .iter()
+        .map(|t| TaskItemWithStatus(t, LinkFormat::None))
+        .collect();
+    let val = MultiSelect::new(message, formatted)
         .with_page_size(SELECT_PAGE_SIZE)
         .prompt()?;
-    Ok(val.iter().map(|i| i.id).collect())
+    Ok(val.iter().map(|i| i.0.id).collect())
 }
 
 pub fn get_visible_items(

@@ -65,6 +65,7 @@ impl fmt::Display for TaskItemWithStatus<'_> {
         let task = self.0;
         let format = self.1;
         let text = match format {
+            LinkFormat::None => task.to_string(),
             LinkFormat::Adjacent => TaskItemCopyable(task).to_string(),
             LinkFormat::Hyperlink => TaskItemHyperlinked(task).to_string(),
             LinkFormat::Markdown => TaskItemCopyableMarkdown(task).to_string(),
