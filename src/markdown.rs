@@ -4,7 +4,13 @@ use regex::Regex;
 use crate::task_item::{Status, TaskItem};
 
 pub fn parse_markdown_archive(content: &str) -> Result<Vec<TaskItem>, Box<dyn std::error::Error>> {
-    let starting_id = 100000;
+    parse_markdown_archive_with_start_id(content, 100000)
+}
+
+pub fn parse_markdown_archive_with_start_id(
+    content: &str,
+    starting_id: usize,
+) -> Result<Vec<TaskItem>, Box<dyn std::error::Error>> {
     let mut current_id: usize = starting_id;
     let mut current_date: Option<NaiveDate> = None;
     let mut tasks: Vec<TaskItem> = Vec::new();

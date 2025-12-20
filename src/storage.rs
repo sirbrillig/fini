@@ -110,9 +110,14 @@ impl TaskStorage for FileStorage {
     fn read_archived(&self) -> Result<Vec<TaskItem>, Box<dyn std::error::Error>> {
         let archive_files = self.find_all_archive_files()?;
         let mut all_tasks: Vec<TaskItem> = Vec::new();
+        let mut next_id = 100000;
         for file_path in archive_files {
             let data = fs::read_to_string(&file_path)?;
-            let mut tasks = parse_markdown_archive(&data)?;
+            let mut tasks = crate::markdown::parse_markdown_archive_with_start_id(&data, next_id)?;
+            // Update next_id to be after the last ID used in this file
+            if let Some(last_task) = tasks.last() {
+                next_id = last_task.id + 1;
+            }
             all_tasks.append(&mut tasks);
         }
         Ok(all_tasks)
