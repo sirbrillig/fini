@@ -49,7 +49,7 @@ pub fn parse_markdown_tasks(
             false => None,
         };
 
-        let title_and_link = task_body.trim_start_matches("⭐️");
+        let title_and_link = task_body.trim_start_matches("⭐️ ");
 
         // Handle task inside markdown link
         if let Some(matches) = link_regex.captures(title_and_link) {

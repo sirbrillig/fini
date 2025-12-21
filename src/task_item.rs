@@ -139,7 +139,7 @@ impl fmt::Display for TaskItemFiniMarkdown<'_> {
             Status::Archived => write!(f, "- [A] ")?,
         };
         match self.0.star {
-            Some(_) => write!(f, "⭐️")?,
+            Some(_) => write!(f, "⭐️ ")?,
             None => write!(f, "")?,
         }
         if let Some(link) = &self.0.link {
