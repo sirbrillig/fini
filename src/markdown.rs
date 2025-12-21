@@ -5,6 +5,66 @@ use regex::Regex;
 
 use crate::task_item::{Status, TaskItem};
 
+const ACTIVE_TASKS_LABEL: &str = "Active Tasks";
+
+pub fn tasks_as_markdown<F>(mut items: Vec<TaskItem>, format: F) -> String
+where
+    F: Fn(&TaskItem) -> String,
+{
+    let mut outputs: Vec<String> = vec![];
+    let mut current_date: Option<NaiveDate> = None;
+
+    // First sort by date (with dateless ones first)
+    items.sort_by_key(|i| i.active_date);
+    // Write dateless tasks first
+    outputs.push(format!("## {}", ACTIVE_TASKS_LABEL));
+    for item in items {
+        if item.active_date.is_none() && current_date.is_some() {
+            panic!(
+                "⚠️ Found tasks without date AFTER tasks with date when writing! Sorting must have failed!"
+            );
+        }
+
+        // Write tasks with dates together by date
+        if let Some(date) = item.active_date {
+            if let Some(current) = current_date {
+                if date != current {
+                    outputs.push(format!("\n## {}", date));
+                }
+            } else {
+                outputs.push(format!("\n## {}", date));
+            }
+        }
+
+        current_date = item.active_date;
+        outputs.push(format(&item));
+    }
+    outputs.join("\n")
+}
+
+pub fn tasks_as_markdown_by_date<F>(mut items: Vec<TaskItem>, format: F) -> String
+where
+    F: Fn(&TaskItem) -> String,
+{
+    let mut outputs: Vec<String> = vec![];
+    items.sort_by_key(|i| i.active_date);
+    let mut current_date: NaiveDate = Default::default();
+    for item in items {
+        let Some(date) = item.active_date else {
+            panic!(
+                "⚠️ Refusing to convert task to markdown because it has no date: {}",
+                item
+            );
+        };
+        if date != current_date {
+            outputs.push(format!("\n## {}", date));
+            current_date = date;
+        }
+        outputs.push(format!("- {}", format(&item)));
+    }
+    outputs.join("\n")
+}
+
 pub fn parse_markdown_tasks(
     content: &str,
     starting_id: usize,
@@ -25,6 +85,9 @@ pub fn parse_markdown_tasks(
 
     for line in content.lines() {
         let trimmed = line.trim();
+        if trimmed.starts_with(format!("## {}", ACTIVE_TASKS_LABEL).as_str()) {
+            continue;
+        }
         if trimmed.starts_with("## ") {
             let date_string = trimmed.trim_start_matches("## ");
             current_date = Some(NaiveDate::parse_from_str(date_string, "%Y-%m-%d")?);

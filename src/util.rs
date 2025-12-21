@@ -3,6 +3,7 @@ use std::cmp::Reverse;
 use crate::{
     commands::LinkFormat,
     copier::Copier,
+    markdown::tasks_as_markdown_by_date,
     printer::Printer,
     storage::TaskStorage,
     task_item::{
@@ -23,63 +24,6 @@ pub fn get_task_link_for_format(task: &TaskItem, format: LinkFormat) -> String {
         LinkFormat::Hyperlink => TaskItemHyperlinked(task).to_string(),
         LinkFormat::Markdown => TaskItemCopyableMarkdown(task).to_string(),
     }
-}
-
-pub fn tasks_as_markdown<F>(mut items: Vec<TaskItem>, format: F) -> String
-where
-    F: Fn(&TaskItem) -> String,
-{
-    let mut outputs: Vec<String> = vec![];
-    let mut current_date: Option<NaiveDate> = None;
-
-    // First sort by date (with dateless ones first)
-    items.sort_by_key(|i| i.active_date);
-    // Write dateless tasks first
-    for item in items {
-        if item.active_date.is_none() && current_date.is_some() {
-            panic!(
-                "⚠️ Found tasks without date AFTER tasks with date when writing! Sorting must have failed!"
-            );
-        }
-
-        // Write tasks with dates together by date
-        if let Some(date) = item.active_date {
-            if let Some(current) = current_date {
-                if date != current {
-                    outputs.push(format!("\n## {}", date));
-                }
-            } else {
-                outputs.push(format!("\n## {}", date));
-            }
-        }
-
-        current_date = item.active_date;
-        outputs.push(format(&item));
-    }
-    outputs.join("\n")
-}
-
-pub fn tasks_as_markdown_by_date<F>(mut items: Vec<TaskItem>, format: F) -> String
-where
-    F: Fn(&TaskItem) -> String,
-{
-    let mut outputs: Vec<String> = vec![];
-    items.sort_by_key(|i| i.active_date);
-    let mut current_date: NaiveDate = Default::default();
-    for item in items {
-        let Some(date) = item.active_date else {
-            panic!(
-                "⚠️ Refusing to convert task to markdown because it has no date: {}",
-                item
-            );
-        };
-        if date != current_date {
-            outputs.push(format!("\n## {}", date));
-            current_date = date;
-        }
-        outputs.push(format!("- {}", format(&item)));
-    }
-    outputs.join("\n")
 }
 
 pub fn sort_visible_items(items: &[TaskItem]) -> Vec<&TaskItem> {

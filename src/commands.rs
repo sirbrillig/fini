@@ -1,5 +1,6 @@
 use crate::copier::Copier;
 use crate::interactive::interactive;
+use crate::markdown::tasks_as_markdown_by_date;
 use crate::printer::Printer;
 use crate::prompter::Prompter;
 use crate::storage::TaskStorage;
@@ -7,7 +8,7 @@ use crate::task_item::Status;
 use crate::util::{
     add, archive, archived, clear, copy, delete, done, edit_task, get_task_for_id,
     get_task_ids_after_date, get_task_link_for_format, get_tasks_for_ids, list, prompt_for_task_id,
-    prompt_for_task_ids, star, tasks_as_markdown_by_date, work,
+    prompt_for_task_ids, star, work,
 };
 use inquire::DateSelect;
 

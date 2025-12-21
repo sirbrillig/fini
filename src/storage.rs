@@ -1,6 +1,8 @@
-use crate::markdown::{parse_markdown_archive_with_start_id, parse_markdown_tasks};
+use crate::markdown::{
+    parse_markdown_archive_with_start_id, parse_markdown_tasks, tasks_as_markdown,
+    tasks_as_markdown_by_date,
+};
 use crate::task_item::{TaskItem, TaskItemCopyableMarkdown, TaskItemFiniMarkdown};
-use crate::util::{tasks_as_markdown, tasks_as_markdown_by_date};
 use chrono::Datelike;
 use directories::BaseDirs;
 use glob::glob;
