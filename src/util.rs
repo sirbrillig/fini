@@ -25,6 +25,40 @@ pub fn get_task_link_for_format(task: &TaskItem, format: LinkFormat) -> String {
     }
 }
 
+pub fn tasks_as_markdown<F>(mut items: Vec<TaskItem>, format: F) -> String
+where
+    F: Fn(&TaskItem) -> String,
+{
+    let mut outputs: Vec<String> = vec![];
+    let mut current_date: Option<NaiveDate> = None;
+
+    // First sort by date (with dateless ones first)
+    items.sort_by_key(|i| i.active_date);
+    // Write dateless tasks first
+    for item in items {
+        if item.active_date.is_none() && current_date.is_some() {
+            panic!(
+                "⚠️ Found tasks without date AFTER tasks with date when writing! Sorting must have failed!"
+            );
+        }
+
+        // Write tasks with dates together by date
+        if let Some(date) = item.active_date {
+            if let Some(current) = current_date {
+                if date != current {
+                    outputs.push(format!("\n## {}", date));
+                }
+            } else {
+                outputs.push(format!("\n## {}", date));
+            }
+        }
+
+        current_date = item.active_date;
+        outputs.push(format(&item));
+    }
+    outputs.join("\n")
+}
+
 pub fn tasks_as_markdown_by_date<F>(mut items: Vec<TaskItem>, format: F) -> String
 where
     F: Fn(&TaskItem) -> String,
@@ -34,7 +68,10 @@ where
     let mut current_date: NaiveDate = Default::default();
     for item in items {
         let Some(date) = item.active_date else {
-            continue;
+            panic!(
+                "⚠️ Refusing to convert task to markdown because it has no date: {}",
+                item
+            );
         };
         if date != current_date {
             outputs.push(format!("\n## {}", date));
@@ -159,6 +196,7 @@ pub fn add(
     };
     printer.print(format!("Added task: {}", &item.title).as_str());
     tasks.push(item);
+    tasks.sort_by_key(|i| Reverse(i.star));
     storage.write_tasks(tasks)?;
     Ok(id)
 }
@@ -216,6 +254,7 @@ pub fn work(
         }
     }
     if did_change {
+        tasks.sort_by_key(|i| Reverse(i.star));
         storage.write_tasks(tasks)?;
     }
     Ok(())
@@ -275,6 +314,7 @@ pub fn done(
         }
     }
     if did_change {
+        tasks.sort_by_key(|i| Reverse(i.star));
         storage.write_tasks(tasks)?;
     }
     Ok(())
@@ -286,6 +326,7 @@ pub fn delete(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut tasks = storage.read_tasks()?;
     tasks.retain(|i| !ids.contains(&i.id));
+    tasks.sort_by_key(|i| Reverse(i.star));
     storage.write_tasks(tasks)?;
     Ok(())
 }
@@ -324,6 +365,7 @@ pub fn archive(
         printer.print(format!("Archived task: {}", item.title).as_str());
     }
     if did_change {
+        tasks.sort_by_key(|i| Reverse(i.star));
         storage.write_tasks(
             tasks
                 .into_iter()
@@ -460,6 +502,7 @@ pub fn edit_link(
     // Update the task
     printer.print(format!("Updated task: {}", new_link).as_str());
     item.link = Some(new_link);
+    tasks.sort_by_key(|i| Reverse(i.star));
     storage.write_tasks(tasks)?;
     Ok(())
 }
@@ -483,6 +526,7 @@ pub fn edit_task(
 
     if new_title != item.title {
         item.title = new_title.clone();
+        tasks.sort_by_key(|i| Reverse(i.star));
         storage.write_tasks(tasks)?;
         printer.print(format!("Updated task: {}", new_title).as_str());
     }

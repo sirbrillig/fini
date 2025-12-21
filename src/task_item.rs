@@ -126,3 +126,27 @@ impl fmt::Display for TaskItemHyperlinked<'_> {
         Ok(())
     }
 }
+
+// A version of the task in a custom Markdown-adjacent format which includes all metadata except
+// date.
+pub struct TaskItemFiniMarkdown<'a>(pub &'a TaskItem);
+impl fmt::Display for TaskItemFiniMarkdown<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self.0.status {
+            Status::Todo => write!(f, "- [ ] ")?,
+            Status::InProgress => write!(f, "- [~] ")?,
+            Status::Done => write!(f, "- [x] ")?,
+            Status::Archived => write!(f, "- [A] ")?,
+        };
+        match self.0.star {
+            Some(_) => write!(f, "⭐️")?,
+            None => write!(f, "")?,
+        }
+        if let Some(link) = &self.0.link {
+            write!(f, "[{}]({})", self.0.title, link)?;
+        } else {
+            write!(f, "{}", self.0.title)?;
+        }
+        Ok(())
+    }
+}

@@ -3,7 +3,7 @@ mod tests {
     use chrono::{Duration, Local};
     use fini::commands::{Command, LinkFormat, execute_command};
     use fini::copier::MockCopier;
-    use fini::indices::get_id_for_index;
+    use fini::indices::{get_id_for_index, get_id_for_title};
     use fini::printer::MockPrinter;
     use fini::prompter::MockPrompter;
     use fini::storage::{InMemoryStorage, TaskStorage};
@@ -119,8 +119,15 @@ mod tests {
 
         assert!(result.is_ok());
         let tasks = ctx.storage.read_tasks().unwrap();
-        assert_eq!(tasks.len(), 1);
-        assert_eq!(tasks[0].title, title);
+        assert_eq!(
+            tasks.len(),
+            1,
+            "Task was not found while reading after adding"
+        );
+        assert_eq!(
+            tasks[0].title, title,
+            "Title of task was incorrect after adding"
+        );
         assert_eq!(tasks[0].link, None);
         assert_eq!(tasks[0].status, Status::Todo);
     }
@@ -187,9 +194,14 @@ mod tests {
         let result = ctx.execute(command);
         assert!(result.is_ok());
 
-        ctx.printer.clear();
+        let tasks = ctx.storage.read_tasks().unwrap();
+        assert_eq!(tasks.len(), 3);
+        assert_eq!(tasks[0].title, title2);
+        assert_eq!(tasks[0].status, Status::Todo);
+        assert_eq!(tasks[0].star, Some(true));
 
-        // This should check the second item because it's now the first
+        // This should check the second item because it's now the first which should cause it to
+        // become the last one
         let id = get_id_for_index(&ctx.storage, 1).unwrap().unwrap();
         let command = Command::Check {
             ids: Some(vec![id]),
@@ -199,8 +211,15 @@ mod tests {
         assert!(result.is_ok());
         let tasks = ctx.storage.read_tasks().unwrap();
         assert_eq!(tasks.len(), 3);
-        assert_eq!(tasks[0].title, title2);
-        assert_eq!(tasks[0].status, Status::Done);
+        assert_eq!(tasks[0].title, title1);
+        assert_eq!(tasks[0].status, Status::Todo);
+        assert_eq!(tasks[0].star, None);
+        assert_eq!(tasks[1].title, title3);
+        assert_eq!(tasks[1].status, Status::Todo);
+        assert_eq!(tasks[1].star, None);
+        assert_eq!(tasks[2].title, title2);
+        assert_eq!(tasks[2].status, Status::Done);
+        assert_eq!(tasks[2].star, Some(true));
     }
 
     #[test]
@@ -341,7 +360,8 @@ mod tests {
         let result = ctx.execute(command);
 
         assert!(result.is_ok());
-        let expected = format!(" 1.  ✔  {}\n 2.  ☐  {}\n", title1, title2,);
+        // Checked tasks go last
+        let expected = format!(" 1.  ☐  {}\n 2.  ✔  {}\n", title2, title1);
         assert_eq!(strip_str(ctx.printer.text), expected);
     }
 
@@ -426,29 +446,29 @@ mod tests {
         let link5 = Some("https://example5.com".to_string());
         ctx.add_task(title5, link5.clone());
 
-        // Check first task
-        let id = get_id_for_index(&ctx.storage, 1).unwrap().unwrap();
+        // Check first task (which makes it the last task)
+        let id = get_id_for_title(&ctx.storage, title1).unwrap().unwrap();
         let command = Command::Check {
             ids: Some(vec![id]),
         };
         ctx.execute(command).unwrap();
 
-        // Begin second task
-        let id = get_id_for_index(&ctx.storage, 2).unwrap().unwrap();
+        // Begin second task (which is now the first task)
+        let id = get_id_for_title(&ctx.storage, title2).unwrap().unwrap();
         let command = Command::Begin {
             ids: Some(vec![id]),
         };
         ctx.execute(command).unwrap();
 
         // Check fourth task
-        let id = get_id_for_index(&ctx.storage, 4).unwrap().unwrap();
+        let id = get_id_for_title(&ctx.storage, title4).unwrap().unwrap();
         let command = Command::Check {
             ids: Some(vec![id]),
         };
         ctx.execute(command).unwrap();
 
         // Begin fifth task
-        let id = get_id_for_index(&ctx.storage, 5).unwrap().unwrap();
+        let id = get_id_for_title(&ctx.storage, title5).unwrap().unwrap();
         let command = Command::Begin {
             ids: Some(vec![id]),
         };
@@ -459,29 +479,32 @@ mod tests {
 
         assert!(result.is_ok());
         let tasks = ctx.storage.read_tasks().unwrap();
-        let archived = ctx.storage.read_archived().unwrap();
+        let mut archived = ctx.storage.read_archived().unwrap();
         assert_eq!(tasks.len(), 3);
         assert_eq!(archived.len(), 4);
+
+        // Sort the archived tasks so it's easier to examine them (archived order doesn't matter)
+        archived.sort_by_key(|t| t.title.clone());
 
         // The first task (at done) was archived
         assert_eq!(archived[0].title, title1);
         assert_eq!(archived[0].status, Status::Archived);
         assert_eq!(archived[0].link, None);
 
-        // The second task (at begin) was changed back to Todo
-        assert_eq!(tasks[0].title, title2);
+        // The third task (at todo) remains unchanged
+        assert_eq!(tasks[0].title, title3);
         assert_eq!(tasks[0].status, Status::Todo);
         assert_eq!(tasks[0].link, None);
 
-        // The third task (at todo) remains unchanged
-        assert_eq!(tasks[1].title, title3);
-        assert_eq!(tasks[1].status, Status::Todo);
-        assert_eq!(tasks[1].link, None);
-
         // The fifth task (at begin) was changed back to Todo
-        assert_eq!(tasks[2].title, title5);
+        assert_eq!(tasks[1].title, title5);
+        assert_eq!(tasks[1].status, Status::Todo);
+        assert_eq!(tasks[1].link, link5);
+
+        // The second task (at begin) was changed back to Todo
+        assert_eq!(tasks[2].title, title2);
         assert_eq!(tasks[2].status, Status::Todo);
-        assert_eq!(tasks[2].link, link5);
+        assert_eq!(tasks[2].link, None);
 
         // The second task (since it was at begin) was duplicated and archived
         assert_eq!(archived[1].title, title2);
@@ -510,19 +533,29 @@ mod tests {
         let title2 = "Test task 2";
         ctx.add_task(title2, None);
 
-        // Check first task
+        let tasks = ctx.storage.read_tasks().unwrap();
+        assert_eq!(tasks[0].title, title1);
+        assert_eq!(tasks[1].title, title2);
+
+        // Check first task (this will make it the last task)
         let id = get_id_for_index(&ctx.storage, 1).unwrap().unwrap();
         let command = Command::Check {
             ids: Some(vec![id]),
         };
         ctx.execute(command).unwrap();
+        let tasks = ctx.storage.read_tasks().unwrap();
+        assert_eq!(tasks[0].title, title2);
+        assert_eq!(tasks[1].title, title1);
 
-        // Begin second task
-        let id = get_id_for_index(&ctx.storage, 2).unwrap().unwrap();
+        // Begin second task (which is now the first task)
+        let id = get_id_for_index(&ctx.storage, 1).unwrap().unwrap();
         let command = Command::Begin {
             ids: Some(vec![id]),
         };
         ctx.execute(command).unwrap();
+        let tasks = ctx.storage.read_tasks().unwrap();
+        assert_eq!(tasks[0].title, title2);
+        assert_eq!(tasks[1].title, title1);
 
         let command = Command::Clear {};
         let result = ctx.execute(command);
@@ -530,8 +563,16 @@ mod tests {
         assert!(result.is_ok());
         let tasks = ctx.storage.read_tasks().unwrap();
         let archived = ctx.storage.read_archived().unwrap();
-        assert_eq!(tasks.len(), 1);
-        assert_eq!(archived.len(), 2);
+        assert_eq!(
+            tasks.len(),
+            1,
+            "There should only be one task after clearing the checked task"
+        );
+        assert_eq!(
+            archived.len(),
+            2,
+            "There should be two archived tasks: the checked one and a duplicate of the begun one"
+        );
 
         // Add more tasks
         let title3 = "Test task 3";
@@ -588,7 +629,7 @@ mod tests {
         ctx.add_task(title5, None);
 
         // First task is done
-        let id = get_id_for_index(&ctx.storage, 1).unwrap().unwrap();
+        let id = get_id_for_title(&ctx.storage, title1).unwrap().unwrap();
         let command = Command::Check {
             ids: Some(vec![id]),
         };
@@ -596,7 +637,7 @@ mod tests {
         assert!(result.is_ok());
 
         // Second task is started
-        let id = get_id_for_index(&ctx.storage, 2).unwrap().unwrap();
+        let id = get_id_for_title(&ctx.storage, title2).unwrap().unwrap();
         let command = Command::Begin {
             ids: Some(vec![id]),
         };
@@ -604,7 +645,7 @@ mod tests {
         assert!(result.is_ok());
 
         // Third task is archived
-        let id = get_id_for_index(&ctx.storage, 3).unwrap().unwrap();
+        let id = get_id_for_title(&ctx.storage, title3).unwrap().unwrap();
         let command = Command::Archive {
             ids: Some(vec![id]),
         };
@@ -615,13 +656,14 @@ mod tests {
         // already archived).
         //
         // Manually set the fourth task's active_date to 2 days ago.
-        let id = get_id_for_index(&ctx.storage, 3).unwrap().unwrap();
+        let id = get_id_for_title(&ctx.storage, title4).unwrap().unwrap();
         let mut tasks = ctx.storage.read_tasks().unwrap();
         let Some(task) = tasks.iter_mut().find(|t| t.id == id) else {
             panic!("Cannot find last task in archive");
         };
         task.active_date = Some((Local::now() - Duration::days(2)).date_naive());
         ctx.storage.write_tasks(tasks).unwrap();
+        let id = get_id_for_title(&ctx.storage, title4).unwrap().unwrap();
         let command = Command::Archive {
             ids: Some(vec![id]),
         };
@@ -632,7 +674,7 @@ mod tests {
 
         // Fifth task remains in Todo
 
-        // Copy should ignore Todo task and task before date
+        // Copy should ignore Todo task (task5) and task before date (task4)
         let command = Command::CopyAfterDate {
             date: Some(Local::now().format("%Y-%m-%d").to_string()),
             format: LinkFormat::Adjacent,
@@ -643,8 +685,8 @@ mod tests {
         let expected = format!(
             "\n## {}\n- {}\n- {}\n- {}",
             Local::now().format("%Y-%m-%d"),
-            title1,
             title2,
+            title1,
             title3
         );
         assert_eq!(ctx.copier.text, expected);

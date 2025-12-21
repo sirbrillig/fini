@@ -1,6 +1,6 @@
-use crate::markdown::parse_markdown_archive;
-use crate::task_item::{TaskItem, TaskItemCopyableMarkdown};
-use crate::util::tasks_as_markdown_by_date;
+use crate::markdown::{parse_markdown_archive_with_start_id, parse_markdown_tasks};
+use crate::task_item::{TaskItem, TaskItemCopyableMarkdown, TaskItemFiniMarkdown};
+use crate::util::{tasks_as_markdown, tasks_as_markdown_by_date};
 use chrono::Datelike;
 use directories::BaseDirs;
 use glob::glob;
@@ -46,7 +46,7 @@ impl FileStorage {
     pub fn new(path: PathBuf) -> Self {
         Self {
             path,
-            data_filename: "fini_data.json".to_string(),
+            data_filename: "tasks.md".to_string(),
         }
     }
 
@@ -80,7 +80,10 @@ impl FileStorage {
                 };
                 grouped.entry(key).or_default().push(task);
             } else {
-                eprintln!("Warning: archived task without active_date: {}", task.title);
+                eprintln!(
+                    "⚠️ Warning: archived task without active_date: {}",
+                    task.title
+                );
             }
         }
         grouped
@@ -89,18 +92,20 @@ impl FileStorage {
 
 impl TaskStorage for FileStorage {
     fn read_tasks(&self) -> Result<Vec<TaskItem>, Box<dyn std::error::Error>> {
-        let path = &self.path.join(&self.data_filename);
-        let Ok(data) = std::fs::read_to_string(path) else {
+        let file_path = &self.path.join(&self.data_filename);
+        let Ok(data) = std::fs::read_to_string(file_path) else {
             return Ok(Vec::new());
         };
-        Ok(serde_json::from_str(&data)?)
+        let tasks = parse_markdown_tasks(&data, 1)?;
+        Ok(tasks)
     }
 
     fn write_tasks(&mut self, tasks: Vec<TaskItem>) -> Result<(), Box<dyn std::error::Error>> {
         let path = &self.path.join(&self.data_filename);
         let dir = &self.path;
         let mut tmp = NamedTempFile::new_in(dir)?;
-        serde_json::to_writer_pretty(&mut tmp, &tasks)?;
+        let markdown = tasks_as_markdown(tasks, |t| TaskItemFiniMarkdown(t).to_string());
+        fs::write(&tmp, markdown)?;
         tmp.as_file_mut().flush()?;
         tmp.as_file().sync_all()?;
         tmp.persist(path)?;
@@ -113,7 +118,7 @@ impl TaskStorage for FileStorage {
         let mut next_id = 100000;
         for file_path in archive_files {
             let data = fs::read_to_string(&file_path)?;
-            let mut tasks = crate::markdown::parse_markdown_archive_with_start_id(&data, next_id)?;
+            let mut tasks = parse_markdown_archive_with_start_id(&data, next_id)?;
             // Update next_id to be after the last ID used in this file
             if let Some(last_task) = tasks.last() {
                 next_id = last_task.id + 1;
@@ -142,7 +147,7 @@ impl TaskStorage for FileStorage {
 }
 
 pub struct InMemoryStorage {
-    tasks: Vec<TaskItem>,
+    tasks: String,
     archived: String,
 }
 
@@ -155,7 +160,7 @@ impl Default for InMemoryStorage {
 impl InMemoryStorage {
     pub fn new() -> Self {
         Self {
-            tasks: Vec::new(),
+            tasks: "".to_string(),
             archived: "".to_string(),
         }
     }
@@ -163,16 +168,16 @@ impl InMemoryStorage {
 
 impl TaskStorage for InMemoryStorage {
     fn read_tasks(&self) -> Result<Vec<TaskItem>, Box<dyn std::error::Error>> {
-        Ok(self.tasks.clone())
+        parse_markdown_tasks(&self.tasks, 1)
     }
 
     fn write_tasks(&mut self, tasks: Vec<TaskItem>) -> Result<(), Box<dyn std::error::Error>> {
-        self.tasks = tasks;
+        self.tasks = tasks_as_markdown(tasks, |t| TaskItemFiniMarkdown(t).to_string());
         Ok(())
     }
 
     fn read_archived(&self) -> Result<Vec<TaskItem>, Box<dyn std::error::Error>> {
-        parse_markdown_archive(&self.archived)
+        parse_markdown_archive_with_start_id(&self.archived, 100000)
     }
 
     fn write_archived(&mut self, tasks: Vec<TaskItem>) -> Result<(), Box<dyn std::error::Error>> {
