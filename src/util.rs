@@ -3,7 +3,7 @@ use std::cmp::Reverse;
 use crate::{
     commands::LinkFormat,
     copier::Copier,
-    markdown::tasks_as_markdown_by_date,
+    markdown::archived_tasks_as_markdown,
     printer::Printer,
     storage::TaskStorage,
     task_item::{
@@ -32,6 +32,7 @@ pub fn sort_visible_items(items: &[TaskItem]) -> Vec<&TaskItem> {
         .filter(|i| matches!(i.status, Status::Todo | Status::InProgress | Status::Done))
         .collect();
     visible.sort_by_key(|i| Reverse(i.star));
+    visible.sort_by_key(|i| i.status == Status::Done);
     visible
 }
 
@@ -140,7 +141,6 @@ pub fn add(
     };
     printer.print(format!("Added task: {}", &item.title).as_str());
     tasks.push(item);
-    tasks.sort_by_key(|i| Reverse(i.star));
     storage.write_tasks(tasks)?;
     Ok(id)
 }
@@ -167,7 +167,7 @@ pub fn archived(
     printer: &mut dyn Printer,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let tasks = storage.read_archived()?;
-    printer.print(&tasks_as_markdown_by_date(tasks, |t| {
+    printer.print(&archived_tasks_as_markdown(tasks, |t| {
         TaskItemCopyable(t).to_string()
     }));
     Ok(())
@@ -198,7 +198,6 @@ pub fn work(
         }
     }
     if did_change {
-        tasks.sort_by_key(|i| Reverse(i.star));
         storage.write_tasks(tasks)?;
     }
     Ok(())
@@ -224,7 +223,6 @@ pub fn star(
         did_change = true;
     }
     if did_change {
-        tasks.sort_by_key(|i| Reverse(i.star));
         storage.write_tasks(tasks)?;
         printer.print("Starred the selected tasks");
     } else {
@@ -258,7 +256,6 @@ pub fn done(
         }
     }
     if did_change {
-        tasks.sort_by_key(|i| Reverse(i.star));
         storage.write_tasks(tasks)?;
     }
     Ok(())
@@ -270,7 +267,6 @@ pub fn delete(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut tasks = storage.read_tasks()?;
     tasks.retain(|i| !ids.contains(&i.id));
-    tasks.sort_by_key(|i| Reverse(i.star));
     storage.write_tasks(tasks)?;
     Ok(())
 }
@@ -309,7 +305,6 @@ pub fn archive(
         printer.print(format!("Archived task: {}", item.title).as_str());
     }
     if did_change {
-        tasks.sort_by_key(|i| Reverse(i.star));
         storage.write_tasks(
             tasks
                 .into_iter()
@@ -446,7 +441,6 @@ pub fn edit_link(
     // Update the task
     printer.print(format!("Updated task: {}", new_link).as_str());
     item.link = Some(new_link);
-    tasks.sort_by_key(|i| Reverse(i.star));
     storage.write_tasks(tasks)?;
     Ok(())
 }
@@ -470,7 +464,6 @@ pub fn edit_task(
 
     if new_title != item.title {
         item.title = new_title.clone();
-        tasks.sort_by_key(|i| Reverse(i.star));
         storage.write_tasks(tasks)?;
         printer.print(format!("Updated task: {}", new_title).as_str());
     }

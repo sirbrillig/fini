@@ -1,6 +1,6 @@
 use crate::copier::Copier;
 use crate::interactive::interactive;
-use crate::markdown::tasks_as_markdown_by_date;
+use crate::markdown::archived_tasks_as_markdown;
 use crate::printer::Printer;
 use crate::prompter::Prompter;
 use crate::storage::TaskStorage;
@@ -146,7 +146,7 @@ pub fn execute_command(
                 &[Status::Done, Status::InProgress, Status::Archived],
             )?;
             let tasks = get_tasks_for_ids(tasks, &ids)?;
-            let text = tasks_as_markdown_by_date(tasks, |i| get_task_link_for_format(i, format));
+            let text = archived_tasks_as_markdown(tasks, |i| get_task_link_for_format(i, format));
             copier.copy(&text)?;
             printer
                 .print(format!("Copied tasks as Markdown by date starting at {}", date).as_str());

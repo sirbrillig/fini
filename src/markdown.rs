@@ -14,12 +14,14 @@ where
     let mut outputs: Vec<String> = vec![];
     let mut current_date: Option<NaiveDate> = None;
 
-    // First sort by date (with dateless ones first)
+    // First sort by date (with dateless ones first) because we need to write the active tasks
+    // first in the file and active tasks do not have a date.
     items.sort_by_key(|i| i.active_date);
-    // Write dateless tasks first
+    // Write dateless (active) tasks first
     outputs.push(format!("## {}", ACTIVE_TASKS_LABEL));
     for item in items {
         if item.active_date.is_none() && current_date.is_some() {
+            // This should never happen due to the sorting.
             panic!(
                 "⚠️ Found tasks without date AFTER tasks with date when writing! Sorting must have failed!"
             );
@@ -42,7 +44,8 @@ where
     outputs.join("\n")
 }
 
-pub fn tasks_as_markdown_by_date<F>(mut items: Vec<TaskItem>, format: F) -> String
+/// Transform archived tasks into archived format.
+pub fn archived_tasks_as_markdown<F>(mut items: Vec<TaskItem>, format: F) -> String
 where
     F: Fn(&TaskItem) -> String,
 {
@@ -107,7 +110,7 @@ pub fn parse_markdown_tasks(
 
         let task_body = &status_matches[2];
 
-        let star = match task_body.starts_with("⭐️") {
+        let star = match task_body.starts_with("⭐️ ") {
             true => Some(true),
             false => None,
         };
@@ -145,10 +148,15 @@ pub fn parse_markdown_tasks(
         continue;
     }
 
-    // Starred tasks go first
-    tasks.sort_by_key(|i| Reverse(i.star));
-    // Checked tasks go last
-    tasks.sort_by_key(|i| i.status == Status::Done);
+    // Starred tasks go first, checked tasks last
+    tasks.sort_by_key(|t| {
+        (
+            t.status == Status::Done,
+            Reverse(t.star),
+            t.active_date,
+            t.id,
+        )
+    });
 
     Ok(tasks)
 }

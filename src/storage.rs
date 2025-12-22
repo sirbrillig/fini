@@ -1,6 +1,6 @@
 use crate::markdown::{
-    parse_markdown_archive_with_start_id, parse_markdown_tasks, tasks_as_markdown,
-    tasks_as_markdown_by_date,
+    archived_tasks_as_markdown, parse_markdown_archive_with_start_id, parse_markdown_tasks,
+    tasks_as_markdown,
 };
 use crate::task_item::{TaskItem, TaskItemCopyableMarkdown, TaskItemFiniMarkdown};
 use chrono::Datelike;
@@ -136,8 +136,9 @@ impl TaskStorage for FileStorage {
         for (key, month_tasks) in grouped {
             let filename = key.get_archive_filename();
             let path = self.path.join(&filename);
-            let markdown =
-                tasks_as_markdown_by_date(month_tasks, |t| TaskItemCopyableMarkdown(t).to_string());
+            let markdown = archived_tasks_as_markdown(month_tasks, |t| {
+                TaskItemCopyableMarkdown(t).to_string()
+            });
             let mut tmp = NamedTempFile::new_in(&self.path)?;
             fs::write(&tmp, markdown)?;
             tmp.as_file_mut().flush()?;
@@ -184,7 +185,7 @@ impl TaskStorage for InMemoryStorage {
 
     fn write_archived(&mut self, tasks: Vec<TaskItem>) -> Result<(), Box<dyn std::error::Error>> {
         self.archived =
-            tasks_as_markdown_by_date(tasks, |t| TaskItemCopyableMarkdown(t).to_string());
+            archived_tasks_as_markdown(tasks, |t| TaskItemCopyableMarkdown(t).to_string());
         Ok(())
     }
 }
