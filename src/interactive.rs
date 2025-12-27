@@ -1,4 +1,5 @@
 use crate::commands::{Command, LinkFormat, execute_command};
+use crate::config::load_config;
 use crate::copier::Copier;
 use crate::printer::Printer;
 use crate::prompter::Prompter;
@@ -13,9 +14,10 @@ pub fn interactive(
     copier: &mut dyn Copier,
     printer: &mut dyn Printer,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let config = load_config()?;
     loop {
         println!("{}", "-----------------------------------------".green());
-        list(storage, printer, LinkFormat::AdjacentColor)?;
+        list(storage, printer, config.list_link_format)?;
         let commands = vec![
             "quit",
             "list",

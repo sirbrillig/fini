@@ -4,10 +4,9 @@ use crate::{
 };
 use chrono::NaiveDate;
 use colored::Colorize;
-use serde::{Deserialize, Serialize};
 use std::fmt;
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct TaskItem {
     pub id: usize,
     pub title: String,
@@ -17,7 +16,7 @@ pub struct TaskItem {
     pub star: Option<bool>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Default, Clone)]
+#[derive(Debug, PartialEq, Default, Clone)]
 pub enum Status {
     #[default]
     Todo,

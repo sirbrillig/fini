@@ -1,5 +1,6 @@
 use clap::{Parser, Subcommand};
 use fini::commands::{Command, LinkFormat, execute_command};
+use fini::config::load_config;
 use fini::copier::ClipboardCopier;
 use fini::indices::{get_id_for_index, get_ids_for_indices};
 use fini::printer::StdoutPrinter;
@@ -94,6 +95,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let prompter = InquirePrompter {};
     let mut copier = ClipboardCopier {};
     let mut printer = StdoutPrinter {};
+    let config = load_config()?;
     let cli = Cli::parse();
     let command = match cli.command {
         CliCommands::Add { title } => Command::Add {
@@ -119,7 +121,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             format: LinkFormat::Adjacent,
         },
         CliCommands::List => Command::List {
-            format: LinkFormat::AdjacentColor,
+            format: config.list_link_format,
         },
         CliCommands::Archived => Command::Archived,
         CliCommands::Edit { index } => {

@@ -1,4 +1,5 @@
 pub mod commands;
+pub mod config;
 pub mod copier;
 pub mod indices;
 mod interactive;
