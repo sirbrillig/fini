@@ -15,7 +15,7 @@ pub fn interactive(
 ) -> Result<(), Box<dyn std::error::Error>> {
     loop {
         println!("{}", "-----------------------------------------".green());
-        list(storage, printer, LinkFormat::Hyperlink)?;
+        list(storage, printer, LinkFormat::AdjacentColor)?;
         let commands = vec![
             "quit",
             "list",
@@ -57,7 +57,7 @@ pub fn interactive(
             }),
             "copy" => Some(Command::Copy {
                 ids: None,
-                format: crate::commands::LinkFormat::Adjacent,
+                format: LinkFormat::Adjacent,
             }),
             "copy-markdown" => Some(Command::Copy {
                 ids: None,
@@ -65,7 +65,7 @@ pub fn interactive(
             }),
             "copy-after" => Some(Command::CopyAfterDate {
                 date: None,
-                format: crate::commands::LinkFormat::Adjacent,
+                format: LinkFormat::Adjacent,
             }),
             "edit" => Some(Command::Edit { id: None }),
             "open" => Some(Command::Open { id: None }),

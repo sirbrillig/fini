@@ -119,7 +119,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             format: LinkFormat::Adjacent,
         },
         CliCommands::List => Command::List {
-            format: LinkFormat::Hyperlink,
+            format: LinkFormat::AdjacentColor,
         },
         CliCommands::Archived => Command::Archived,
         CliCommands::Edit { index } => {

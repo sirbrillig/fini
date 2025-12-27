@@ -7,8 +7,8 @@ use crate::{
     printer::Printer,
     storage::TaskStorage,
     task_item::{
-        Status, TaskItem, TaskItemCopyable, TaskItemCopyableMarkdown, TaskItemHyperlinked,
-        TaskItemWithIndex, TaskItemWithStatus,
+        Status, TaskItem, TaskItemAdjacentLink, TaskItemCopyable, TaskItemCopyableMarkdown,
+        TaskItemHyperlinked, TaskItemWithIndex, TaskItemWithStatus,
     },
 };
 use chrono::{Local, NaiveDate};
@@ -21,6 +21,7 @@ pub fn get_task_link_for_format(task: &TaskItem, format: LinkFormat) -> String {
     match format {
         LinkFormat::None => task.to_string(),
         LinkFormat::Adjacent => TaskItemCopyable(task).to_string(),
+        LinkFormat::AdjacentColor => TaskItemAdjacentLink(task).to_string(),
         LinkFormat::Hyperlink => TaskItemHyperlinked(task).to_string(),
         LinkFormat::Markdown => TaskItemCopyableMarkdown(task).to_string(),
     }

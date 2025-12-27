@@ -87,6 +87,19 @@ impl fmt::Display for TaskItemWithStatus<'_> {
     }
 }
 
+// A version of the task where the link is adjacent to the text with color, corresponding to
+// `LinkFormat::AdjacentColor`.
+pub struct TaskItemAdjacentLink<'a>(pub &'a TaskItem);
+impl fmt::Display for TaskItemAdjacentLink<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0.title)?;
+        if let Some(link) = &self.0.link {
+            write!(f, " {}", link.dimmed())?;
+        }
+        Ok(())
+    }
+}
+
 // A version of the task where the link is adjacent to the text, corresponding to
 // `LinkFormat::Adjacent`.
 pub struct TaskItemCopyable<'a>(pub &'a TaskItem);

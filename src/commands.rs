@@ -19,6 +19,8 @@ pub enum LinkFormat {
     None,
     /// Print the link after the task title
     Adjacent,
+    /// Print the link after the task title with colors
+    AdjacentColor,
     /// Print the link as an OSC 8 hyperlink after the task title
     Hyperlink,
     /// Make the task title into a markdown link
