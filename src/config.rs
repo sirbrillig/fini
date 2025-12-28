@@ -1,7 +1,7 @@
 use config::{Config, ConfigError, File};
 use serde::Deserialize;
 
-use crate::{commands::LinkFormat, storage::get_default_storage_path};
+use crate::{commands::LinkFormat, storage::get_default_data_dir};
 
 #[derive(Debug, Deserialize)]
 pub struct FiniConfig {
@@ -10,7 +10,7 @@ pub struct FiniConfig {
 }
 
 pub fn load_config() -> Result<FiniConfig, ConfigError> {
-    let path = get_default_storage_path();
+    let path = get_default_data_dir();
     let file_path = path.join("fini_config");
     let data = Config::builder()
         .add_source(File::from(file_path).required(false))

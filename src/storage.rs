@@ -13,11 +13,18 @@ use std::io::Write;
 use std::path::PathBuf;
 use tempfile::NamedTempFile;
 
-pub fn get_default_storage_path() -> PathBuf {
+/// Get the path to the main data directory for fini
+pub fn get_default_data_dir() -> PathBuf {
     let data_dir = BaseDirs::new()
         .map(|b| b.data_dir().to_path_buf())
         .unwrap_or(PathBuf::from("."));
     data_dir.join("fini")
+}
+
+/// Get the path to the default task storage directory
+pub fn get_default_storage_path() -> PathBuf {
+    let data_dir = get_default_data_dir();
+    data_dir.join("tasks")
 }
 
 #[derive(Eq, Hash, PartialEq)]
