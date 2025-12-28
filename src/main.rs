@@ -6,6 +6,7 @@ use fini::indices::{get_id_for_index, get_ids_for_indices};
 use fini::printer::StdoutPrinter;
 use fini::prompter::InquirePrompter;
 use fini::storage::{FileStorage, get_default_storage_path};
+use std::fs::create_dir_all;
 
 #[derive(Parser)]
 #[command(
@@ -91,7 +92,9 @@ enum CliCommands {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut storage = FileStorage::new(get_default_storage_path());
+    let storage_path = get_default_storage_path();
+    create_dir_all(&storage_path)?;
+    let mut storage = FileStorage::new(storage_path);
     let prompter = InquirePrompter {};
     let mut copier = ClipboardCopier {};
     let mut printer = StdoutPrinter {};
