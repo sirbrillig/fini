@@ -81,7 +81,7 @@ pub fn parse_markdown_tasks(
     // x is Done
     // A is Archived
     // space is Todo
-    let status_regex = Regex::new(r"^- \[(\s|x|~|A)\] (\S.+)")?;
+    let status_regex = Regex::new(r"^-\s+\[(\s|x|~|A)\] (\S.+)")?;
 
     // Links wrap the task title, like `- [ ] [Task](https://example.com)`
     let link_regex = Regex::new(r"\[([^\]]+)\]\(([^)]+)\)")?;
