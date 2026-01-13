@@ -79,17 +79,21 @@ pub fn get_tasks_for_ids(
 pub fn prompt_for_task_id(
     storage: &dyn TaskStorage,
     message: &str,
-) -> Result<usize, Box<dyn std::error::Error>> {
+) -> Result<Option<usize>, Box<dyn std::error::Error>> {
     let items = storage.read_tasks()?;
     let visible = sort_visible_items(&items);
     let formatted: Vec<_> = visible
         .iter()
         .map(|t| TaskItemWithStatus(t, LinkFormat::None))
         .collect();
-    let val = Select::new(message, formatted)
+    let val = match Select::new(message, formatted)
         .with_page_size(SELECT_PAGE_SIZE)
-        .prompt()?;
-    Ok(val.0.id)
+        .prompt() {
+            Ok(val) => Some(val.0.id),
+            Err(inquire::InquireError::OperationCanceled) => None,
+            Err(err) => return Err(err.into()),
+        };
+    Ok(val)
 }
 
 pub fn prompt_for_task_ids(
@@ -104,7 +108,10 @@ pub fn prompt_for_task_ids(
         .collect();
     let val = MultiSelect::new(message, formatted)
         .with_page_size(SELECT_PAGE_SIZE)
-        .prompt()?;
+        .prompt().or_else(|err| match err {
+            inquire::InquireError::OperationCanceled => Ok(Vec::new()),
+            err => Err(err),
+        })?;
     Ok(val.iter().map(|i| i.0.id).collect())
 }
 

@@ -157,9 +157,13 @@ pub fn execute_command(
         Command::List { format } => list(storage, printer, format)?,
         Command::Archived => archived(storage, printer)?,
         Command::Open { id } => {
-            let id = match id {
-                Some(id) => id,
+            let id_option = match id {
+                Some(id) => Some(id),
                 None => prompt_for_task_id(storage, "Select task to open")?,
+            };
+            let Some(id) = id_option else {
+                printer.print("No task selected");
+                return Ok(());
             };
             let task = get_task_for_id(storage, id)?;
             let Some(link) = task.link else {
@@ -169,9 +173,13 @@ pub fn execute_command(
             webbrowser::open(&link)?;
         }
         Command::Edit { id } => {
-            let id = match id {
-                Some(id) => id,
+            let id_option = match id {
+                Some(id) => Some(id),
                 None => prompt_for_task_id(storage, "Select task to edit")?,
+            };
+            let Some(id) = id_option else {
+                printer.print("No task selected");
+                return Ok(());
             };
             edit_task(storage, printer, id)?;
         }
