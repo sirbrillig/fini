@@ -363,8 +363,6 @@ pub fn clear(
     let mut next_id = get_next_id(&tasks);
 
     for item in tasks.iter_mut() {
-        // Unstar all tasks.
-        item.star = None;
         match item.status {
             Status::Archived => {
                 // In case there are any archived tasks still in task storage, move them to
