@@ -16,7 +16,7 @@ use std::fs::create_dir_all;
 )]
 struct Cli {
     #[command(subcommand)]
-    command: CliCommands,
+    command: Option<CliCommands>,
 }
 
 #[derive(Subcommand)]
@@ -100,7 +100,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut printer = StdoutPrinter {};
     let config = load_config()?;
     let cli = Cli::parse();
-    let command = match cli.command {
+    let requested_command = match cli.command {
+        Some(requested_command) => requested_command,
+        // Default to interactive.
+        None => CliCommands::Interactive,
+    };
+    let command = match requested_command {
         CliCommands::Add { title } => Command::Add {
             title: Some(title.join(" ")).filter(|x| !x.is_empty()),
             link: None,
