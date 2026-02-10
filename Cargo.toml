@@ -20,3 +20,6 @@ serde = { version = "1.0.228", features = ["derive"] }
 strip-ansi-escapes = "0.2.1"
 tempfile = "3.23.0"
 webbrowser = "1.0.6"
+
+[patch.crates-io]
+inquire = { git = "https://github.com/sirbrillig/inquire", branch = "add-select-on-submit-to-multi-select", subdirectory = "inquire" }

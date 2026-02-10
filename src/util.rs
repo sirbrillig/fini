@@ -108,6 +108,7 @@ pub fn prompt_for_task_ids(
         .collect();
     let val = MultiSelect::new(message, formatted)
         .with_page_size(SELECT_PAGE_SIZE)
+        .with_select_on_empty_submit()
         .prompt().or_else(|err| match err {
             inquire::InquireError::OperationCanceled => Ok(Vec::new()),
             err => Err(err),
