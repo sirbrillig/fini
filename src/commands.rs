@@ -219,13 +219,14 @@ pub fn execute_command(
             // Print tasks that will be deleted
             let tasks = storage.read_tasks()?;
             let tasks_to_delete = get_tasks_for_ids(tasks, &ids)?;
-            if !tasks_to_delete.is_empty() {
-                printer.print("Tasks to be deleted:");
-                for task in &tasks_to_delete {
-                    printer.print(format!("  - {}", task).as_str());
-                }
-                printer.print(""); // Blank line before confirmation
+            if tasks_to_delete.is_empty() {
+                return Ok(());
             }
+            printer.print("Tasks to be deleted:");
+            for task in &tasks_to_delete {
+                printer.print(format!("  - {}", task).as_str());
+            }
+            printer.print(""); // Blank line before confirmation
             let confirm_answer =
                 prompter.confirm("Are you sure you want to delete the selected tasks?");
             if confirm_answer.is_ok_and(|x| x) {
