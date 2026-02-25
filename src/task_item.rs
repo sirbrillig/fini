@@ -112,6 +112,19 @@ impl fmt::Display for TaskItemCopyable<'_> {
     }
 }
 
+// A version of the task where the link is on a newline after the text with color, corresponding to
+// `LinkFormat::Newline`.
+pub struct TaskItemNewlineLink<'a>(pub &'a TaskItem);
+impl fmt::Display for TaskItemNewlineLink<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0.title)?;
+        if let Some(link) = &self.0.link {
+            write!(f, "\n{}", link.dimmed())?;
+        }
+        Ok(())
+    }
+}
+
 // A version of the task where the link is markdown linked to the text, corresponding to
 // `LinkFormat::Markdown`.
 pub struct TaskItemCopyableMarkdown<'a>(pub &'a TaskItem);

@@ -19,5 +19,5 @@ pub fn load_config() -> Result<FiniConfig, ConfigError> {
 }
 
 fn default_list_link_format() -> LinkFormat {
-    LinkFormat::AdjacentColor
+    LinkFormat::Newline
 }

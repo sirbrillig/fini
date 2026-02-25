@@ -26,6 +26,8 @@ pub enum LinkFormat {
     Hyperlink,
     /// Make the task title into a markdown link
     Markdown,
+    /// Print the link after the task title on a new line
+    Newline,
 }
 
 pub enum Command {

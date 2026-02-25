@@ -8,7 +8,7 @@ use crate::{
     storage::TaskStorage,
     task_item::{
         Status, TaskItem, TaskItemAdjacentLink, TaskItemCopyable, TaskItemCopyableMarkdown,
-        TaskItemHyperlinked, TaskItemWithIndex, TaskItemWithStatus,
+        TaskItemHyperlinked, TaskItemNewlineLink, TaskItemWithIndex, TaskItemWithStatus,
     },
 };
 use chrono::{Local, NaiveDate};
@@ -24,6 +24,7 @@ pub fn get_task_link_for_format(task: &TaskItem, format: LinkFormat) -> String {
         LinkFormat::AdjacentColor => TaskItemAdjacentLink(task).to_string(),
         LinkFormat::Hyperlink => TaskItemHyperlinked(task).to_string(),
         LinkFormat::Markdown => TaskItemCopyableMarkdown(task).to_string(),
+        LinkFormat::Newline => TaskItemNewlineLink(task).to_string(),
     }
 }
 
@@ -88,11 +89,12 @@ pub fn prompt_for_task_id(
         .collect();
     let val = match Select::new(message, formatted)
         .with_page_size(SELECT_PAGE_SIZE)
-        .prompt() {
-            Ok(val) => Some(val.0.id),
-            Err(inquire::InquireError::OperationCanceled) => None,
-            Err(err) => return Err(err.into()),
-        };
+        .prompt()
+    {
+        Ok(val) => Some(val.0.id),
+        Err(inquire::InquireError::OperationCanceled) => None,
+        Err(err) => return Err(err.into()),
+    };
     Ok(val)
 }
 
@@ -109,7 +111,8 @@ pub fn prompt_for_task_ids(
     let val = MultiSelect::new(message, formatted)
         .with_page_size(SELECT_PAGE_SIZE)
         .with_select_on_empty_submit()
-        .prompt().or_else(|err| match err {
+        .prompt()
+        .or_else(|err| match err {
             inquire::InquireError::OperationCanceled => Ok(Vec::new()),
             err => Err(err),
         })?;
