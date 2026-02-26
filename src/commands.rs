@@ -183,7 +183,7 @@ pub fn execute_command(
                 printer.print("No task selected");
                 return Ok(());
             };
-            edit_task(storage, printer, id)?;
+            edit_task(storage, prompter, printer, id)?;
         }
         Command::Begin { ids } => {
             let ids = match ids {

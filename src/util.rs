@@ -5,6 +5,7 @@ use crate::{
     copier::Copier,
     markdown::archived_tasks_as_markdown,
     printer::Printer,
+    prompter::Prompter,
     storage::TaskStorage,
     task_item::{
         Status, TaskItem, TaskItemAdjacentLink, TaskItemCopyable, TaskItemCopyableMarkdown,
@@ -12,8 +13,7 @@ use crate::{
     },
 };
 use chrono::{Local, NaiveDate};
-use edit::edit;
-use inquire::{Confirm, MultiSelect, Select};
+use inquire::{MultiSelect, Select};
 
 const SELECT_PAGE_SIZE: usize = 20;
 
@@ -426,6 +426,7 @@ pub fn clear(
 
 pub fn edit_link(
     storage: &mut dyn TaskStorage,
+    prompter: &dyn Prompter,
     printer: &mut dyn Printer,
     id: usize,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -436,7 +437,7 @@ pub fn edit_link(
     };
     let current_link = item.link.clone().unwrap_or_default();
 
-    let new_link = edit(&current_link)?;
+    let new_link = prompter.text_with_initial("Edit link:", &current_link)?;
     let new_link = new_link.trim().to_string();
     if new_link.is_empty() {
         eprintln!("⚠️ link cannot be empty");
@@ -457,6 +458,7 @@ pub fn edit_link(
 
 pub fn edit_task(
     storage: &mut dyn TaskStorage,
+    prompter: &dyn Prompter,
     printer: &mut dyn Printer,
     id: usize,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -465,7 +467,7 @@ pub fn edit_task(
         return Err("No task found to edit".into());
     };
 
-    let new_title = edit(&item.title)?;
+    let new_title = prompter.text_with_initial("Edit task:", &item.title)?;
     let new_title = new_title.trim().to_string();
     if new_title.is_empty() {
         eprintln!("⚠️ Title cannot be empty");
@@ -478,12 +480,8 @@ pub fn edit_task(
         printer.print(format!("Updated task: {}", new_title).as_str());
     }
 
-    let confirm_answer = Confirm::new("Do you want to edit the link?")
-        .with_default(false)
-        .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
-        .prompt();
-    if confirm_answer.is_ok_and(|x| x) {
-        edit_link(storage, printer, id)?;
+    if prompter.confirm("Do you want to edit the link?")? {
+        edit_link(storage, prompter, printer, id)?;
     }
     Ok(())
 }

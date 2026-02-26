@@ -6,6 +6,11 @@ use std::cell::RefCell;
 
 pub trait Prompter {
     fn text(&self, message: &str) -> Result<String, Box<dyn std::error::Error>>;
+    fn text_with_initial(
+        &self,
+        message: &str,
+        initial: &str,
+    ) -> Result<String, Box<dyn std::error::Error>>;
     fn confirm(&self, message: &str) -> Result<bool, Box<dyn std::error::Error>>;
 }
 
@@ -14,6 +19,14 @@ pub struct InquirePrompter;
 impl Prompter for InquirePrompter {
     fn text(&self, message: &str) -> Result<String, Box<dyn std::error::Error>> {
         Ok(Text::new(message).prompt()?)
+    }
+
+    fn text_with_initial(
+        &self,
+        message: &str,
+        initial: &str,
+    ) -> Result<String, Box<dyn std::error::Error>> {
+        Ok(Text::new(message).with_initial_value(initial).prompt()?)
     }
 
     fn confirm(&self, message: &str) -> Result<bool, Box<dyn std::error::Error>> {
@@ -54,6 +67,16 @@ impl Prompter for VimPrompter {
         Ok(input)
     }
 
+    fn text_with_initial(
+        &self,
+        message: &str,
+        initial: &str,
+    ) -> Result<String, Box<dyn std::error::Error>> {
+        let prompt = format!("{} ", message);
+        let input = self.editor.borrow_mut().readline_with_initial(&prompt, (initial, ""))?;
+        Ok(input)
+    }
+
     fn confirm(&self, message: &str) -> Result<bool, Box<dyn std::error::Error>> {
         // Use inquire for confirm since it's more suitable for yes/no
         Ok(Confirm::new(message)
@@ -83,6 +106,14 @@ impl MockPrompter {
 
 impl Prompter for MockPrompter {
     fn text(&self, _message: &str) -> Result<String, Box<dyn std::error::Error>> {
+        Ok(self.next_text_response.clone())
+    }
+
+    fn text_with_initial(
+        &self,
+        _message: &str,
+        _initial: &str,
+    ) -> Result<String, Box<dyn std::error::Error>> {
         Ok(self.next_text_response.clone())
     }
 
