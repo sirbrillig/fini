@@ -12,7 +12,6 @@ clap = { version = "4.5.51", features = ["derive"] }
 colored = "2.1.0"
 config = "0.15.19"
 directories = "6.0.0"
-edit = "0.1.5"
 glob = "0.3"
 inquire = { version = "0.9.1", features = ["editor", "date"] }
 regex = "1.12.2"
