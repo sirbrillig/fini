@@ -1,10 +1,10 @@
 use clap::{Parser, Subcommand};
 use fini::commands::{Command, LinkFormat, execute_command};
-use fini::config::load_config;
+use fini::config::{PrompterType, load_config};
 use fini::copier::ClipboardCopier;
 use fini::indices::{get_id_for_index, get_ids_for_indices};
 use fini::printer::StdoutPrinter;
-use fini::prompter::InquirePrompter;
+use fini::prompter::{InquirePrompter, Prompter, VimPrompter};
 use fini::storage::{FileStorage, get_default_storage_path};
 use std::fs::create_dir_all;
 
@@ -95,10 +95,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let storage_path = get_default_storage_path();
     create_dir_all(&storage_path)?;
     let mut storage = FileStorage::new(storage_path);
-    let prompter = InquirePrompter {};
+    let config = load_config()?;
+    let prompter: Box<dyn Prompter> = match config.prompter {
+        PrompterType::Vim => Box::new(VimPrompter::new()?),
+        PrompterType::Inquire => Box::new(InquirePrompter),
+    };
     let mut copier = ClipboardCopier {};
     let mut printer = StdoutPrinter {};
-    let config = load_config()?;
     let cli = Cli::parse();
     let requested_command = match cli.command {
         Some(requested_command) => requested_command,
@@ -167,6 +170,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         CliCommands::Clear => Command::Clear,
         CliCommands::Interactive => Command::Interactive,
     };
-    execute_command(&mut storage, &prompter, &mut copier, &mut printer, command)?;
+    execute_command(&mut storage, prompter.as_ref(), &mut copier, &mut printer, command)?;
     Ok(())
 }

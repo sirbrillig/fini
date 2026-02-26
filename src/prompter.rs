@@ -1,4 +1,8 @@
 use inquire::{Confirm, Text};
+use rustyline::error::ReadlineError;
+use rustyline::history::DefaultHistory;
+use rustyline::{CompletionType, Config, EditMode, Editor};
+use std::cell::RefCell;
 
 pub trait Prompter {
     fn text(&self, message: &str) -> Result<String, Box<dyn std::error::Error>>;
@@ -13,6 +17,45 @@ impl Prompter for InquirePrompter {
     }
 
     fn confirm(&self, message: &str) -> Result<bool, Box<dyn std::error::Error>> {
+        Ok(Confirm::new(message)
+            .with_default(false)
+            .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
+            .prompt()?)
+    }
+}
+
+pub struct VimPrompter {
+    editor: RefCell<Editor<(), DefaultHistory>>,
+}
+
+impl VimPrompter {
+    pub fn new() -> Result<Self, ReadlineError> {
+        let config = Config::builder()
+            .edit_mode(EditMode::Vi)
+            .completion_type(CompletionType::List)
+            .build();
+        let editor = Editor::with_config(config)?;
+        Ok(Self {
+            editor: RefCell::new(editor),
+        })
+    }
+}
+
+impl Default for VimPrompter {
+    fn default() -> Self {
+        Self::new().expect("Failed to create VimPrompter")
+    }
+}
+
+impl Prompter for VimPrompter {
+    fn text(&self, message: &str) -> Result<String, Box<dyn std::error::Error>> {
+        let prompt = format!("{} ", message);
+        let input = self.editor.borrow_mut().readline(&prompt)?;
+        Ok(input)
+    }
+
+    fn confirm(&self, message: &str) -> Result<bool, Box<dyn std::error::Error>> {
+        // Use inquire for confirm since it's more suitable for yes/no
         Ok(Confirm::new(message)
             .with_default(false)
             .with_help_message("Type 'yes' or 'no' or 'y'/'n'")
