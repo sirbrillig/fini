@@ -4,6 +4,7 @@ use crate::{
 };
 use chrono::NaiveDate;
 use colored::Colorize;
+use terminal_size::{Width, terminal_size};
 use std::fmt;
 
 #[derive(Debug, Default, Clone)]
@@ -14,6 +15,20 @@ pub struct TaskItem {
     pub active_date: Option<NaiveDate>,
     pub link: Option<String>,
     pub star: Option<bool>,
+}
+
+impl TaskItem {
+    fn truncated_link(&self) -> &str {
+        let Some(link) = &self.link else {
+            return "";
+        };
+        let max_width = terminal_size().map(|(Width(w), _)| w as usize).unwrap_or(80);
+        let title_width = &self.title.len();
+        let buffer = 10; // width of any prefix like number or star
+        let url_width = max_width - title_width - buffer;
+        let safe_end = url_width.min(link.len());
+        &link[0..safe_end]
+    }
 }
 
 #[derive(Debug, PartialEq, Default, Clone)]
@@ -146,7 +161,7 @@ impl fmt::Display for TaskItemHyperlinked<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", &self.0.title)?;
         if let Some(link) = &self.0.link {
-            write!(f, " {}", format_hyperlink(link, "[link]").dimmed())?;
+            write!(f, " {}", format_hyperlink(link, self.0.truncated_link()).dimmed())?;
         }
         Ok(())
     }

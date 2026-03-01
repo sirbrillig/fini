@@ -20,6 +20,7 @@ strip-ansi-escapes = "0.2.1"
 tempfile = "3.23.0"
 webbrowser = "1.0.6"
 rustyline = { version = "15.0", features = ["derive"] }
+terminal_size = "0.4.3"
 
 [patch.crates-io]
 inquire = { git = "https://github.com/sirbrillig/inquire", branch = "add-select-on-submit-to-multi-select", subdirectory = "inquire" }
