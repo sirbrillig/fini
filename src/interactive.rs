@@ -37,7 +37,11 @@ pub fn interactive(
         println!("{}", "-----------------------------------------".dimmed());
         let answer = Select::new("Select a command:", commands)
             .with_page_size(4)
-            .prompt();
+            .prompt()
+            .or_else(|err| match err {
+                inquire::InquireError::OperationCanceled => Ok("list"),
+                err => Err(err),
+            });
 
         let answer = match answer {
             Ok(cmd) => cmd,
