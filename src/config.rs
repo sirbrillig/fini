@@ -23,7 +23,7 @@ pub fn load_config() -> Result<FiniConfig, ConfigError> {
     let path = get_default_data_dir();
     let file_path = path.join("fini_config");
     let data = Config::builder()
-        .add_source(File::from(file_path).required(false))
+        .add_source(File::with_name(&file_path.to_string_lossy()).required(false))
         .build()?;
     data.try_deserialize()
 }
