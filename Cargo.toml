@@ -2,6 +2,7 @@
 name = "fini"
 version = "1.0.0"
 edition = "2024"
+rust-version = "1.85"
 description = "A fast, interactive CLI todo list tool"
 repository = "https://github.com/sirbrillig/fini"
 license = "MIT"
