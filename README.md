@@ -13,17 +13,15 @@ A fast, interactive CLI todo list tool written in Rust. Track tasks with optiona
 
 ## Installation
 
+```bash
+cargo install --git https://github.com/sirbrillig/fini
+```
+
 ### From Source
 
 ```bash
 git clone https://github.com/sirbrillig/fini
 cd fini
-cargo build --release
-```
-
-The binary will be available at `target/release/fini`. You can add it to your PATH or install it with:
-
-```bash
 cargo install --path .
 ```
 

@@ -2,6 +2,8 @@
 name = "fini"
 version = "1.0.0"
 edition = "2024"
+description = "A fast, interactive CLI todo list tool"
+repository = "https://github.com/sirbrillig/fini"
 license = "MIT"
 authors = ["Payton Swick <payton@foolord.com>"]
 
