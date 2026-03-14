@@ -33,6 +33,7 @@ pub fn interactive(
             "delete",
             "edit",
             "list-archived",
+            "list-after",
         ];
         println!("{}", "-----------------------------------------".dimmed());
         let answer = Select::new("Select a command:", commands)
@@ -56,6 +57,10 @@ pub fn interactive(
             // Do nothing as the list will be printed when we loop.
             "list" => None,
             "list-archived" => Some(Command::Archived),
+            "list-after" => Some(Command::ListAfterDate {
+                date: None,
+                format: LinkFormat::Adjacent,
+            }),
             "clear" => Some(Command::Clear),
             "add" => Some(Command::Add {
                 title: None,

@@ -87,8 +87,15 @@ pub enum Command {
         /// The format of the copied links
         format: LinkFormat,
     },
-    /// Copy all completed, begun, or archived tasks to the clipboard after the date (inclusive)
+    /// Copy all completed, begun, or archived tasks to the clipboard starting on the date
     CopyAfterDate {
+        /// The date to start (will prompt if missing)
+        date: Option<String>,
+        /// The format of the copied links
+        format: LinkFormat,
+    },
+    /// List all completed, begun, or archived tasks starting on the date
+    ListAfterDate {
         /// The date to start (will prompt if missing)
         date: Option<String>,
         /// The format of the copied links
@@ -155,6 +162,25 @@ pub fn execute_command(
             copier.copy(&text)?;
             printer
                 .print(format!("Copied tasks as Markdown by date starting at {}", date).as_str());
+        }
+        Command::ListAfterDate { date, format } => {
+            let date = match date {
+                Some(content) => content,
+                None => DateSelect::new("Select first date to start listing begun and completed tasks:")
+                    .prompt()?
+                    .to_string(),
+            };
+            let mut tasks = storage.read_tasks()?;
+            let mut archived = storage.read_archived()?;
+            tasks.append(&mut archived);
+            let ids: Vec<usize> = get_task_ids_after_date(
+                &tasks,
+                &date,
+                &[Status::Done, Status::InProgress, Status::Archived],
+            )?;
+            let tasks = get_tasks_for_ids(tasks, &ids)?;
+            let text = archived_tasks_as_markdown(tasks, |i| get_task_link_for_format(i, format));
+            printer.print(&text);
         }
         Command::List { format } => list(storage, printer, format)?,
         Command::Archived => archived(storage, printer)?,

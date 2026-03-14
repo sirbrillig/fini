@@ -84,6 +84,11 @@ enum CliCommands {
         /// The date to start (will prompt if missing)
         date: String,
     },
+    /// List all completed, begun, or archived tasks after the date (inclusive)
+    ListAfterDate {
+        /// The date to start (will prompt if missing)
+        date: String,
+    },
     /// List all archived tasks
     Archived,
     /// Enter interactive mode (alias: i)
@@ -128,6 +133,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
         CliCommands::CopyAfterDate { date } => Command::CopyAfterDate {
+            date: Some(date),
+            format: LinkFormat::Adjacent,
+        },
+        CliCommands::ListAfterDate { date } => Command::ListAfterDate {
             date: Some(date),
             format: LinkFormat::Adjacent,
         },
