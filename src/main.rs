@@ -1,4 +1,5 @@
 use clap::{Parser, Subcommand};
+use directories::BaseDirs;
 use fini::commands::{Command, LinkFormat, execute_command};
 use fini::config::{PrompterType, load_config};
 use fini::copier::ClipboardCopier;
@@ -7,6 +8,7 @@ use fini::printer::StdoutPrinter;
 use fini::prompter::{InquirePrompter, Prompter, VimPrompter};
 use fini::storage::{FileStorage, get_default_data_dir};
 use std::fs;
+use std::path::PathBuf;
 
 #[derive(Parser)]
 #[command(
@@ -103,13 +105,29 @@ enum CliCommands {
     Boards,
 }
 
+fn expand_tilde(path: String) -> PathBuf {
+    if let Some(suffix) = path.strip_prefix("~/") {
+        if let Some(home) = BaseDirs::new().map(|b| b.home_dir().to_path_buf()) {
+            return home.join(suffix);
+        }
+    } else if path == "~" {
+        if let Some(home) = BaseDirs::new().map(|b| b.home_dir().to_path_buf()) {
+            return home;
+        }
+    }
+    PathBuf::from(path)
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
 
-    let data_dir = get_default_data_dir();
+    let config = load_config()?;
+    let data_dir = match config.data_dir {
+        Some(dir) => expand_tilde(dir),
+        None => get_default_data_dir(),
+    };
     fs::create_dir_all(&data_dir)?;
     let mut storage = FileStorage::new(data_dir)?;
-    let config = load_config()?;
     let prompter: Box<dyn Prompter> = match config.prompter {
         PrompterType::Vim => Box::new(VimPrompter::new()?),
         PrompterType::Inquire => Box::new(InquirePrompter),

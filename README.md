@@ -259,11 +259,22 @@ Controls the input method used for interactive prompts. Default: `inquire`.
 | `inquire` | Default interactive prompt UI      |
 | `vim`     | Vim-style line editing             |
 
+### `data_dir`
+
+Overrides where boards are stored. Supports `~` for the home directory. Useful for keeping boards in a synced folder (e.g. Dropbox, iCloud Drive).
+
+The config file itself always lives in the default platform location regardless of this setting.
+
+```toml
+data_dir = "~/Dropbox/fini"
+```
+
 ### Example config
 
 ```toml
 list_link_format = "Hyperlink"
 prompter = "vim"
+data_dir = "~/Dropbox/fini"
 ```
 
 ## Development
