@@ -6,7 +6,7 @@ mod tests {
     use fini::indices::{get_id_for_index, get_id_for_title};
     use fini::printer::MockPrinter;
     use fini::prompter::MockPrompter;
-    use fini::storage::{InMemoryStorage, TaskStorage};
+    use fini::storage::{FileStorage, InMemoryStorage, TaskStorage};
     use fini::task_item::Status;
     use strip_ansi_escapes::strip_str;
 
@@ -690,5 +690,81 @@ mod tests {
             title3
         );
         assert_eq!(ctx.copier.text, expected);
+    }
+
+    #[test]
+    fn test_boards_store_data_separately() -> Result<(), Box<dyn std::error::Error>> {
+        let dir_a = tempfile::tempdir()?;
+        let dir_b = tempfile::tempdir()?;
+
+        let mut storage_a = FileStorage::new(dir_a.path().to_path_buf())?;
+        let storage_b = FileStorage::new(dir_b.path().to_path_buf())?;
+
+        let prompter = MockPrompter::new();
+        let mut copier = MockCopier::new();
+        let mut printer = MockPrinter::new();
+
+        execute_command(
+            &mut storage_a,
+            &prompter,
+            &mut copier,
+            &mut printer,
+            Command::Add {
+                title: Some("Task on board A".to_string()),
+                link: None,
+            },
+        )?;
+
+        let tasks_a = storage_a.read_tasks()?;
+        let tasks_b = storage_b.read_tasks()?;
+
+        assert_eq!(tasks_a.len(), 1);
+        assert_eq!(tasks_a[0].title, "Task on board A");
+        assert!(tasks_b.is_empty(), "board B should be unaffected by writes to board A");
+        Ok(())
+    }
+
+    #[test]
+    fn test_boards_can_hold_different_tasks() -> Result<(), Box<dyn std::error::Error>> {
+        let dir_a = tempfile::tempdir()?;
+        let dir_b = tempfile::tempdir()?;
+
+        let mut storage_a = FileStorage::new(dir_a.path().to_path_buf())?;
+        let mut storage_b = FileStorage::new(dir_b.path().to_path_buf())?;
+
+        let prompter = MockPrompter::new();
+        let mut copier = MockCopier::new();
+        let mut printer = MockPrinter::new();
+
+        execute_command(
+            &mut storage_a,
+            &prompter,
+            &mut copier,
+            &mut printer,
+            Command::Add {
+                title: Some("Board A task".to_string()),
+                link: None,
+            },
+        )?;
+
+        execute_command(
+            &mut storage_b,
+            &prompter,
+            &mut copier,
+            &mut printer,
+            Command::Add {
+                title: Some("Board B task".to_string()),
+                link: None,
+            },
+        )?;
+
+        let tasks_a = storage_a.read_tasks()?;
+        let tasks_b = storage_b.read_tasks()?;
+
+        assert_eq!(tasks_a.len(), 1);
+        assert_eq!(tasks_b.len(), 1);
+        assert_eq!(tasks_a[0].title, "Board A task");
+        assert_eq!(tasks_b[0].title, "Board B task");
+        Ok(())
     }
 }

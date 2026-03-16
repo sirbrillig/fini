@@ -10,6 +10,7 @@ A fast, interactive CLI todo list tool written in Rust. Track tasks with optiona
 - **Interactive Mode**: Full-featured TUI for managing tasks
 - **Archive System**: Archive completed tasks with `clear`
 - **Copy to Clipboard**: Copy tasks (with links) to clipboard
+- **Boards**: Maintain separate, independent task lists
 
 ## Installation
 
@@ -135,6 +136,27 @@ fini archived
 fini list-after-date 2024-12-15
 ```
 
+### Boards
+
+Boards are independent task lists. The default board is named `tasks`.
+
+```bash
+# Switch to a board (creates it if it doesn't exist)
+fini use work
+fini use personal
+
+# List all boards (* marks the active one)
+fini boards
+```
+
+```
+* tasks
+  work
+  personal
+```
+
+Each board stores its tasks and archive files separately. Switching boards with `fini use` takes effect immediately for all subsequent commands.
+
 ### Interactive Mode
 
 ```bash
@@ -149,16 +171,21 @@ Interactive mode provides:
 - Multi-select for batch operations
 - Confirmation prompts for destructive actions
 - Continuous workflow without re-running commands
+- Board switching via the `boards` command (exits and reloads with the new board)
 
 ## Data Storage
 
 Tasks are stored as Markdown files in a platform-specific directory:
 
-- **Linux**: `~/.local/share/fini/tasks/`
-- **macOS**: `~/Library/Application Support/fini/tasks/`
-- **Windows**: `%APPDATA%\fini\tasks\`
+- **Linux**: `~/.local/share/fini/`
+- **macOS**: `~/Library/Application Support/fini/`
+- **Windows**: `%APPDATA%\fini\`
 
-Active tasks are stored in `tasks.md`. Archived tasks are stored in monthly files named `archived-YYYY-MM.md`, one per calendar month.
+Each board is a subdirectory inside the fini data directory. The default board lives in `tasks/`. A board named `work` would live in `work/`, and so on.
+
+Within each board directory, active tasks are stored in `tasks.md` and archived tasks are stored in monthly files named `archived-YYYY-MM.md`, one per calendar month.
+
+The currently active board is tracked in a file named `active_list` in the data directory. If this file is missing or its board directory no longer exists, fini falls back to the default `tasks` board.
 
 All files are human-readable and can be backed up or version controlled.
 
@@ -232,11 +259,22 @@ Controls the input method used for interactive prompts. Default: `inquire`.
 | `inquire` | Default interactive prompt UI      |
 | `vim`     | Vim-style line editing             |
 
+### `data_dir`
+
+Overrides where boards are stored. Supports `~` for the home directory. Useful for keeping boards in a synced folder (e.g. Dropbox, iCloud Drive).
+
+The config file itself always lives in the default platform location regardless of this setting.
+
+```toml
+data_dir = "~/Dropbox/fini"
+```
+
 ### Example config
 
 ```toml
 list_link_format = "Hyperlink"
 prompter = "vim"
+data_dir = "~/Dropbox/fini"
 ```
 
 ## Development

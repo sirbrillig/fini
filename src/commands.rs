@@ -10,7 +10,7 @@ use crate::util::{
     get_task_ids_after_date, get_task_link_for_format, get_tasks_for_ids, list, prompt_for_task_id,
     prompt_for_task_ids, star, work,
 };
-use inquire::DateSelect;
+use inquire::{DateSelect, Select};
 use serde::Deserialize;
 
 /// The way that links will be formatted by an action
@@ -105,6 +105,13 @@ pub enum Command {
     Archived,
     /// Enter interactive mode
     Interactive,
+    /// List all available boards
+    Boards,
+    /// Switch to (or create) a board; prompts interactively when name is None
+    Use {
+        /// The board name (will prompt if missing)
+        name: Option<String>,
+    },
 }
 
 pub fn execute_command(
@@ -270,6 +277,58 @@ pub fn execute_command(
         }
         Command::Interactive => {
             interactive(storage, prompter, copier, printer)?;
+        }
+        Command::Boards => {
+            let active = storage.active_board();
+            for board in storage.list_boards()? {
+                if board == active {
+                    printer.print(&format!("* {board}"));
+                } else {
+                    printer.print(&format!("  {board}"));
+                }
+            }
+        }
+        Command::Use { name } => {
+            let name = match name {
+                Some(n) => {
+                    let n = n.trim().to_string();
+                    if n.is_empty() || n.contains('/') || n.contains('\\') {
+                        printer.print(&format!("Invalid board name: '{n}'"));
+                        return Ok(());
+                    }
+                    n
+                }
+                None => {
+                    let mut boards = storage.list_boards()?;
+                    boards.push("+ create new board".to_string());
+
+                    let Ok(selection) = Select::new("Select a board:", boards).prompt() else {
+                        return Ok(());
+                    };
+
+                    if selection == "+ create new board" {
+                        let new_name = match prompter.text("Board name:") {
+                            Ok(n) => n.trim().to_string(),
+                            Err(_) => return Ok(()),
+                        };
+                        if new_name.is_empty()
+                            || new_name.contains('/')
+                            || new_name.contains('\\')
+                        {
+                            printer.print("Invalid board name.");
+                            return Ok(());
+                        }
+                        new_name
+                    } else {
+                        selection
+                    }
+                }
+            };
+
+            if name != storage.active_board() {
+                storage.switch_board(&name)?;
+                printer.print(&format!("Switched to board '{name}'."));
+            }
         }
     }
     Ok(())

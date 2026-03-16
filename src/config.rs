@@ -17,6 +17,10 @@ pub struct FiniConfig {
     pub list_link_format: LinkFormat,
     #[serde(default)]
     pub prompter: PrompterType,
+    /// Override where boards are stored. Supports ~ for home directory.
+    /// Defaults to the platform data directory if not set.
+    #[serde(default)]
+    pub data_dir: Option<String>,
 }
 
 pub fn load_config() -> Result<FiniConfig, ConfigError> {
