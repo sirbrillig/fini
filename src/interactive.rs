@@ -16,6 +16,8 @@ pub fn interactive(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let config = load_config()?;
     loop {
+        let active_board = storage.active_board();
+        println!("{}", format!("board: {active_board}").dimmed());
         println!("{}", "-----------------------------------------".green());
         list(storage, printer, config.list_link_format)?;
         let commands = vec![
@@ -34,6 +36,7 @@ pub fn interactive(
             "edit",
             "list-archived",
             "list-after",
+            "boards",
         ];
         println!("{}", "-----------------------------------------".dimmed());
         let answer = Select::new("Select a command:", commands)
@@ -84,6 +87,7 @@ pub fn interactive(
             "star" => Some(Command::Star { ids: None }),
             "delete" => Some(Command::Delete { ids: None }),
             "begin" => Some(Command::Begin { ids: None }),
+            "boards" => Some(Command::Use { name: None }),
             _ => {
                 println!("Unknown command");
                 None

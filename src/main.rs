@@ -5,8 +5,8 @@ use fini::copier::ClipboardCopier;
 use fini::indices::{get_id_for_index, get_ids_for_indices};
 use fini::printer::StdoutPrinter;
 use fini::prompter::{InquirePrompter, Prompter, VimPrompter};
-use fini::storage::{FileStorage, get_default_storage_path};
-use std::fs::create_dir_all;
+use fini::storage::{FileStorage, get_default_data_dir};
+use std::fs;
 
 #[derive(Parser)]
 #[command(
@@ -94,12 +94,21 @@ enum CliCommands {
     /// Enter interactive mode (alias: i)
     #[command(alias = "i")]
     Interactive,
+    /// Switch to (or create) a board
+    Use {
+        /// The name of the board
+        name: String,
+    },
+    /// List all available boards
+    Boards,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let storage_path = get_default_storage_path();
-    create_dir_all(&storage_path)?;
-    let mut storage = FileStorage::new(storage_path);
+    let cli = Cli::parse();
+
+    let data_dir = get_default_data_dir();
+    fs::create_dir_all(&data_dir)?;
+    let mut storage = FileStorage::new(data_dir)?;
     let config = load_config()?;
     let prompter: Box<dyn Prompter> = match config.prompter {
         PrompterType::Vim => Box::new(VimPrompter::new()?),
@@ -107,7 +116,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     let mut copier = ClipboardCopier {};
     let mut printer = StdoutPrinter {};
-    let cli = Cli::parse();
     let requested_command = match cli.command {
         Some(requested_command) => requested_command,
         // Default to interactive.
@@ -178,6 +186,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         CliCommands::Clear => Command::Clear,
         CliCommands::Interactive => Command::Interactive,
+        CliCommands::Use { name } => Command::Use { name: Some(name) },
+        CliCommands::Boards => Command::Boards,
     };
     execute_command(&mut storage, prompter.as_ref(), &mut copier, &mut printer, command)?;
     Ok(())
