@@ -155,6 +155,11 @@ fini boards
   personal
 ```
 
+```bash
+# Print the filesystem path to the current board's directory
+fini board-path
+```
+
 Each board stores its tasks and archive files separately. Switching boards with `fini use` takes effect immediately for all subsequent commands.
 
 ### Interactive Mode
