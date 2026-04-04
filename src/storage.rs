@@ -40,6 +40,7 @@ pub trait TaskStorage {
     fn write_archived(&mut self, tasks: Vec<TaskItem>) -> Result<(), Box<dyn std::error::Error>>;
 
     fn active_board(&self) -> String;
+    fn active_board_path(&self) -> Option<PathBuf>;
     fn list_boards(&self) -> Result<Vec<String>, Box<dyn std::error::Error>>;
     fn switch_board(&mut self, name: &str) -> Result<(), Box<dyn std::error::Error>>;
 }
@@ -172,6 +173,10 @@ impl TaskStorage for FileStorage {
         self.board.clone()
     }
 
+    fn active_board_path(&self) -> Option<PathBuf> {
+        Some(self.board_path())
+    }
+
     fn list_boards(&self) -> Result<Vec<String>, Box<dyn std::error::Error>> {
         if !self.data_dir.exists() {
             return Ok(vec!["tasks".to_string()]);
@@ -249,6 +254,10 @@ impl TaskStorage for InMemoryStorage {
 
     fn active_board(&self) -> String {
         self.active.clone()
+    }
+
+    fn active_board_path(&self) -> Option<PathBuf> {
+        None
     }
 
     fn list_boards(&self) -> Result<Vec<String>, Box<dyn std::error::Error>> {

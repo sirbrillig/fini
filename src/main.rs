@@ -103,6 +103,8 @@ enum CliCommands {
     },
     /// List all available boards
     Boards,
+    /// Print the filesystem path to the current active board
+    BoardPath,
 }
 
 fn expand_tilde(path: String) -> PathBuf {
@@ -206,6 +208,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         CliCommands::Interactive => Command::Interactive,
         CliCommands::Use { name } => Command::Use { name: Some(name) },
         CliCommands::Boards => Command::Boards,
+        CliCommands::BoardPath => Command::BoardPath,
     };
     execute_command(&mut storage, prompter.as_ref(), &mut copier, &mut printer, command)?;
     Ok(())
