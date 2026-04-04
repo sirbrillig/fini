@@ -107,6 +107,8 @@ pub enum Command {
     Interactive,
     /// List all available boards
     Boards,
+    /// Print the filesystem path to the current active board
+    BoardPath,
     /// Switch to (or create) a board; prompts interactively when name is None
     Use {
         /// The board name (will prompt if missing)
@@ -286,6 +288,12 @@ pub fn execute_command(
                 } else {
                     printer.print(&format!("  {board}"));
                 }
+            }
+        }
+        Command::BoardPath => {
+            match storage.active_board_path() {
+                None => printer.print("No path available"),
+                Some(board_path) => printer.print(&board_path.display().to_string()),
             }
         }
         Command::Use { name } => {
