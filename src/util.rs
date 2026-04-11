@@ -358,6 +358,18 @@ where
     Ok(())
 }
 
+/// Return all checked or begun tasks
+pub fn get_checked_task_ids(
+    storage: &mut dyn TaskStorage,
+) -> Result<Vec<usize>, Box<dyn std::error::Error>> {
+    let tasks = storage.read_tasks()?;
+    Ok(tasks
+        .into_iter()
+        .filter(|t| matches!(t.status, Status::Done | Status::InProgress))
+        .map(|task| task.id)
+        .collect())
+}
+
 pub fn clear(
     storage: &mut dyn TaskStorage,
     printer: &mut dyn Printer,

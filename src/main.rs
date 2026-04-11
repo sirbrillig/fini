@@ -81,6 +81,8 @@ enum CliCommands {
         /// The indices of the tasks to copy
         indices: Vec<usize>,
     },
+    /// Copy completed or begun tasks to the clipboard as markdown links
+    CopyChecked,
     /// Copy all completed, begun, or archived tasks to the clipboard after the date (inclusive)
     CopyAfterDate {
         /// The date to start (will prompt if missing)
@@ -153,6 +155,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 format: LinkFormat::Adjacent,
             }
         }
+        CliCommands::CopyChecked => Command::CopyChecked {
+            format: LinkFormat::Markdown,
+        },
         CliCommands::CopyMarkdown { indices } => {
             let ids = get_ids_for_indices(&storage, indices)?;
             Command::Copy {

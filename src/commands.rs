@@ -6,9 +6,9 @@ use crate::prompter::Prompter;
 use crate::storage::TaskStorage;
 use crate::task_item::Status;
 use crate::util::{
-    add, archive, archived, clear, copy, delete, done, edit_task, get_task_for_id,
-    get_task_ids_after_date, get_task_link_for_format, get_tasks_for_ids, list, prompt_for_task_id,
-    prompt_for_task_ids, star, work,
+    add, archive, archived, clear, copy, delete, done, edit_task, get_checked_task_ids,
+    get_task_for_id, get_task_ids_after_date, get_task_link_for_format, get_tasks_for_ids, list,
+    prompt_for_task_id, prompt_for_task_ids, star, work,
 };
 use inquire::{DateSelect, Select};
 use serde::Deserialize;
@@ -87,6 +87,11 @@ pub enum Command {
         /// The format of the copied links
         format: LinkFormat,
     },
+    /// Copy all completed or begun tasks to the clipboard
+    CopyChecked {
+        /// The format of the copied links
+        format: LinkFormat,
+    },
     /// Copy all completed, begun, or archived tasks to the clipboard starting on the date
     CopyAfterDate {
         /// The date to start (will prompt if missing)
@@ -147,6 +152,12 @@ pub fn execute_command(
                 Some(ids) => ids,
                 None => prompt_for_task_ids(storage, "Select tasks to copy")?,
             };
+            copy(storage, copier, printer, &ids, |i| {
+                get_task_link_for_format(i, format)
+            })?;
+        }
+        Command::CopyChecked { format } => {
+            let ids = get_checked_task_ids(storage)?;
             copy(storage, copier, printer, &ids, |i| {
                 get_task_link_for_format(i, format)
             })?;

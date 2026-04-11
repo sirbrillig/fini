@@ -615,6 +615,44 @@ mod tests {
     }
 
     #[test]
+    fn test_copy_checked_command() {
+        let mut ctx = TestContext::new();
+        let title1 = "Test task 1";
+        ctx.add_task(title1, None);
+        let title2 = "Test task 2";
+        ctx.add_task(title2, None);
+        let title3 = "Test task 3";
+        ctx.add_task(title3, None);
+        let title4 = "Test task 4";
+        ctx.add_task(title4, None);
+
+        // First task is done
+        let id = get_id_for_title(&ctx.storage, title1).unwrap().unwrap();
+        let command = Command::Check {
+            ids: Some(vec![id]),
+        };
+        let result = ctx.execute(command);
+        assert!(result.is_ok());
+
+        // Second task is started
+        let id = get_id_for_title(&ctx.storage, title2).unwrap().unwrap();
+        let command = Command::Begin {
+            ids: Some(vec![id]),
+        };
+        let result = ctx.execute(command);
+        assert!(result.is_ok());
+
+        let command = Command::CopyChecked {
+            format: LinkFormat::Adjacent,
+        };
+        let result = ctx.execute(command);
+
+        assert!(result.is_ok());
+        let expected = format!("{}\n{}", title2, title1,);
+        assert_eq!(ctx.copier.text, expected);
+    }
+
+    #[test]
     fn test_copy_after_command() {
         let mut ctx = TestContext::new();
         let title1 = "Test task 1";
