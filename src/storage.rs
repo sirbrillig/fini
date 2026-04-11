@@ -225,7 +225,8 @@ impl InMemoryStorage {
 
 impl TaskStorage for InMemoryStorage {
     fn read_tasks(&self) -> Result<Vec<TaskItem>, Box<dyn std::error::Error>> {
-        let tasks_md = self.boards
+        let tasks_md = self
+            .boards
             .get(&self.active)
             .map(|(t, _)| t.as_str())
             .unwrap_or("");
@@ -239,7 +240,8 @@ impl TaskStorage for InMemoryStorage {
     }
 
     fn read_archived(&self) -> Result<Vec<TaskItem>, Box<dyn std::error::Error>> {
-        let archived_md = self.boards
+        let archived_md = self
+            .boards
             .get(&self.active)
             .map(|(_, a)| a.as_str())
             .unwrap_or("");

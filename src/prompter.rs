@@ -73,7 +73,10 @@ impl Prompter for VimPrompter {
         initial: &str,
     ) -> Result<String, Box<dyn std::error::Error>> {
         let prompt = format!("{} ", message);
-        let input = self.editor.borrow_mut().readline_with_initial(&prompt, (initial, ""))?;
+        let input = self
+            .editor
+            .borrow_mut()
+            .readline_with_initial(&prompt, (initial, ""))?;
         Ok(input)
     }
 
