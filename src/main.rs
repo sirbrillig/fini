@@ -210,6 +210,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         CliCommands::Boards => Command::Boards,
         CliCommands::BoardPath => Command::BoardPath,
     };
-    execute_command(&mut storage, prompter.as_ref(), &mut copier, &mut printer, command)?;
+    execute_command(
+        &mut storage,
+        prompter.as_ref(),
+        &mut copier,
+        &mut printer,
+        command,
+    )?;
     Ok(())
 }

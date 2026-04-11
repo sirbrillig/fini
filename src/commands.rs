@@ -175,9 +175,11 @@ pub fn execute_command(
         Command::ListAfterDate { date, format } => {
             let date = match date {
                 Some(content) => content,
-                None => DateSelect::new("Select first date to start listing begun and completed tasks:")
-                    .prompt()?
-                    .to_string(),
+                None => {
+                    DateSelect::new("Select first date to start listing begun and completed tasks:")
+                        .prompt()?
+                        .to_string()
+                }
             };
             let mut tasks = storage.read_tasks()?;
             let mut archived = storage.read_archived()?;
@@ -290,12 +292,10 @@ pub fn execute_command(
                 }
             }
         }
-        Command::BoardPath => {
-            match storage.active_board_path() {
-                None => printer.print("No path available"),
-                Some(board_path) => printer.print(&board_path.display().to_string()),
-            }
-        }
+        Command::BoardPath => match storage.active_board_path() {
+            None => printer.print("No path available"),
+            Some(board_path) => printer.print(&board_path.display().to_string()),
+        },
         Command::Use { name } => {
             let name = match name {
                 Some(n) => {
@@ -319,9 +319,7 @@ pub fn execute_command(
                             Ok(n) => n.trim().to_string(),
                             Err(_) => return Ok(()),
                         };
-                        if new_name.is_empty()
-                            || new_name.contains('/')
-                            || new_name.contains('\\')
+                        if new_name.is_empty() || new_name.contains('/') || new_name.contains('\\')
                         {
                             printer.print("Invalid board name.");
                             return Ok(());

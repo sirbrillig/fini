@@ -720,7 +720,10 @@ mod tests {
 
         assert_eq!(tasks_a.len(), 1);
         assert_eq!(tasks_a[0].title, "Task on board A");
-        assert!(tasks_b.is_empty(), "board B should be unaffected by writes to board A");
+        assert!(
+            tasks_b.is_empty(),
+            "board B should be unaffected by writes to board A"
+        );
         Ok(())
     }
 
