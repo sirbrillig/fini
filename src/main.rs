@@ -28,6 +28,9 @@ enum CliCommands {
     Add {
         /// The task title
         title: Vec<String>,
+        /// The optional task link
+        #[arg(long)]
+        link: Option<String>,
     },
     /// List all current tasks (alias: l)
     #[command(alias = "l")]
@@ -144,9 +147,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         None => CliCommands::Interactive,
     };
     let command = match requested_command {
-        CliCommands::Add { title } => Command::Add {
+        CliCommands::Add { title, link } => Command::Add {
             title: Some(title.join(" ")).filter(|x| !x.is_empty()),
-            link: None,
+            link,
         },
         CliCommands::Copy { indices } => {
             let ids = get_ids_for_indices(&storage, indices)?;
