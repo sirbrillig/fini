@@ -30,6 +30,7 @@ pub fn interactive(
             "open",
             "copy",
             "copy-markdown",
+            "copy-checked",
             "copy-after",
             "clear",
             "delete",
@@ -76,6 +77,9 @@ pub fn interactive(
             "copy-markdown" => Some(Command::Copy {
                 ids: None,
                 format: crate::commands::LinkFormat::Markdown,
+            }),
+            "copy-checked" => Some(Command::CopyChecked {
+                format: LinkFormat::Adjacent,
             }),
             "copy-after" => Some(Command::CopyAfterDate {
                 date: None,
