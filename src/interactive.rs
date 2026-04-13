@@ -79,7 +79,7 @@ pub fn interactive(
                 format: crate::commands::LinkFormat::Markdown,
             }),
             "copy-checked" => Some(Command::CopyChecked {
-                format: LinkFormat::Adjacent,
+                format: LinkFormat::Markdown,
             }),
             "copy-after" => Some(Command::CopyAfterDate {
                 date: None,
