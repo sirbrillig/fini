@@ -133,6 +133,34 @@ mod tests {
     }
 
     #[test]
+    fn test_archive_command_from_todo() {
+        let mut ctx = TestContext::new();
+        let title = "Test task";
+        ctx.add_task(title, None);
+
+        let id = get_id_for_index(&ctx.storage, 1).unwrap().unwrap();
+        let command = Command::Archive {
+            ids: Some(vec![id]),
+        };
+        let result = ctx.execute(command);
+
+        assert!(result.is_ok());
+        let tasks = ctx.storage.read_tasks().unwrap();
+        assert_eq!(tasks.len(), 0);
+
+        let mut archived = ctx.storage.read_archived().unwrap();
+        assert_eq!(archived.len(), 1);
+
+        // Sort the archived tasks so it's easier to examine them (archived order doesn't matter)
+        archived.sort_by_key(|t| t.title.clone());
+
+        // The first task (at done) was archived
+        assert_eq!(archived[0].title, title);
+        assert_eq!(archived[0].status, Status::Archived);
+        assert_eq!(archived[0].link, None);
+    }
+
+    #[test]
     fn test_check_command_from_todo() {
         let mut ctx = TestContext::new();
         let title = "Test task";
