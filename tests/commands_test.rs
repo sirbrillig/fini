@@ -681,6 +681,114 @@ mod tests {
     }
 
     #[test]
+    fn test_list_between_command() {
+        let mut ctx = TestContext::new();
+        let title1 = "Test task 1";
+        ctx.add_task(title1, None);
+        let title2 = "Test task 2";
+        ctx.add_task(title2, None);
+        let title3 = "Test task 3";
+        ctx.add_task(title3, None);
+        let title4 = "Test task 4";
+        ctx.add_task(title4, None);
+        let title5 = "Test task 5";
+        ctx.add_task(title5, None);
+
+        // First task is done
+        let id = get_id_for_title(&ctx.storage, title1).unwrap().unwrap();
+        let command = Command::Check {
+            ids: Some(vec![id]),
+        };
+        let result = ctx.execute(command);
+        assert!(result.is_ok());
+
+        // Second task is started
+        let id = get_id_for_title(&ctx.storage, title2).unwrap().unwrap();
+        let command = Command::Begin {
+            ids: Some(vec![id]),
+        };
+        let result = ctx.execute(command);
+        assert!(result.is_ok());
+
+        // Third task is archived
+        let id = get_id_for_title(&ctx.storage, title3).unwrap().unwrap();
+        let command = Command::Archive {
+            ids: Some(vec![id]),
+        };
+        let result = ctx.execute(command);
+        assert!(result.is_ok());
+
+        // Fourth task is archived but before date.
+        // Manually set the fourth task's active_date to 2 days ago.
+        let two_days_ago = Some((Local::now() - Duration::days(2)).date_naive());
+        let id = get_id_for_title(&ctx.storage, title4).unwrap().unwrap();
+        let mut tasks = ctx.storage.read_tasks().unwrap();
+        let Some(task) = tasks.iter_mut().find(|t| t.id == id) else {
+            panic!("Cannot find last task in archive");
+        };
+        task.active_date = two_days_ago;
+        ctx.storage.write_tasks(tasks).unwrap();
+        let id = get_id_for_title(&ctx.storage, title4).unwrap().unwrap();
+        let command = Command::Archive {
+            ids: Some(vec![id]),
+        };
+        let result = ctx.execute(command);
+        assert!(result.is_ok());
+        let archived = ctx.storage.read_archived().unwrap();
+        assert_eq!(archived.len(), 2);
+
+        // Fifth task remains in Todo
+
+        // List should ignore Todo task (task5) and task before date (task4)
+        ctx.printer.clear();
+        let command = Command::ListBetween {
+            date_a: Some(
+                (Local::now() - Duration::days(1))
+                    .format("%Y-%m-%d")
+                    .to_string(),
+            ),
+            date_b: Some(Local::now().format("%Y-%m-%d").to_string()),
+            format: LinkFormat::Adjacent,
+        };
+        let result = ctx.execute(command);
+
+        assert!(result.is_ok());
+        let expected = format!(
+            "\n## {}\n- {}\n- {}\n- {}\n",
+            Local::now().format("%Y-%m-%d"),
+            title2,
+            title1,
+            title3
+        );
+        assert_eq!(ctx.printer.text, expected);
+
+        // List should include only task4
+        ctx.printer.clear();
+        let command = Command::ListBetween {
+            date_a: Some(
+                (Local::now() - Duration::days(2))
+                    .format("%Y-%m-%d")
+                    .to_string(),
+            ),
+            date_b: Some(
+                (Local::now() - Duration::days(1))
+                    .format("%Y-%m-%d")
+                    .to_string(),
+            ),
+            format: LinkFormat::Adjacent,
+        };
+        let result = ctx.execute(command);
+
+        assert!(result.is_ok());
+        let expected = format!(
+            "\n## {}\n- {}\n",
+            (Local::now() - Duration::days(2)).format("%Y-%m-%d"),
+            title4
+        );
+        assert_eq!(ctx.printer.text, expected);
+    }
+
+    #[test]
     fn test_copy_after_command() {
         let mut ctx = TestContext::new();
         let title1 = "Test task 1";

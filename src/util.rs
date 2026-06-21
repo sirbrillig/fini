@@ -38,6 +38,29 @@ pub fn sort_visible_items(items: &[TaskItem]) -> Vec<&TaskItem> {
     visible
 }
 
+/// Return all task IDs between the given dates, inclusive
+pub fn get_task_ids_between(
+    tasks: &[TaskItem],
+    date_a: &str,
+    date_b: &str,
+    statuses: &[Status],
+) -> Result<Vec<usize>, Box<dyn std::error::Error>> {
+    let filter_date_a = NaiveDate::parse_from_str(date_a, "%Y-%m-%d")?;
+    let filter_date_b = NaiveDate::parse_from_str(date_b, "%Y-%m-%d")?;
+    Ok(tasks
+        .iter()
+        .filter(|t| statuses.contains(&t.status))
+        .filter_map(|t| {
+            let task_date = t.active_date?;
+            if task_date >= filter_date_a && task_date <= filter_date_b {
+                Some(t.id)
+            } else {
+                None
+            }
+        })
+        .collect())
+}
+
 /// Return all task IDs after the given date, inclusive
 pub fn get_task_ids_after_date(
     tasks: &[TaskItem],
