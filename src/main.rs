@@ -93,12 +93,19 @@ enum CliCommands {
     CopyChecked,
     /// Copy all completed, begun, or archived tasks to the clipboard after the date (inclusive)
     CopyAfterDate {
-        /// The date to start (will prompt if missing)
+        /// The date to start
         date: String,
+    },
+    /// List all completed, begun, or archived tasks between the dates (inclusive)
+    ListBetween {
+        /// The date to start
+        date_a: String,
+        /// The date to end
+        date_b: String,
     },
     /// List all completed, begun, or archived tasks after the date (inclusive)
     ListAfterDate {
-        /// The date to start (will prompt if missing)
+        /// The date to start
         date: String,
     },
     /// List all archived tasks
@@ -175,6 +182,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         CliCommands::CopyAfterDate { date } => Command::CopyAfterDate {
             date: Some(date),
+            format: LinkFormat::Adjacent,
+        },
+        CliCommands::ListBetween { date_a, date_b } => Command::ListBetween {
+            date_a: Some(date_a),
+            date_b: Some(date_b),
             format: LinkFormat::Adjacent,
         },
         CliCommands::ListAfterDate { date } => Command::ListAfterDate {

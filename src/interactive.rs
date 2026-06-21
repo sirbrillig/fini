@@ -38,6 +38,7 @@ pub fn interactive(
             "edit",
             "list-archived",
             "list-after",
+            "list-between",
             "boards",
         ];
         println!("{}", "-----------------------------------------".dimmed());
@@ -64,6 +65,11 @@ pub fn interactive(
             "list-archived" => Some(Command::Archived),
             "list-after" => Some(Command::ListAfterDate {
                 date: None,
+                format: LinkFormat::Adjacent,
+            }),
+            "list-between" => Some(Command::ListBetween {
+                date_a: None,
+                date_b: None,
                 format: LinkFormat::Adjacent,
             }),
             "clear" => Some(Command::Clear),
