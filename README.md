@@ -125,8 +125,9 @@ fini copy-after-date 2024-12-15
 ### Archive Management
 
 ```bash
-# Archive all done tasks (also archives a snapshot of in-progress tasks,
-# which remain active as Todo)
+# Archive all done tasks (also archives a snapshot of in-progress tasks, #
+# which remain active as Todo). You can also use the archive command to archive
+# specific tasks.
 fini clear
 
 # View all archived tasks

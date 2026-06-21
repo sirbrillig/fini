@@ -65,6 +65,11 @@ enum CliCommands {
         /// The indices of the tasks to toggle
         indices: Vec<usize>,
     },
+    /// Archive specific tasks
+    Archive {
+        /// The indices of the tasks to archive
+        indices: Vec<usize>,
+    },
     /// Delete tasks entirely (alias: d)
     #[command(alias = "d")]
     Delete {
@@ -203,6 +208,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         CliCommands::Check { indices } => {
             let ids = get_ids_for_indices(&storage, indices)?;
             Command::Check {
+                ids: Some(ids).filter(|x| !x.is_empty()),
+            }
+        }
+        CliCommands::Archive { indices } => {
+            let ids = get_ids_for_indices(&storage, indices)?;
+            Command::Archive {
                 ids: Some(ids).filter(|x| !x.is_empty()),
             }
         }
