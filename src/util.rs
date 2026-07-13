@@ -2,7 +2,7 @@ use std::cmp::Reverse;
 
 use crate::{
     commands::LinkFormat,
-    copier::Copier,
+    copier::{Copier, CopyPayload},
     markdown::archived_tasks_as_markdown,
     printer::Printer,
     prompter::Prompter,
@@ -372,7 +372,8 @@ where
         })
         .collect();
     let text = text_lines.join("\n");
-    copier.copy(&text)?;
+    let payload = CopyPayload::Text(text);
+    copier.copy(&payload)?;
     match text_lines.len() {
         0 => printer.print("No tasks to copy"),
         1 => printer.print(format!("Copied text for task: {}", text_lines[0]).as_str()),
