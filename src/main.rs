@@ -83,6 +83,9 @@ enum CliCommands {
     Copy {
         /// The indices of the tasks to copy
         indices: Vec<usize>,
+        /// How to format links in the copied output
+        #[arg(long, value_enum, default_value_t = LinkFormat::Adjacent)]
+        format: LinkFormat,
     },
     /// Copy tasks to the clipboard as markdown links
     CopyMarkdown {
@@ -163,11 +166,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             title: Some(title.join(" ")).filter(|x| !x.is_empty()),
             link,
         },
-        CliCommands::Copy { indices } => {
+        CliCommands::Copy { indices, format } => {
             let ids = get_ids_for_indices(&storage, indices)?;
             Command::Copy {
                 ids: Some(ids).filter(|x| !x.is_empty()),
-                format: LinkFormat::Adjacent,
+                format,
             }
         }
         CliCommands::CopyChecked => Command::CopyChecked {
