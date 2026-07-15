@@ -142,6 +142,20 @@ impl fmt::Display for TaskItemNewlineLink<'_> {
     }
 }
 
+// A version of the task where the link is html
+// `LinkFormat::RichText`.
+pub struct TaskItemRichText<'a>(pub &'a TaskItem);
+impl fmt::Display for TaskItemRichText<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if let Some(link) = &self.0.link {
+            write!(f, "<a href=\"{}\">{}</a>", link, self.0.title)?;
+        } else {
+            write!(f, "{}", self.0.title)?;
+        }
+        Ok(())
+    }
+}
+
 // A version of the task where the link is markdown linked to the text, corresponding to
 // `LinkFormat::Markdown`.
 pub struct TaskItemCopyableMarkdown<'a>(pub &'a TaskItem);

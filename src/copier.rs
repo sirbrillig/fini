@@ -1,8 +1,63 @@
 use arboard::Clipboard;
+use std::fmt;
+
+pub struct TextPayload(pub String);
+
+impl fmt::Display for TextPayload {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            self.0
+        )?;
+        Ok(())
+    }
+}
+
+pub struct HtmlPayload {
+    pub html: String,
+    pub alt: String
+}
+
+impl fmt::Display for HtmlPayload {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            self.alt
+        )?;
+        Ok(())
+    }
+}
 
 pub enum CopyPayload {
-    Text(String),
-    Html { html: String, alt: String },
+    Text(TextPayload),
+    Html(HtmlPayload),
+}
+
+pub trait CopyContent: Sized {
+    fn combine(self, other: Self) -> Self;
+    fn into_payload(self) -> CopyPayload;
+}
+
+impl CopyContent for TextPayload {
+    fn combine(self, other: Self) -> Self {
+        TextPayload(self.0 +  "\n" + &other.0)
+    }
+
+    fn into_payload(self) -> CopyPayload {
+        CopyPayload::Text(self)
+    }
+}
+
+impl CopyContent for HtmlPayload {
+    fn combine(self, other: Self) -> Self {
+        HtmlPayload { html: format!("{}<br>\n{}", self.html, other.html), alt: format!("{}\n{}", self.alt, other.alt) }
+    }
+
+    fn into_payload(self) -> CopyPayload {
+        CopyPayload::Html(self)
+    }
 }
 
 pub trait Copier {
@@ -15,8 +70,8 @@ impl Copier for ClipboardCopier {
     fn copy(&mut self, payload: &CopyPayload) -> Result<(), Box<dyn std::error::Error>> {
         let mut clipboard = Clipboard::new()?;
         match payload {
-            CopyPayload::Text(text) => clipboard.set_text(text)?,
-            CopyPayload::Html { html, alt } => clipboard.set_html(html, Some(alt))?,
+            CopyPayload::Text(text) => clipboard.set_text(&text.0)?,
+            CopyPayload::Html(html) => clipboard.set_html(&html.html, Some(&html.alt))?,
         };
         Ok(())
     }
@@ -43,9 +98,9 @@ impl Copier for MockCopier {
     fn copy(&mut self, payload: &CopyPayload) -> Result<(), Box<dyn std::error::Error>> {
         match payload {
             CopyPayload::Text(text) => self.text = text.to_string(),
-            CopyPayload::Html { html, alt } => {
-                self.html = html.to_string();
-                self.alt = alt.to_string();
+            CopyPayload::Html(html) => {
+                self.html = html.html.to_string();
+                self.alt = html.alt.to_string();
             }
         };
         Ok(())

@@ -2,14 +2,13 @@ use std::cmp::Reverse;
 
 use crate::{
     commands::LinkFormat,
-    copier::{Copier, CopyPayload},
+    copier::{Copier, CopyContent},
     markdown::archived_tasks_as_markdown,
     printer::Printer,
     prompter::Prompter,
     storage::TaskStorage,
     task_item::{
-        Status, TaskItem, TaskItemAdjacentLink, TaskItemCopyable, TaskItemCopyableMarkdown,
-        TaskItemHyperlinked, TaskItemNewlineLink, TaskItemWithIndex, TaskItemWithStatus,
+        Status, TaskItem, TaskItemAdjacentLink, TaskItemCopyable, TaskItemCopyableMarkdown, TaskItemHyperlinked, TaskItemNewlineLink, TaskItemRichText, TaskItemWithIndex, TaskItemWithStatus
     },
 };
 use chrono::{Local, NaiveDate};
@@ -25,6 +24,7 @@ pub fn get_task_link_for_format(task: &TaskItem, format: LinkFormat) -> String {
         LinkFormat::Hyperlink => TaskItemHyperlinked(task).to_string(),
         LinkFormat::Markdown => TaskItemCopyableMarkdown(task).to_string(),
         LinkFormat::Newline => TaskItemNewlineLink(task).to_string(),
+        LinkFormat::RichText => TaskItemRichText(task).to_string(),
     }
 }
 
@@ -351,7 +351,7 @@ pub fn archive(
     Ok(())
 }
 
-pub fn copy<F>(
+pub fn copy<F, P>(
     storage: &dyn TaskStorage,
     copier: &mut dyn Copier,
     printer: &mut dyn Printer,
@@ -359,10 +359,11 @@ pub fn copy<F>(
     format: F,
 ) -> Result<(), Box<dyn std::error::Error>>
 where
-    F: Fn(&TaskItem) -> String,
+    F: Fn(&TaskItem) -> P,
+    P: CopyContent,
 {
     let tasks = storage.read_tasks()?;
-    let text_lines: Vec<String> = tasks
+    let payloads: Vec<P> = tasks
         .iter()
         .filter_map(|i| {
             if ids.contains(&i.id) {
@@ -371,14 +372,14 @@ where
             None
         })
         .collect();
-    let text = text_lines.join("\n");
-    let payload = CopyPayload::Text(text);
-    copier.copy(&payload)?;
-    match text_lines.len() {
-        0 => printer.print("No tasks to copy"),
-        1 => printer.print(format!("Copied text for task: {}", text_lines[0]).as_str()),
-        _ => printer.print("Copied text for selected tasks"),
-    };
+    let count = payloads.len();
+    match payloads.into_iter().reduce(P::combine) {
+        None => printer.print("No tasks to copy"),
+        Some(joined) => {
+            copier.copy(&joined.into_payload())?;
+            printer.print(&format!("Copied text for {count} selected task{}", if count == 1 { "" } else { "s" }));
+        },
+    }
     Ok(())
 }
 
