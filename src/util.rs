@@ -9,7 +9,7 @@ use crate::{
     storage::TaskStorage,
     task_item::{
         Status, TaskItem, TaskItemAdjacentLink, TaskItemCopyable, TaskItemCopyableMarkdown,
-        TaskItemHyperlinked, TaskItemNewlineLink, TaskItemRichText, TaskItemWithIndex,
+        TaskItemHtml, TaskItemHyperlinked, TaskItemNewlineLink, TaskItemWithIndex,
         TaskItemWithStatus,
     },
 };
@@ -26,7 +26,7 @@ pub fn get_task_link_for_format(task: &TaskItem, format: LinkFormat) -> String {
         LinkFormat::Hyperlink => TaskItemHyperlinked(task).to_string(),
         LinkFormat::Markdown => TaskItemCopyableMarkdown(task).to_string(),
         LinkFormat::Newline => TaskItemNewlineLink(task).to_string(),
-        LinkFormat::RichText => TaskItemRichText(task).to_string(),
+        LinkFormat::Html => TaskItemHtml(task).to_string(),
     }
 }
 

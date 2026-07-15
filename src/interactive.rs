@@ -112,7 +112,7 @@ pub fn interactive(
 }
 
 fn prompt_for_copy_format() -> LinkFormat {
-    let formats = vec!["adjacent", "markdown", "richtext"];
+    let formats = vec!["adjacent", "markdown", "html"];
     let format_answer = Select::new("Select a copy format:", formats)
         .with_page_size(4)
         .prompt()
@@ -125,7 +125,7 @@ fn prompt_for_copy_format() -> LinkFormat {
     match format_answer {
         "adjacent" => LinkFormat::Adjacent,
         "markdown" => LinkFormat::Markdown,
-        "richtext" => LinkFormat::RichText,
+        "html" => LinkFormat::Html,
         _ => LinkFormat::Adjacent,
     }
 }

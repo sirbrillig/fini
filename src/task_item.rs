@@ -143,9 +143,9 @@ impl fmt::Display for TaskItemNewlineLink<'_> {
 }
 
 // A version of the task where the link is html
-// `LinkFormat::RichText`.
-pub struct TaskItemRichText<'a>(pub &'a TaskItem);
-impl fmt::Display for TaskItemRichText<'_> {
+// `LinkFormat::Html`.
+pub struct TaskItemHtml<'a>(pub &'a TaskItem);
+impl fmt::Display for TaskItemHtml<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let Some(link) = &self.0.link {
             write!(f, "<a href=\"{}\">{}</a>", link, self.0.title)?;

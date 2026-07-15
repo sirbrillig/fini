@@ -4,7 +4,7 @@ use crate::markdown::archived_tasks_as_markdown;
 use crate::printer::Printer;
 use crate::prompter::Prompter;
 use crate::storage::TaskStorage;
-use crate::task_item::{Status, TaskItemRichText};
+use crate::task_item::{Status, TaskItemHtml};
 use crate::util::{
     add, archive, archived, clear, copy, delete, done, edit_task, get_checked_task_ids,
     get_task_for_id, get_task_ids_after_date, get_task_ids_between, get_task_link_for_format,
@@ -29,7 +29,7 @@ pub enum LinkFormat {
     /// Print the link after the task title on a new line
     Newline,
     /// Make the task title into an HTML link
-    RichText,
+    Html,
 }
 
 pub enum Command {
@@ -164,8 +164,8 @@ pub fn execute_command(
                 None => prompt_for_task_ids(storage, "Select tasks to copy")?,
             };
             match format {
-                LinkFormat::RichText => copy(storage, copier, printer, &ids, |i| HtmlPayload {
-                    html: TaskItemRichText(i).to_string(),
+                LinkFormat::Html => copy(storage, copier, printer, &ids, |i| HtmlPayload {
+                    html: TaskItemHtml(i).to_string(),
                     alt: get_task_link_for_format(i, LinkFormat::Adjacent),
                 })?,
                 _ => copy(storage, copier, printer, &ids, |i| {
@@ -176,8 +176,8 @@ pub fn execute_command(
         Command::CopyChecked { format } => {
             let ids = get_checked_task_ids(storage)?;
             match format {
-                LinkFormat::RichText => copy(storage, copier, printer, &ids, |i| HtmlPayload {
-                    html: TaskItemRichText(i).to_string(),
+                LinkFormat::Html => copy(storage, copier, printer, &ids, |i| HtmlPayload {
+                    html: TaskItemHtml(i).to_string(),
                     alt: get_task_link_for_format(i, LinkFormat::Adjacent),
                 })?,
                 _ => copy(storage, copier, printer, &ids, |i| {
