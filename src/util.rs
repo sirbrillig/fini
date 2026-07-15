@@ -8,7 +8,9 @@ use crate::{
     prompter::Prompter,
     storage::TaskStorage,
     task_item::{
-        Status, TaskItem, TaskItemAdjacentLink, TaskItemCopyable, TaskItemCopyableMarkdown, TaskItemHyperlinked, TaskItemNewlineLink, TaskItemRichText, TaskItemWithIndex, TaskItemWithStatus
+        Status, TaskItem, TaskItemAdjacentLink, TaskItemCopyable, TaskItemCopyableMarkdown,
+        TaskItemHyperlinked, TaskItemNewlineLink, TaskItemRichText, TaskItemWithIndex,
+        TaskItemWithStatus,
     },
 };
 use chrono::{Local, NaiveDate};
@@ -377,8 +379,11 @@ where
         None => printer.print("No tasks to copy"),
         Some(joined) => {
             copier.copy(&joined.into_payload())?;
-            printer.print(&format!("Copied text for {count} selected task{}", if count == 1 { "" } else { "s" }));
-        },
+            printer.print(&format!(
+                "Copied text for {count} selected task{}",
+                if count == 1 { "" } else { "s" }
+            ));
+        }
     }
     Ok(())
 }

@@ -87,17 +87,19 @@ enum CliCommands {
         #[arg(long, value_enum, default_value_t = LinkFormat::Adjacent)]
         format: LinkFormat,
     },
-    /// Copy tasks to the clipboard as markdown links
-    CopyMarkdown {
-        /// The indices of the tasks to copy
-        indices: Vec<usize>,
-    },
     /// Copy completed or begun tasks to the clipboard as markdown links
-    CopyChecked,
+    CopyChecked {
+        /// How to format links in the copied output
+        #[arg(long, value_enum, default_value_t = LinkFormat::Adjacent)]
+        format: LinkFormat,
+    },
     /// Copy all completed, begun, or archived tasks to the clipboard after the date (inclusive)
     CopyAfterDate {
         /// The date to start
         date: String,
+        /// How to format links in the copied output
+        #[arg(long, value_enum, default_value_t = LinkFormat::Adjacent)]
+        format: LinkFormat,
     },
     /// List all completed, begun, or archived tasks between the dates (inclusive)
     ListBetween {
@@ -173,19 +175,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 format,
             }
         }
-        CliCommands::CopyChecked => Command::CopyChecked {
-            format: LinkFormat::Markdown,
-        },
-        CliCommands::CopyMarkdown { indices } => {
-            let ids = get_ids_for_indices(&storage, indices)?;
-            Command::Copy {
-                ids: Some(ids).filter(|x| !x.is_empty()),
-                format: LinkFormat::Markdown,
-            }
-        }
-        CliCommands::CopyAfterDate { date } => Command::CopyAfterDate {
+        CliCommands::CopyChecked { format } => Command::CopyChecked { format },
+        CliCommands::CopyAfterDate { date, format } => Command::CopyAfterDate {
             date: Some(date),
-            format: LinkFormat::Adjacent,
+            format,
         },
         CliCommands::ListBetween { date_a, date_b } => Command::ListBetween {
             date_a: Some(date_a),

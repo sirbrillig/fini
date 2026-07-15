@@ -5,27 +5,19 @@ pub struct TextPayload(pub String);
 
 impl fmt::Display for TextPayload {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            self.0
-        )?;
+        write!(f, "{}", self.0)?;
         Ok(())
     }
 }
 
 pub struct HtmlPayload {
     pub html: String,
-    pub alt: String
+    pub alt: String,
 }
 
 impl fmt::Display for HtmlPayload {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            self.alt
-        )?;
+        write!(f, "{}", self.alt)?;
         Ok(())
     }
 }
@@ -42,7 +34,7 @@ pub trait CopyContent: Sized {
 
 impl CopyContent for TextPayload {
     fn combine(self, other: Self) -> Self {
-        TextPayload(self.0 +  "\n" + &other.0)
+        TextPayload(self.0 + "\n" + &other.0)
     }
 
     fn into_payload(self) -> CopyPayload {
@@ -52,7 +44,10 @@ impl CopyContent for TextPayload {
 
 impl CopyContent for HtmlPayload {
     fn combine(self, other: Self) -> Self {
-        HtmlPayload { html: format!("{}<br>\n{}", self.html, other.html), alt: format!("{}\n{}", self.alt, other.alt) }
+        HtmlPayload {
+            html: format!("{}<br>\n{}", self.html, other.html),
+            alt: format!("{}\n{}", self.alt, other.alt),
+        }
     }
 
     fn into_payload(self) -> CopyPayload {

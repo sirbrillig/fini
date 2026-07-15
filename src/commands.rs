@@ -164,10 +164,10 @@ pub fn execute_command(
                 None => prompt_for_task_ids(storage, "Select tasks to copy")?,
             };
             match format {
-                LinkFormat::RichText =>  
-                    copy(storage, copier, printer, &ids, |i| {
-                        HtmlPayload { html: TaskItemRichText(i).to_string(), alt: get_task_link_for_format(i, LinkFormat::Adjacent) }
-                    })?,
+                LinkFormat::RichText => copy(storage, copier, printer, &ids, |i| HtmlPayload {
+                    html: TaskItemRichText(i).to_string(),
+                    alt: get_task_link_for_format(i, LinkFormat::Adjacent),
+                })?,
                 _ => copy(storage, copier, printer, &ids, |i| {
                     TextPayload(get_task_link_for_format(i, format))
                 })?,
@@ -176,10 +176,10 @@ pub fn execute_command(
         Command::CopyChecked { format } => {
             let ids = get_checked_task_ids(storage)?;
             match format {
-                LinkFormat::RichText =>  
-                    copy(storage, copier, printer, &ids, |i| {
-                        HtmlPayload { html: TaskItemRichText(i).to_string(), alt: get_task_link_for_format(i, LinkFormat::Adjacent) }
-                    })?,
+                LinkFormat::RichText => copy(storage, copier, printer, &ids, |i| HtmlPayload {
+                    html: TaskItemRichText(i).to_string(),
+                    alt: get_task_link_for_format(i, LinkFormat::Adjacent),
+                })?,
                 _ => copy(storage, copier, printer, &ids, |i| {
                     TextPayload(get_task_link_for_format(i, format))
                 })?,
@@ -206,7 +206,7 @@ pub fn execute_command(
             copier.copy(&payload)?;
             printer
                 .print(format!("Copied tasks as Markdown by date starting at {}", date).as_str());
-            }
+        }
         Command::ListBetween {
             date_a,
             date_b,
