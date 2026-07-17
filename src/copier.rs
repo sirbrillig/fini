@@ -45,7 +45,7 @@ impl CopyContent for TextPayload {
 impl CopyContent for HtmlPayload {
     fn combine(self, other: Self) -> Self {
         HtmlPayload {
-            html: format!("{}<br>\n{}", self.html, other.html),
+            html: format!("{}<br>{}", self.html, other.html),
             alt: format!("{}\n{}", self.alt, other.alt),
         }
     }
