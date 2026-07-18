@@ -1,3 +1,4 @@
+use crate::config::get_current_config_file_path;
 use crate::copier::{Copier, HtmlPayload, TextPayload};
 use crate::interactive::interactive;
 use crate::markdown::archived_tasks_as_markdown;
@@ -122,6 +123,8 @@ pub enum Command {
     Boards,
     /// Print the filesystem path to the current active board
     BoardPath,
+    /// Print the filesystem path to the current config file
+    ConfigPath,
     /// Switch to (or create) a board; prompts interactively when name is None
     Use {
         /// The board name (will prompt if missing)
@@ -315,6 +318,7 @@ pub fn execute_command(
             None => printer.print("No path available"),
             Some(board_path) => printer.print(&board_path.display().to_string()),
         },
+        Command::ConfigPath => printer.print(&get_current_config_file_path().to_string_lossy()),
         Command::Use { name } => {
             let name = match name {
                 Some(n) => {

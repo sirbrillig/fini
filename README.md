@@ -211,6 +211,11 @@ fini can be configured by creating a TOML file named `fini_config.toml` in the d
 
 All settings are optional and fall back to defaults if omitted.
 
+```bash
+# Print the filesystem path to the current config file
+fini config-path
+```
+
 ### `list_link_format`
 
 Controls how task links are displayed by `fini list` and other list commands. Can be overridden using the `--format` option except in interactive mode. Default: `newline`. See [Formats](#formats) for options.
