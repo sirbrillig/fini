@@ -34,7 +34,11 @@ enum CliCommands {
     },
     /// List all current tasks (alias: l)
     #[command(alias = "l")]
-    List,
+    List {
+        /// How to format links in the output
+        #[arg(long, value_enum)]
+        format: Option<LinkFormat>,
+    },
     /// Toggle a task as in-progress (aliases: b)
     #[command(aliases=["b"])]
     Begin {
@@ -168,8 +172,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             date_b: Some(date_b),
             format: LinkFormat::Adjacent,
         },
-        CliCommands::List => Command::List {
-            format: config.list_link_format,
+        CliCommands::List { format } => Command::List {
+            format: format.unwrap_or(config.list_link_format),
         },
         CliCommands::Archived => Command::Archived,
         CliCommands::Edit { index } => {
