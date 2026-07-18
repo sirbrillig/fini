@@ -15,6 +15,7 @@ use serde::Deserialize;
 
 /// The way that links will be formatted by an action
 #[derive(Clone, Copy, Debug, Deserialize, clap::ValueEnum)]
+#[serde(rename_all = "kebab-case")]
 pub enum LinkFormat {
     /// Do not print the link
     None,
