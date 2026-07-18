@@ -31,7 +31,8 @@ pub fn get_config_file_path_base() -> PathBuf {
 }
 
 pub fn get_current_config_file_path() -> PathBuf {
-    // This should match the config crate.
+    // This should match the features set for the config crate in Config.yaml. If that ever
+    // changes, make sure to update this too.
     let formats = ["toml", "json", "yaml"];
     let file_path = get_config_file_path_base();
     formats
