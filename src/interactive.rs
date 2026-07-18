@@ -65,7 +65,7 @@ pub fn interactive(
             "list-between" => Some(Command::ListBetween {
                 date_a: None,
                 date_b: None,
-                format: LinkFormat::Adjacent,
+                format: config.list_link_format,
             }),
             "clear" => Some(Command::Clear),
             "add" => Some(Command::Add {
