@@ -1,15 +1,15 @@
 # fini
 
-A fast, interactive CLI todo list tool written in Rust. Track tasks with optional links (URLs, issue trackers) and manage them efficiently from your terminal.
+A fast, interactive CLI todo list tool written in Rust. Track tasks with optional links and manage them efficiently from your terminal.
 
 ## Features
 
 - **Task Management**: Create, edit, complete, and delete tasks
 - **Status Tracking**: Three states - Todo, In Progress, and Done
-- **Link Support**: Attach URLs or issue tracker links to tasks
+- **Link Support**: Attach URLs to tasks
 - **Interactive Mode**: Full-featured TUI for managing tasks
-- **Archive System**: Archive completed tasks with `clear`
-- **Copy to Clipboard**: Copy tasks (with links) to clipboard
+- **Archive System**: Archive completed tasks in per-month files
+- **Copy to Clipboard**: Copy tasks (with links) to clipboard in various formats
 - **Boards**: Maintain separate, independent task lists
 
 ## Installation
@@ -40,8 +40,7 @@ All other subcommands are available for scripting or quick one-off operations fr
 
 ```bash
 # Add a task (will prompt for optional link)
-fini add "Implement user authentication"
-fini a "Fix bug in parser"  # using alias
+fini add "Implement user authentication" --link "https://example.com/issue/123"
 ```
 
 ### List Tasks
@@ -49,22 +48,22 @@ fini a "Fix bug in parser"  # using alias
 ```bash
 # Show all current tasks
 fini list
-fini l  # using alias
 ```
 
 Output format:
 ```
   1. ☐ Task title
   2. … Task in progress https://github.com/user/repo/issues/123
-  3. ✔ Completed task
+  3. ✔ Completed task https://github.com/user/repo/issues/522
 ```
+
+You can control what link format is used with the `--format` option (see [#Formats] for options).
 
 ### Work on Tasks
 
 ```bash
 # Mark task(s) as in-progress (toggles with Todo)
 fini begin 1 2 3
-fini b 1       # using alias
 ```
 
 ### Complete Tasks
@@ -72,7 +71,6 @@ fini b 1       # using alias
 ```bash
 # Mark task(s) as done (toggles with Todo)
 fini check 1 2
-fini c 1      # using alias
 ```
 
 ### Star Tasks
@@ -80,31 +78,6 @@ fini c 1      # using alias
 ```bash
 # Star or un-star task(s) to mark as important
 fini star 1 2 3
-fini s 1       # using alias
-```
-
-### Edit Tasks
-
-```bash
-# Edit a task's title and link via interactive prompts
-fini edit 2
-fini e 2  # using alias
-```
-
-### Open Task Links
-
-```bash
-# Open a task's link in your web browser
-fini open 1
-fini o 1  # using alias
-```
-
-### Delete Tasks
-
-```bash
-# Permanently delete task(s)
-fini delete 1
-fini d 1  # using alias
 ```
 
 ### Copy Tasks
@@ -160,22 +133,6 @@ fini board-path
 
 Each board stores its tasks and archive files separately. Switching boards with `fini use` takes effect immediately for all subsequent commands.
 
-### Interactive Mode
-
-```bash
-# Enter interactive mode (default when no command is given)
-fini
-fini interactive
-fini i  # using alias
-```
-
-Interactive mode provides:
-- Visual task selection
-- Multi-select for batch operations
-- Confirmation prompts for destructive actions
-- Continuous workflow without re-running commands
-- Board switching via the `boards` command (exits and reloads with the new board)
-
 ## Data Storage
 
 Tasks are stored as Markdown files in a platform-specific directory:
@@ -230,6 +187,20 @@ Archive files use plain Markdown lists grouped under `## YYYY-MM-DD` date header
 - Another archived task
 ```
 
+## Formats
+
+These are the formats you can use with the `--format` CLI option or the `list_link_format` config option.
+
+| Value            | Description                                              |
+|------------------|----------------------------------------------------------|
+| `newline`        | Link printed on a new line below the task title          |
+| `adjacent`       | Link printed after the task title on the same line       |
+| `adjacent-color` | Same as `Adjacent` but link is dimmed                    |
+| `hyperlink`      | Link rendered as an OSC 8 terminal hyperlink             |
+| `markdown`       | Task title becomes a Markdown link: `[title](url)`       |
+| `html`           | Task title becomes an HTML link                          |
+| `none`           | Links not shown                                          |
+
 ## Configuration
 
 fini can be configured by creating a TOML file named `fini_config.toml` in the data directory:
@@ -242,17 +213,7 @@ All settings are optional and fall back to defaults if omitted.
 
 ### `list_link_format`
 
-Controls how task links are displayed by `fini list` and other list commands. Can be overridden using the `--format` option except in interactive mode. Default: `newline`.
-
-| Value           | Description                                              |
-|-----------------|----------------------------------------------------------|
-| `Newline`       | Link printed on a new line below the task title          |
-| `Adjacent`      | Link printed after the task title on the same line       |
-| `AdjacentColor` | Same as `Adjacent` but link is dimmed                    |
-| `Hyperlink`     | Link rendered as an OSC 8 terminal hyperlink             |
-| `Markdown`      | Task title becomes a Markdown link: `[title](url)`       |
-| `Html`          | Task title becomes an HTML link                          |
-| `None`          | Links not shown                                          |
+Controls how task links are displayed by `fini list` and other list commands. Can be overridden using the `--format` option except in interactive mode. Default: `newline`. See [#Formats] for options.
 
 ### `prompter`
 
@@ -276,7 +237,7 @@ data_dir = "~/Dropbox/fini"
 ### Example config
 
 ```toml
-list_link_format = "Hyperlink"
+list_link_format = "hyperlink"
 prompter = "vim"
 data_dir = "~/Dropbox/fini"
 ```

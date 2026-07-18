@@ -4,7 +4,7 @@ use serde::Deserialize;
 use crate::{commands::LinkFormat, storage::get_default_data_dir};
 
 #[derive(Debug, Deserialize, Default)]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "kebab-case")]
 pub enum PrompterType {
     #[default]
     Inquire,
