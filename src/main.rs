@@ -103,6 +103,9 @@ enum CliCommands {
         date_a: String,
         /// The date to end
         date_b: String,
+        /// How to format links in the output
+        #[arg(long, value_enum)]
+        format: Option<LinkFormat>,
     },
     /// List all archived tasks
     Archived,
@@ -167,10 +170,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
         CliCommands::CopyChecked { format } => Command::CopyChecked { format },
-        CliCommands::ListBetween { date_a, date_b } => Command::ListBetween {
+        CliCommands::ListBetween {
+            date_a,
+            date_b,
+            format,
+        } => Command::ListBetween {
             date_a: Some(date_a),
             date_b: Some(date_b),
-            format: LinkFormat::Adjacent,
+            format: format.unwrap_or(config.list_link_format),
         },
         CliCommands::List { format } => Command::List {
             format: format.unwrap_or(config.list_link_format),
