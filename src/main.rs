@@ -87,7 +87,7 @@ enum CliCommands {
         #[arg(long, value_enum, default_value_t = LinkFormat::Adjacent)]
         format: LinkFormat,
     },
-    /// Copy completed or begun tasks to the clipboard as markdown links
+    /// Copy completed or begun tasks to the clipboard
     CopyChecked {
         /// How to format links in the copied output
         #[arg(long, value_enum, default_value_t = LinkFormat::Adjacent)]
