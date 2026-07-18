@@ -116,7 +116,7 @@ fini y 1 2     # using alias
 fini yank 1    # alternative alias
 
 # Copy task(s) to clipboard as Markdown links
-fini copy-markdown 1 2 3
+fini copy 1 2 3 --format=markdown
 
 # Copy all completed, begun, or archived tasks on or after a date
 fini copy-after-date 2024-12-15
@@ -254,6 +254,7 @@ Controls how task links are displayed by `fini list`. Default: `newline`.
 | `AdjacentColor` | Same as `Adjacent` but link is dimmed                    |
 | `Hyperlink`     | Link rendered as an OSC 8 terminal hyperlink             |
 | `Markdown`      | Task title becomes a Markdown link: `[title](url)`       |
+| `Html`          | Task title becomes an HTML link                          |
 | `None`          | Links not shown                                          |
 
 ### `prompter`

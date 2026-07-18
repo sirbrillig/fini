@@ -1,10 +1,10 @@
-use crate::copier::Copier;
+use crate::copier::{Copier, CopyPayload, HtmlPayload, TextPayload};
 use crate::interactive::interactive;
 use crate::markdown::archived_tasks_as_markdown;
 use crate::printer::Printer;
 use crate::prompter::Prompter;
 use crate::storage::TaskStorage;
-use crate::task_item::Status;
+use crate::task_item::{Status, TaskItemHtml};
 use crate::util::{
     add, archive, archived, clear, copy, delete, done, edit_task, get_checked_task_ids,
     get_task_for_id, get_task_ids_after_date, get_task_ids_between, get_task_link_for_format,
@@ -14,7 +14,7 @@ use inquire::{DateSelect, Select};
 use serde::Deserialize;
 
 /// The way that links will be formatted by an action
-#[derive(Clone, Copy, Debug, Deserialize)]
+#[derive(Clone, Copy, Debug, Deserialize, clap::ValueEnum)]
 pub enum LinkFormat {
     /// Do not print the link
     None,
@@ -28,6 +28,8 @@ pub enum LinkFormat {
     Markdown,
     /// Print the link after the task title on a new line
     Newline,
+    /// Make the task title into an HTML link
+    Html,
 }
 
 pub enum Command {
@@ -161,15 +163,27 @@ pub fn execute_command(
                 Some(ids) => ids,
                 None => prompt_for_task_ids(storage, "Select tasks to copy")?,
             };
-            copy(storage, copier, printer, &ids, |i| {
-                get_task_link_for_format(i, format)
-            })?;
+            match format {
+                LinkFormat::Html => copy(storage, copier, printer, &ids, |i| HtmlPayload {
+                    html: TaskItemHtml(i).to_string(),
+                    alt: get_task_link_for_format(i, LinkFormat::Adjacent),
+                })?,
+                _ => copy(storage, copier, printer, &ids, |i| {
+                    TextPayload(get_task_link_for_format(i, format))
+                })?,
+            };
         }
         Command::CopyChecked { format } => {
             let ids = get_checked_task_ids(storage)?;
-            copy(storage, copier, printer, &ids, |i| {
-                get_task_link_for_format(i, format)
-            })?;
+            match format {
+                LinkFormat::Html => copy(storage, copier, printer, &ids, |i| HtmlPayload {
+                    html: TaskItemHtml(i).to_string(),
+                    alt: get_task_link_for_format(i, LinkFormat::Adjacent),
+                })?,
+                _ => copy(storage, copier, printer, &ids, |i| {
+                    TextPayload(get_task_link_for_format(i, format))
+                })?,
+            };
         }
         Command::CopyAfterDate { date, format } => {
             let date = match date {
@@ -188,7 +202,8 @@ pub fn execute_command(
             )?;
             let tasks = get_tasks_for_ids(tasks, &ids)?;
             let text = archived_tasks_as_markdown(tasks, |i| get_task_link_for_format(i, format));
-            copier.copy(&text)?;
+            let payload = CopyPayload::Text(TextPayload(text));
+            copier.copy(&payload)?;
             printer
                 .print(format!("Copied tasks as Markdown by date starting at {}", date).as_str());
         }

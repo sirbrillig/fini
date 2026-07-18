@@ -16,10 +16,13 @@ pub fn interactive(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let config = load_config()?;
     loop {
+        // List tasks at the top of each loop
         let active_board = storage.active_board();
         println!("{}", format!("board: {active_board}").dimmed());
         println!("{}", "-----------------------------------------".green());
         list(storage, printer, config.list_link_format)?;
+
+        // Prompt for the command
         let commands = vec![
             "quit",
             "list",
@@ -29,7 +32,6 @@ pub fn interactive(
             "star",
             "open",
             "copy",
-            "copy-markdown",
             "copy-checked",
             "copy-after",
             "archive",
@@ -49,16 +51,15 @@ pub fn interactive(
                 inquire::InquireError::OperationCanceled => Ok("list"),
                 err => Err(err),
             });
-
         let answer = match answer {
             Ok(cmd) => cmd,
             Err(_) => break, // Handle ctrl-c by quitting
         };
-
         if answer == "quit" {
             break;
         }
 
+        // Determine what command to execute based on the input
         let command: Option<Command> = match answer {
             // Do nothing as the list will be printed when we loop.
             "list" => None,
@@ -77,21 +78,18 @@ pub fn interactive(
                 title: None,
                 link: None,
             }),
-            "copy" => Some(Command::Copy {
-                ids: None,
-                format: LinkFormat::Adjacent,
-            }),
-            "copy-markdown" => Some(Command::Copy {
-                ids: None,
-                format: crate::commands::LinkFormat::Markdown,
-            }),
-            "copy-checked" => Some(Command::CopyChecked {
-                format: LinkFormat::Markdown,
-            }),
-            "copy-after" => Some(Command::CopyAfterDate {
-                date: None,
-                format: LinkFormat::Adjacent,
-            }),
+            "copy" => {
+                let format = prompt_for_copy_format();
+                Some(Command::Copy { ids: None, format })
+            }
+            "copy-checked" => {
+                let format = prompt_for_copy_format();
+                Some(Command::CopyChecked { format })
+            }
+            "copy-after" => {
+                let format = prompt_for_copy_format();
+                Some(Command::CopyAfterDate { date: None, format })
+            }
             "edit" => Some(Command::Edit { id: None }),
             "open" => Some(Command::Open { id: None }),
             "check" => Some(Command::Check { ids: None }),
@@ -105,9 +103,29 @@ pub fn interactive(
                 None
             }
         };
+
         if let Some(command) = command {
             execute_command(storage, prompter, copier, printer, command)?;
         }
     }
     Ok(())
+}
+
+fn prompt_for_copy_format() -> LinkFormat {
+    let formats = vec!["adjacent", "markdown", "html"];
+    let format_answer = Select::new("Select a copy format:", formats)
+        .with_page_size(4)
+        .prompt()
+        .or_else(|err| match err {
+            inquire::InquireError::OperationCanceled => Ok("adjacent"),
+            err => Err(err),
+        })
+        .unwrap_or("adjacent");
+
+    match format_answer {
+        "adjacent" => LinkFormat::Adjacent,
+        "markdown" => LinkFormat::Markdown,
+        "html" => LinkFormat::Html,
+        _ => LinkFormat::Adjacent,
+    }
 }

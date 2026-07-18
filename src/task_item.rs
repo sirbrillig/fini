@@ -142,6 +142,20 @@ impl fmt::Display for TaskItemNewlineLink<'_> {
     }
 }
 
+// A version of the task where the link is html
+// `LinkFormat::Html`.
+pub struct TaskItemHtml<'a>(pub &'a TaskItem);
+impl fmt::Display for TaskItemHtml<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if let Some(link) = &self.0.link {
+            write!(f, "<a href=\"{}\">{}</a>", link, self.0.title)?;
+        } else {
+            write!(f, "{}", self.0.title)?;
+        }
+        Ok(())
+    }
+}
+
 // A version of the task where the link is markdown linked to the text, corresponding to
 // `LinkFormat::Markdown`.
 pub struct TaskItemCopyableMarkdown<'a>(pub &'a TaskItem);
@@ -161,7 +175,7 @@ impl fmt::Display for TaskItemCopyableMarkdown<'_> {
 pub struct TaskItemHyperlinked<'a>(pub &'a TaskItem);
 impl fmt::Display for TaskItemHyperlinked<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", &self.0.title)?;
+        write!(f, "{}", self.0.title)?;
         if let Some(link) = &self.0.link {
             write!(
                 f,
