@@ -125,6 +125,8 @@ enum CliCommands {
     Boards,
     /// Print the filesystem path to the current active board
     BoardPath,
+    /// Print the filesystem path to the current config file
+    ConfigPath,
 }
 
 fn expand_tilde(path: String) -> PathBuf {
@@ -232,6 +234,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         CliCommands::Use { name } => Command::Use { name: Some(name) },
         CliCommands::Boards => Command::Boards,
         CliCommands::BoardPath => Command::BoardPath,
+        CliCommands::ConfigPath => Command::ConfigPath,
     };
     execute_command(
         &mut storage,

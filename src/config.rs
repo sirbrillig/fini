@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use config::{Config, ConfigError, File};
 use serde::Deserialize;
 
@@ -23,9 +25,24 @@ pub struct FiniConfig {
     pub data_dir: Option<String>,
 }
 
-pub fn load_config() -> Result<FiniConfig, ConfigError> {
+pub fn get_config_file_path_base() -> PathBuf {
     let path = get_default_data_dir();
-    let file_path = path.join("fini_config");
+    path.join("fini_config")
+}
+
+pub fn get_current_config_file_path() -> PathBuf {
+    // This should match the config crate.
+    let formats = ["toml", "json", "yaml", "yml", "ini", "ron", "json5"];
+    let file_path = get_config_file_path_base();
+    formats
+        .iter()
+        .map(|e| file_path.with_extension(e))
+        .find(|path| path.exists())
+        .unwrap_or_else(|| file_path.with_extension("toml"))
+}
+
+pub fn load_config() -> Result<FiniConfig, ConfigError> {
+    let file_path = get_config_file_path_base();
     let data = Config::builder()
         .add_source(File::with_name(&file_path.to_string_lossy()).required(false))
         .build()?;
