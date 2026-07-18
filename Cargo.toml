@@ -13,7 +13,7 @@ arboard = "3.6.1"
 chrono = { version = "0.4.42" }
 clap = { version = "4.5.51", features = ["derive"] }
 colored = "2.1.0"
-config = "0.15.19"
+config = { version = "0.15.19", default-features = false, features = ["toml", "json", "yaml"] }
 directories = "6.0.0"
 glob = "0.3"
 inquire = { version = "0.9.1", features = ["editor", "date"] }

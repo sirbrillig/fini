@@ -32,7 +32,7 @@ pub fn get_config_file_path_base() -> PathBuf {
 
 pub fn get_current_config_file_path() -> PathBuf {
     // This should match the config crate.
-    let formats = ["toml", "json", "yaml", "yml", "ini", "ron", "json5"];
+    let formats = ["toml", "json", "yaml"];
     let file_path = get_config_file_path_base();
     formats
         .iter()
