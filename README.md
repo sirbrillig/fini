@@ -57,7 +57,7 @@ Output format:
   3. ✔ Completed task https://github.com/user/repo/issues/522
 ```
 
-You can control what link format is used with the `--format` option (see [#Formats] for options).
+You can control what link format is used with the `--format` option (see [Formats](#formats) for options).
 
 ### Work on Tasks
 
@@ -213,7 +213,7 @@ All settings are optional and fall back to defaults if omitted.
 
 ### `list_link_format`
 
-Controls how task links are displayed by `fini list` and other list commands. Can be overridden using the `--format` option except in interactive mode. Default: `newline`. See [#Formats] for options.
+Controls how task links are displayed by `fini list` and other list commands. Can be overridden using the `--format` option except in interactive mode. Default: `newline`. See [Formats](#formats) for options.
 
 ### `prompter`
 
