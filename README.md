@@ -242,7 +242,7 @@ All settings are optional and fall back to defaults if omitted.
 
 ### `list_link_format`
 
-Controls how task links are displayed by `fini list`. Default: `newline`.
+Controls how task links are displayed by `fini list` and other list commands. Can be overridden using the `--format` option except in interactive mode. Default: `newline`.
 
 | Value           | Description                                              |
 |-----------------|----------------------------------------------------------|

@@ -444,7 +444,9 @@ mod tests {
         ctx.execute(command).unwrap();
         ctx.printer.clear();
 
-        let command = Command::Archived {};
+        let command = Command::Archived {
+            format: LinkFormat::Adjacent,
+        };
         let result = ctx.execute(command);
 
         assert!(result.is_ok());

@@ -105,8 +105,8 @@ impl fmt::Display for TaskItemWithStatus<'_> {
 
 // A version of the task where the link is adjacent to the text with color, corresponding to
 // `LinkFormat::AdjacentColor`.
-pub struct TaskItemAdjacentLink<'a>(pub &'a TaskItem);
-impl fmt::Display for TaskItemAdjacentLink<'_> {
+pub struct TaskItemAdjacentColor<'a>(pub &'a TaskItem);
+impl fmt::Display for TaskItemAdjacentColor<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0.title)?;
         if let Some(link) = &self.0.link {
@@ -118,8 +118,8 @@ impl fmt::Display for TaskItemAdjacentLink<'_> {
 
 // A version of the task where the link is adjacent to the text, corresponding to
 // `LinkFormat::Adjacent`.
-pub struct TaskItemCopyable<'a>(pub &'a TaskItem);
-impl fmt::Display for TaskItemCopyable<'_> {
+pub struct TaskItemAdjacent<'a>(pub &'a TaskItem);
+impl fmt::Display for TaskItemAdjacent<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0.title)?;
         if let Some(link) = &self.0.link {
@@ -158,8 +158,8 @@ impl fmt::Display for TaskItemHtml<'_> {
 
 // A version of the task where the link is markdown linked to the text, corresponding to
 // `LinkFormat::Markdown`.
-pub struct TaskItemCopyableMarkdown<'a>(pub &'a TaskItem);
-impl fmt::Display for TaskItemCopyableMarkdown<'_> {
+pub struct TaskItemMarkdown<'a>(pub &'a TaskItem);
+impl fmt::Display for TaskItemMarkdown<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let Some(link) = &self.0.link {
             write!(f, "[{}]({})", self.0.title, link)?;

@@ -8,8 +8,8 @@ use crate::{
     prompter::Prompter,
     storage::TaskStorage,
     task_item::{
-        Status, TaskItem, TaskItemAdjacentLink, TaskItemCopyable, TaskItemCopyableMarkdown,
-        TaskItemHtml, TaskItemHyperlinked, TaskItemNewlineLink, TaskItemWithIndex,
+        Status, TaskItem, TaskItemAdjacent, TaskItemAdjacentColor, TaskItemHtml,
+        TaskItemHyperlinked, TaskItemMarkdown, TaskItemNewlineLink, TaskItemWithIndex,
         TaskItemWithStatus,
     },
 };
@@ -21,10 +21,10 @@ const SELECT_PAGE_SIZE: usize = 20;
 pub fn get_task_link_for_format(task: &TaskItem, format: LinkFormat) -> String {
     match format {
         LinkFormat::None => task.to_string(),
-        LinkFormat::Adjacent => TaskItemCopyable(task).to_string(),
-        LinkFormat::AdjacentColor => TaskItemAdjacentLink(task).to_string(),
+        LinkFormat::Adjacent => TaskItemAdjacent(task).to_string(),
+        LinkFormat::AdjacentColor => TaskItemAdjacentColor(task).to_string(),
         LinkFormat::Hyperlink => TaskItemHyperlinked(task).to_string(),
-        LinkFormat::Markdown => TaskItemCopyableMarkdown(task).to_string(),
+        LinkFormat::Markdown => TaskItemMarkdown(task).to_string(),
         LinkFormat::Newline => TaskItemNewlineLink(task).to_string(),
         LinkFormat::Html => TaskItemHtml(task).to_string(),
     }
@@ -181,10 +181,11 @@ pub fn list(
 pub fn archived(
     storage: &dyn TaskStorage,
     printer: &mut dyn Printer,
+    format: LinkFormat,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let tasks = storage.read_archived()?;
     printer.print(&archived_tasks_as_markdown(tasks, |t| {
-        TaskItemCopyable(t).to_string()
+        get_task_link_for_format(t, format)
     }));
     Ok(())
 }
