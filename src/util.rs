@@ -8,8 +8,8 @@ use crate::{
     prompter::Prompter,
     storage::TaskStorage,
     task_item::{
-        Status, TaskItem, TaskItemAdjacent, TaskItemAdjacentLink, TaskItemCopyableMarkdown,
-        TaskItemHtml, TaskItemHyperlinked, TaskItemNewlineLink, TaskItemWithIndex,
+        Status, TaskItem, TaskItemAdjacent, TaskItemAdjacentColor, TaskItemHtml,
+        TaskItemHyperlinked, TaskItemMarkdown, TaskItemNewlineLink, TaskItemWithIndex,
         TaskItemWithStatus,
     },
 };
@@ -22,9 +22,9 @@ pub fn get_task_link_for_format(task: &TaskItem, format: LinkFormat) -> String {
     match format {
         LinkFormat::None => task.to_string(),
         LinkFormat::Adjacent => TaskItemAdjacent(task).to_string(),
-        LinkFormat::AdjacentColor => TaskItemAdjacentLink(task).to_string(),
+        LinkFormat::AdjacentColor => TaskItemAdjacentColor(task).to_string(),
         LinkFormat::Hyperlink => TaskItemHyperlinked(task).to_string(),
-        LinkFormat::Markdown => TaskItemCopyableMarkdown(task).to_string(),
+        LinkFormat::Markdown => TaskItemMarkdown(task).to_string(),
         LinkFormat::Newline => TaskItemNewlineLink(task).to_string(),
         LinkFormat::Html => TaskItemHtml(task).to_string(),
     }
