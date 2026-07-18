@@ -117,15 +117,12 @@ fini yank 1    # alternative alias
 
 # Copy task(s) to clipboard as Markdown links
 fini copy 1 2 3 --format=markdown
-
-# Copy all completed, begun, or archived tasks on or after a date
-fini copy-after-date 2024-12-15
 ```
 
 ### Archive Management
 
 ```bash
-# Archive all done tasks (also archives a snapshot of in-progress tasks, #
+# Archive all done tasks (also archives a snapshot of in-progress tasks,
 # which remain active as Todo). You can also use the archive command to archive
 # specific tasks.
 fini clear
@@ -133,8 +130,8 @@ fini clear
 # View all archived tasks
 fini archived
 
-# List all completed, begun, or archived tasks on or after a date
-fini list-after-date 2024-12-15
+# List all completed, begun, or archived tasks between dates (inclusive)
+fini list-between 2026-06-01 2026-06-15 --format=markdown
 ```
 
 ### Boards

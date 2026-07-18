@@ -63,27 +63,6 @@ pub fn get_task_ids_between(
         .collect())
 }
 
-/// Return all task IDs after the given date, inclusive
-pub fn get_task_ids_after_date(
-    tasks: &[TaskItem],
-    date: &str,
-    statuses: &[Status],
-) -> Result<Vec<usize>, Box<dyn std::error::Error>> {
-    let filter_date = NaiveDate::parse_from_str(date, "%Y-%m-%d")?;
-    Ok(tasks
-        .iter()
-        .filter(|t| statuses.contains(&t.status))
-        .filter_map(|t| {
-            let task_date = t.active_date?;
-            if task_date >= filter_date {
-                Some(t.id)
-            } else {
-                None
-            }
-        })
-        .collect())
-}
-
 pub fn get_task_for_id(
     storage: &dyn TaskStorage,
     id: usize,
