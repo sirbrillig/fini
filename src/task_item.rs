@@ -175,7 +175,7 @@ impl fmt::Display for TaskItemCopyableMarkdown<'_> {
 pub struct TaskItemHyperlinked<'a>(pub &'a TaskItem);
 impl fmt::Display for TaskItemHyperlinked<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", &self.0.title)?;
+        write!(f, "{}", self.0.title)?;
         if let Some(link) = &self.0.link {
             write!(
                 f,

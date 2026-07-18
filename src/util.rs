@@ -176,7 +176,7 @@ pub fn add(
         link,
         ..Default::default()
     };
-    printer.print(format!("Added task: {}", &item.title).as_str());
+    printer.print(format!("Added task: {}", item.title).as_str());
     tasks.push(item);
     storage.write_tasks(tasks)?;
     Ok(id)
