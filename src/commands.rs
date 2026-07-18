@@ -18,18 +18,25 @@ use serde::Deserialize;
 #[serde(rename_all = "kebab-case")]
 pub enum LinkFormat {
     /// Do not print the link
+    #[serde(alias = "None")]
     None,
     /// Print the link after the task title
+    #[serde(alias = "Adjacent")]
     Adjacent,
     /// Print the link after the task title with colors
+    #[serde(alias = "adjacent-color")]
     AdjacentColor,
     /// Print the link as an OSC 8 hyperlink after the task title
+    #[serde(alias = "Hyperlink")]
     Hyperlink,
     /// Make the task title into a markdown link
+    #[serde(alias = "Markdown")]
     Markdown,
     /// Print the link after the task title on a new line
+    #[serde(alias = "Newline")]
     Newline,
     /// Make the task title into an HTML link
+    #[serde(alias = "Html")]
     Html,
 }
 
