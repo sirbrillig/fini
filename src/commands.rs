@@ -1,4 +1,4 @@
-use crate::copier::{Copier, CopyPayload, HtmlPayload, TextPayload};
+use crate::copier::{Copier, HtmlPayload, TextPayload};
 use crate::interactive::interactive;
 use crate::markdown::archived_tasks_as_markdown;
 use crate::printer::Printer;
@@ -7,8 +7,8 @@ use crate::storage::TaskStorage;
 use crate::task_item::{Status, TaskItemHtml};
 use crate::util::{
     add, archive, archived, clear, copy, delete, done, edit_task, get_checked_task_ids,
-    get_task_for_id, get_task_ids_after_date, get_task_ids_between, get_task_link_for_format,
-    get_tasks_for_ids, list, prompt_for_task_id, prompt_for_task_ids, star, work,
+    get_task_for_id, get_task_ids_between, get_task_link_for_format, get_tasks_for_ids, list,
+    prompt_for_task_id, prompt_for_task_ids, star, work,
 };
 use inquire::{DateSelect, Select};
 use serde::Deserialize;
@@ -94,26 +94,12 @@ pub enum Command {
         /// The format of the copied links
         format: LinkFormat,
     },
-    /// Copy all completed, begun, or archived tasks to the clipboard starting on the date
-    CopyAfterDate {
-        /// The date to start (will prompt if missing)
-        date: Option<String>,
-        /// The format of the copied links
-        format: LinkFormat,
-    },
     /// List all completed, begun, or archived tasks between dates, inclusive
     ListBetween {
         /// The date to start (will prompt if missing)
         date_a: Option<String>,
         /// The date to end (will prompt if missing)
         date_b: Option<String>,
-        /// The format of the copied links
-        format: LinkFormat,
-    },
-    /// List all completed, begun, or archived tasks starting on the date
-    ListAfterDate {
-        /// The date to start (will prompt if missing)
-        date: Option<String>,
         /// The format of the copied links
         format: LinkFormat,
     },
@@ -185,28 +171,6 @@ pub fn execute_command(
                 })?,
             };
         }
-        Command::CopyAfterDate { date, format } => {
-            let date = match date {
-                Some(content) => content,
-                None => DateSelect::new("Select date to start copying begun and completed tasks:")
-                    .prompt()?
-                    .to_string(),
-            };
-            let mut tasks = storage.read_tasks()?;
-            let mut archived = storage.read_archived()?;
-            tasks.append(&mut archived);
-            let ids: Vec<usize> = get_task_ids_after_date(
-                &tasks,
-                &date,
-                &[Status::Done, Status::InProgress, Status::Archived],
-            )?;
-            let tasks = get_tasks_for_ids(tasks, &ids)?;
-            let text = archived_tasks_as_markdown(tasks, |i| get_task_link_for_format(i, format));
-            let payload = CopyPayload::Text(TextPayload(text));
-            copier.copy(&payload)?;
-            printer
-                .print(format!("Copied tasks as Markdown by date starting at {}", date).as_str());
-        }
         Command::ListBetween {
             date_a,
             date_b,
@@ -231,27 +195,6 @@ pub fn execute_command(
                 &tasks,
                 &date_a,
                 &date_b,
-                &[Status::Done, Status::InProgress, Status::Archived],
-            )?;
-            let tasks = get_tasks_for_ids(tasks, &ids)?;
-            let text = archived_tasks_as_markdown(tasks, |i| get_task_link_for_format(i, format));
-            printer.print(&text);
-        }
-        Command::ListAfterDate { date, format } => {
-            let date = match date {
-                Some(content) => content,
-                None => {
-                    DateSelect::new("Select first date to start listing begun and completed tasks:")
-                        .prompt()?
-                        .to_string()
-                }
-            };
-            let mut tasks = storage.read_tasks()?;
-            let mut archived = storage.read_archived()?;
-            tasks.append(&mut archived);
-            let ids: Vec<usize> = get_task_ids_after_date(
-                &tasks,
-                &date,
                 &[Status::Done, Status::InProgress, Status::Archived],
             )?;
             let tasks = get_tasks_for_ids(tasks, &ids)?;

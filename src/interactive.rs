@@ -33,13 +33,11 @@ pub fn interactive(
             "open",
             "copy",
             "copy-checked",
-            "copy-after",
             "archive",
             "clear",
             "delete",
             "edit",
             "list-archived",
-            "list-after",
             "list-between",
             "boards",
         ];
@@ -64,10 +62,6 @@ pub fn interactive(
             // Do nothing as the list will be printed when we loop.
             "list" => None,
             "list-archived" => Some(Command::Archived),
-            "list-after" => Some(Command::ListAfterDate {
-                date: None,
-                format: LinkFormat::Adjacent,
-            }),
             "list-between" => Some(Command::ListBetween {
                 date_a: None,
                 date_b: None,
@@ -85,10 +79,6 @@ pub fn interactive(
             "copy-checked" => {
                 let format = prompt_for_copy_format();
                 Some(Command::CopyChecked { format })
-            }
-            "copy-after" => {
-                let format = prompt_for_copy_format();
-                Some(Command::CopyAfterDate { date: None, format })
             }
             "edit" => Some(Command::Edit { id: None }),
             "open" => Some(Command::Open { id: None }),
