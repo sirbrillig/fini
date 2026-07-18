@@ -100,11 +100,14 @@ pub enum Command {
         date_a: Option<String>,
         /// The date to end (will prompt if missing)
         date_b: Option<String>,
-        /// The format of the copied links
+        /// The format of the links
         format: LinkFormat,
     },
     /// List all archived tasks
-    Archived,
+    Archived {
+        /// The format of the links
+        format: LinkFormat,
+    },
     /// Enter interactive mode
     Interactive,
     /// List all available boards
@@ -202,7 +205,7 @@ pub fn execute_command(
             printer.print(&text);
         }
         Command::List { format } => list(storage, printer, format)?,
-        Command::Archived => archived(storage, printer)?,
+        Command::Archived { format } => archived(storage, printer, format)?,
         Command::Open { id } => {
             let id_option = match id {
                 Some(id) => Some(id),

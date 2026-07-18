@@ -61,7 +61,9 @@ pub fn interactive(
         let command: Option<Command> = match answer {
             // Do nothing as the list will be printed when we loop.
             "list" => None,
-            "list-archived" => Some(Command::Archived),
+            "list-archived" => Some(Command::Archived {
+                format: config.list_link_format,
+            }),
             "list-between" => Some(Command::ListBetween {
                 date_a: None,
                 date_b: None,

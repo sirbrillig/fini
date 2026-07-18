@@ -118,8 +118,8 @@ impl fmt::Display for TaskItemAdjacentLink<'_> {
 
 // A version of the task where the link is adjacent to the text, corresponding to
 // `LinkFormat::Adjacent`.
-pub struct TaskItemCopyable<'a>(pub &'a TaskItem);
-impl fmt::Display for TaskItemCopyable<'_> {
+pub struct TaskItemAdjacent<'a>(pub &'a TaskItem);
+impl fmt::Display for TaskItemAdjacent<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0.title)?;
         if let Some(link) = &self.0.link {

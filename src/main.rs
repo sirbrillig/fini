@@ -108,7 +108,11 @@ enum CliCommands {
         format: Option<LinkFormat>,
     },
     /// List all archived tasks
-    Archived,
+    Archived {
+        /// How to format links in the output
+        #[arg(long, value_enum)]
+        format: Option<LinkFormat>,
+    },
     /// Enter interactive mode (alias: i)
     #[command(alias = "i")]
     Interactive,
@@ -182,7 +186,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         CliCommands::List { format } => Command::List {
             format: format.unwrap_or(config.list_link_format),
         },
-        CliCommands::Archived => Command::Archived,
+        CliCommands::Archived { format } => Command::Archived {
+            format: format.unwrap_or(config.list_link_format),
+        },
         CliCommands::Edit { index } => {
             let id = get_id_for_index(&storage, index)?;
             Command::Edit { id }
