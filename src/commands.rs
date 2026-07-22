@@ -13,6 +13,7 @@ use crate::util::{
 };
 use inquire::{DateSelect, Select};
 use serde::Deserialize;
+use std::fmt::{self, Display, Formatter};
 
 /// The way that links will be formatted by an action
 #[derive(Clone, Copy, Debug, Deserialize, clap::ValueEnum)]
@@ -39,6 +40,39 @@ pub enum LinkFormat {
     /// Make the task title into an HTML link
     #[serde(alias = "Html")]
     Html,
+}
+
+impl Display for LinkFormat {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+impl LinkFormat {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            LinkFormat::None => "none",
+            LinkFormat::Adjacent => "adjacent",
+            LinkFormat::AdjacentColor => "adjacent-color",
+            LinkFormat::Hyperlink => "hyperlink",
+            LinkFormat::Markdown => "markdown",
+            LinkFormat::Newline => "newline",
+            LinkFormat::Html => "html",
+        }
+    }
+
+    pub fn get_from_str(s: &str) -> Self {
+        match s {
+            "none" => LinkFormat::None,
+            "adjacent" => LinkFormat::Adjacent,
+            "adjacent-color" => LinkFormat::AdjacentColor,
+            "hyperlink" => LinkFormat::Hyperlink,
+            "newline" => LinkFormat::Newline,
+            "markdown" => LinkFormat::Markdown,
+            "html" => LinkFormat::Html,
+            _ => LinkFormat::Adjacent,
+        }
+    }
 }
 
 pub enum Command {

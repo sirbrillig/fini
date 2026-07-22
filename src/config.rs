@@ -17,6 +17,8 @@ pub enum PrompterType {
 pub struct FiniConfig {
     #[serde(default = "default_list_link_format")]
     pub list_link_format: LinkFormat,
+    #[serde(default = "default_copy_link_format")]
+    pub copy_link_format: LinkFormat,
     #[serde(default)]
     pub prompter: PrompterType,
     /// Override where boards are stored. Supports ~ for home directory.
@@ -52,4 +54,8 @@ pub fn load_config() -> Result<FiniConfig, ConfigError> {
 
 fn default_list_link_format() -> LinkFormat {
     LinkFormat::Newline
+}
+
+fn default_copy_link_format() -> LinkFormat {
+    LinkFormat::Adjacent
 }

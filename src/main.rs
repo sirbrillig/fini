@@ -88,14 +88,14 @@ enum CliCommands {
         /// The indices of the tasks to copy
         indices: Vec<usize>,
         /// How to format links in the copied output
-        #[arg(long, value_enum, default_value_t = LinkFormat::Adjacent)]
-        format: LinkFormat,
+        #[arg(long, value_enum)]
+        format: Option<LinkFormat>,
     },
     /// Copy completed or begun tasks to the clipboard
     CopyChecked {
         /// How to format links in the copied output
-        #[arg(long, value_enum, default_value_t = LinkFormat::Adjacent)]
-        format: LinkFormat,
+        #[arg(long, value_enum)]
+        format: Option<LinkFormat>,
     },
     /// List all completed, begun, or archived tasks between the dates (inclusive)
     ListBetween {
@@ -172,10 +172,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let ids = get_ids_for_indices(&storage, indices)?;
             Command::Copy {
                 ids: Some(ids).filter(|x| !x.is_empty()),
-                format,
+                format: format.unwrap_or(config.copy_link_format),
             }
         }
-        CliCommands::CopyChecked { format } => Command::CopyChecked { format },
+        CliCommands::CopyChecked { format } => Command::CopyChecked {
+            format: format.unwrap_or(config.copy_link_format),
+        },
         CliCommands::ListBetween {
             date_a,
             date_b,
