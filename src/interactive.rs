@@ -75,11 +75,11 @@ pub fn interactive(
                 link: None,
             }),
             "copy" => {
-                let format = prompt_for_copy_format();
+                let format = prompt_for_copy_format(config.copy_link_format);
                 Some(Command::Copy { ids: None, format })
             }
             "copy-checked" => {
-                let format = prompt_for_copy_format();
+                let format = prompt_for_copy_format(config.copy_link_format);
                 Some(Command::CopyChecked { format })
             }
             "edit" => Some(Command::Edit { id: None }),
@@ -103,10 +103,13 @@ pub fn interactive(
     Ok(())
 }
 
-fn prompt_for_copy_format() -> LinkFormat {
+fn prompt_for_copy_format(default: LinkFormat) -> LinkFormat {
     let formats = vec!["adjacent", "markdown", "html"];
+    let default_str = default.as_str();
+    let selected = formats.iter().position(|f| *f == default_str).unwrap_or(0);
     let format_answer = Select::new("Select a copy format:", formats)
         .with_page_size(4)
+        .with_starting_cursor(selected)
         .prompt()
         .or_else(|err| match err {
             inquire::InquireError::OperationCanceled => Ok("adjacent"),
@@ -114,10 +117,5 @@ fn prompt_for_copy_format() -> LinkFormat {
         })
         .unwrap_or("adjacent");
 
-    match format_answer {
-        "adjacent" => LinkFormat::Adjacent,
-        "markdown" => LinkFormat::Markdown,
-        "html" => LinkFormat::Html,
-        _ => LinkFormat::Adjacent,
-    }
+    LinkFormat::get_from_str(format_answer)
 }

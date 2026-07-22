@@ -220,6 +220,10 @@ fini config-path
 
 Controls how task links are displayed by `fini list` and other list commands. Can be overridden using the `--format` option except in interactive mode. Default: `newline`. See [Formats](#formats) for options.
 
+### `copy_link_format`
+
+Controls how task links are formatted when running `fini copy` and other copy commands. Can be overridden using the `--format` option except in interactive mode where a menu is always presented (but the default will be the first one selected). Default: `adjacent`. See [Formats](#formats) for options.
+
 ### `prompter`
 
 Controls the input method used for interactive prompts. Default: `inquire`.
