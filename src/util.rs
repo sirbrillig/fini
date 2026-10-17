@@ -123,6 +123,26 @@ pub fn prompt_for_task_ids(
     Ok(val.iter().map(|i| i.0.id).collect())
 }
 
+pub fn prompt_for_archived_task_ids(
+    storage: &dyn TaskStorage,
+    message: &str,
+) -> Result<Vec<usize>, Box<dyn std::error::Error>> {
+    let items = storage.read_archived()?;
+    let formatted: Vec<_> = items
+        .iter()
+        .map(|t| TaskItemWithStatus(t, LinkFormat::None))
+        .collect();
+    let val = MultiSelect::new(message, formatted)
+        .with_page_size(SELECT_PAGE_SIZE)
+        .with_select_on_empty_submit()
+        .prompt()
+        .or_else(|err| match err {
+            inquire::InquireError::OperationCanceled => Ok(Vec::new()),
+            err => Err(err),
+        })?;
+    Ok(val.iter().map(|i| i.0.id).collect())
+}
+
 pub fn get_visible_items(
     storage: &dyn TaskStorage,
 ) -> Result<Vec<TaskItem>, Box<dyn std::error::Error>> {

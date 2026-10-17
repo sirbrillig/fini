@@ -9,7 +9,7 @@ use crate::task_item::{Status, TaskItemHtml};
 use crate::util::{
     add, archive, archived, clear, copy, delete, done, edit_task, get_checked_task_ids,
     get_task_for_id, get_task_ids_between, get_task_link_for_format, get_tasks_for_ids, list,
-    prompt_for_task_id, prompt_for_task_ids, star, unarchive, work,
+    prompt_for_archived_task_ids, prompt_for_task_id, prompt_for_task_ids, star, unarchive, work,
 };
 use inquire::{DateSelect, Select};
 use serde::Deserialize;
@@ -260,8 +260,7 @@ pub fn execute_command(
         Command::Unarchive { ids } => {
             let ids = match ids {
                 Some(ids) => ids,
-                // FIXME: prompt for archived tasks
-                None => prompt_for_task_ids(storage, "Select archived tasks to restore")?,
+                None => prompt_for_archived_task_ids(storage, "Select archived tasks to restore")?,
             };
             unarchive(storage, printer, &ids)?;
         }
