@@ -7,7 +7,7 @@ use chrono::Datelike;
 use directories::BaseDirs;
 use glob::glob;
 use regex::Regex;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -151,14 +151,13 @@ impl TaskStorage for FileStorage {
     }
 
     fn write_archived(&mut self, tasks: Vec<TaskItem>) -> Result<(), Box<dyn std::error::Error>> {
-        let previous_archived = self.read_archived()?;
+        let previous = self.find_all_archive_files()?;
 
         let board_path = self.board_path();
         let grouped = self.group_tasks_by_month(tasks);
-        let mut grouped_keys: Vec<YearMonth> = vec![];
+        let mut written_filenames: HashSet<String> = HashSet::new();
         // Write each month's tasks to its own file
         for (key, month_tasks) in grouped {
-            grouped_keys.push(key);
             let filename = key.get_archive_filename();
             let path = board_path.join(&filename);
             let markdown =
@@ -168,14 +167,16 @@ impl TaskStorage for FileStorage {
             tmp.as_file_mut().flush()?;
             tmp.as_file().sync_all()?;
             tmp.persist(&path)?;
+            written_filenames.insert(filename);
         }
 
         // If tasks have been removed since the last write, and we removed the last task in a month,
         // then the above loop will not write that file at all; we need to remove it manually.
-        let previous_grouped = self.group_tasks_by_month(previous_archived);
-        for key in previous_grouped.keys() {
-            if !grouped_keys.contains(key) {
-                let path = board_path.join(key.get_archive_filename());
+        for path in previous {
+            let Some(filename) = path.file_name().and_then(|f| f.to_str()) else {
+                continue;
+            };
+            if !written_filenames.contains(filename) {
                 fs::remove_file(path)?;
             }
         }
