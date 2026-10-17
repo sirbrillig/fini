@@ -21,7 +21,7 @@ pub fn get_default_data_dir() -> PathBuf {
     data_dir.join("fini")
 }
 
-#[derive(Eq, Hash, PartialEq)]
+#[derive(Eq, Hash, PartialEq, Clone, Copy)]
 struct YearMonth {
     year: i32,
     month: u32,
@@ -151,10 +151,14 @@ impl TaskStorage for FileStorage {
     }
 
     fn write_archived(&mut self, tasks: Vec<TaskItem>) -> Result<(), Box<dyn std::error::Error>> {
+        let previous_archived = self.read_archived()?;
+
         let board_path = self.board_path();
         let grouped = self.group_tasks_by_month(tasks);
+        let mut grouped_keys: Vec<YearMonth> = vec![];
         // Write each month's tasks to its own file
         for (key, month_tasks) in grouped {
+            grouped_keys.push(key);
             let filename = key.get_archive_filename();
             let path = board_path.join(&filename);
             let markdown =
@@ -165,6 +169,17 @@ impl TaskStorage for FileStorage {
             tmp.as_file().sync_all()?;
             tmp.persist(&path)?;
         }
+
+        // If tasks have been removed since the last write, and we removed the last task in a month,
+        // then the above loop will not write that file at all; we need to remove it manually.
+        let previous_grouped = self.group_tasks_by_month(previous_archived);
+        for key in previous_grouped.keys() {
+            if !grouped_keys.contains(key) {
+                let path = board_path.join(key.get_archive_filename());
+                fs::remove_file(path)?;
+            }
+        }
+
         Ok(())
     }
 
