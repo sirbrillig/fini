@@ -221,16 +221,16 @@ pub fn unarchive(
     for id in ids {
         let Some(item) = archived.iter_mut().find(|t| &t.id == id) else {
             eprintln!("⚠️ No archived task found with id {id}");
-            return Ok(());
+            continue;
         };
         item.status = Status::Todo;
         item.active_date = None;
         tasks.push(item.clone());
         printer.print(format!("Moved archived task back to todo: {}", item.title).as_str());
-        archived.retain(|i| !ids.contains(&i.id));
         did_change = true;
     }
     if did_change {
+        archived.retain(|i| !ids.contains(&i.id));
         storage.write_tasks(tasks)?;
         storage.write_archived(archived)?;
     }
@@ -247,7 +247,7 @@ pub fn work(
     for id in ids {
         let Some(item) = tasks.iter_mut().find(|t| &t.id == id) else {
             eprintln!("⚠️ No task found with id {id}");
-            return Ok(());
+            continue;
         };
         if item.status == Status::InProgress {
             item.status = Status::Todo;
@@ -277,7 +277,7 @@ pub fn star(
     for id in ids {
         let Some(item) = tasks.iter_mut().find(|t| &t.id == id) else {
             eprintln!("⚠️ No task found with id {id}");
-            return Ok(());
+            continue;
         };
         if item.star.is_some_and(|v| v) {
             item.star = None;
@@ -305,7 +305,7 @@ pub fn done(
     for id in ids {
         let Some(item) = tasks.iter_mut().find(|t| &t.id == id) else {
             eprintln!("⚠️ No task found with id {id}");
-            return Ok(());
+            continue;
         };
         if item.status == Status::Done {
             item.status = Status::Todo;
@@ -346,7 +346,7 @@ pub fn archive(
     for id in ids {
         let Some(item) = tasks.iter_mut().find(|t| &t.id == id) else {
             eprintln!("⚠️ No task found with id {id}");
-            return Ok(());
+            continue;
         };
         if item.status == Status::Archived {
             eprintln!("Task already archived");
