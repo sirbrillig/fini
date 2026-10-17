@@ -251,7 +251,8 @@ pub fn execute_command(
                 &[Status::Done, Status::InProgress, Status::Archived],
             )?;
             let tasks = get_tasks_for_ids(tasks, &ids)?;
-            let text = archived_tasks_as_markdown(tasks, |i| get_task_link_for_format(i, format));
+            let text =
+                archived_tasks_as_markdown(tasks, |t, _| get_task_link_for_format(t, format));
             printer.print(&text);
         }
         Command::List { format } => list(storage, printer, format)?,

@@ -184,9 +184,8 @@ pub fn archived(
     format: LinkFormat,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let tasks = storage.read_archived()?;
-    // FIXME: add indices so unarchive can target tasks
-    printer.print(&archived_tasks_as_markdown(tasks, |t| {
-        get_task_link_for_format(t, format)
+    printer.print(&archived_tasks_as_markdown(tasks, |task, index| {
+        TaskItemWithIndex(task, index + 1, format).to_string()
     }));
     Ok(())
 }

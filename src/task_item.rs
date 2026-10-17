@@ -86,9 +86,10 @@ impl fmt::Display for TaskItemWithStatus<'_> {
         let text = get_task_link_for_format(task, format);
         match task.status {
             // Archived status doesn't require any extra formatting because it will never be mixed
-            // with other statuses and will never be starred.
+            // with other statuses and will never be starred. Prepend with a space to match the
+            // format of the other tasks which prepend a status.
             Status::Archived => {
-                write!(f, "{}", task.title)?;
+                write!(f, " {}", text)?;
             }
             _ => {
                 if task.star.is_some_and(|v| v) {

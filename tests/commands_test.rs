@@ -487,7 +487,11 @@ mod tests {
         let result = ctx.execute(command);
 
         assert!(result.is_ok());
-        let expected = format!("\n## {}\n- {}\n", Local::now().format("%Y-%m-%d"), title1);
+        let expected = format!(
+            "\n## {}\n-  1. {}\n",
+            Local::now().format("%Y-%m-%d"),
+            title1
+        );
         assert_eq!(strip_str(ctx.printer.text), expected);
     }
 

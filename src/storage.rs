@@ -158,7 +158,7 @@ impl TaskStorage for FileStorage {
             let filename = key.get_archive_filename();
             let path = board_path.join(&filename);
             let markdown =
-                archived_tasks_as_markdown(month_tasks, |t| TaskItemMarkdown(t).to_string());
+                archived_tasks_as_markdown(month_tasks, |t, _| TaskItemMarkdown(t).to_string());
             let mut tmp = NamedTempFile::new_in(&board_path)?;
             fs::write(&tmp, markdown)?;
             tmp.as_file_mut().flush()?;
@@ -248,7 +248,7 @@ impl TaskStorage for InMemoryStorage {
     }
 
     fn write_archived(&mut self, tasks: Vec<TaskItem>) -> Result<(), Box<dyn std::error::Error>> {
-        let md = archived_tasks_as_markdown(tasks, |t| TaskItemMarkdown(t).to_string());
+        let md = archived_tasks_as_markdown(tasks, |t, _| TaskItemMarkdown(t).to_string());
         self.boards.entry(self.active.clone()).or_default().1 = md;
         Ok(())
     }
