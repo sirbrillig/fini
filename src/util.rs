@@ -184,9 +184,37 @@ pub fn archived(
     format: LinkFormat,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let tasks = storage.read_archived()?;
+    // FIXME: add indices so unarchive can target tasks
     printer.print(&archived_tasks_as_markdown(tasks, |t| {
         get_task_link_for_format(t, format)
     }));
+    Ok(())
+}
+
+pub fn unarchive(
+    storage: &mut dyn TaskStorage,
+    printer: &mut dyn Printer,
+    ids: &[usize],
+) -> Result<(), Box<dyn std::error::Error>> {
+    let mut archived = storage.read_archived()?;
+    let mut tasks = storage.read_tasks()?;
+    let mut did_change = false;
+    for id in ids {
+        let Some(item) = archived.iter_mut().find(|t| &t.id == id) else {
+            eprintln!("⚠️ No archived task found with id {id}");
+            return Ok(());
+        };
+        item.status = Status::Todo;
+        item.active_date = None;
+        tasks.push(item.clone());
+        printer.print(format!("Moved archived task back to todo: {}", item.title).as_str());
+        archived.retain(|i| !ids.contains(&i.id));
+        did_change = true;
+    }
+    if did_change {
+        storage.write_tasks(tasks)?;
+        storage.write_archived(archived)?;
+    }
     Ok(())
 }
 
