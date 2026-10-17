@@ -39,6 +39,7 @@ pub fn interactive(
             "edit",
             "list-archived",
             "list-between",
+            "unarchive",
             "boards",
         ];
         println!("{}", "-----------------------------------------".dimmed());
@@ -88,6 +89,7 @@ pub fn interactive(
             "archive" => Some(Command::Archive { ids: None }),
             "star" => Some(Command::Star { ids: None }),
             "delete" => Some(Command::Delete { ids: None }),
+            "unarchive" => Some(Command::Unarchive { ids: None }),
             "begin" => Some(Command::Begin { ids: None }),
             "boards" => Some(Command::Use { name: None }),
             _ => {
