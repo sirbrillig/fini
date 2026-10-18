@@ -123,6 +123,26 @@ pub fn prompt_for_task_ids(
     Ok(val.iter().map(|i| i.0.id).collect())
 }
 
+pub fn prompt_for_archived_task_ids(
+    storage: &dyn TaskStorage,
+    message: &str,
+) -> Result<Vec<usize>, Box<dyn std::error::Error>> {
+    let items = storage.read_archived()?;
+    let formatted: Vec<_> = items
+        .iter()
+        .map(|t| TaskItemWithStatus(t, LinkFormat::None))
+        .collect();
+    let val = MultiSelect::new(message, formatted)
+        .with_page_size(SELECT_PAGE_SIZE)
+        .with_select_on_empty_submit()
+        .prompt()
+        .or_else(|err| match err {
+            inquire::InquireError::OperationCanceled => Ok(Vec::new()),
+            err => Err(err),
+        })?;
+    Ok(val.iter().map(|i| i.0.id).collect())
+}
+
 pub fn get_visible_items(
     storage: &dyn TaskStorage,
 ) -> Result<Vec<TaskItem>, Box<dyn std::error::Error>> {
@@ -184,9 +204,36 @@ pub fn archived(
     format: LinkFormat,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let tasks = storage.read_archived()?;
-    printer.print(&archived_tasks_as_markdown(tasks, |t| {
-        get_task_link_for_format(t, format)
+    printer.print(&archived_tasks_as_markdown(tasks, |task, index| {
+        TaskItemWithIndex(task, index + 1, format).to_string()
     }));
+    Ok(())
+}
+
+pub fn unarchive(
+    storage: &mut dyn TaskStorage,
+    printer: &mut dyn Printer,
+    ids: &[usize],
+) -> Result<(), Box<dyn std::error::Error>> {
+    let mut archived = storage.read_archived()?;
+    let mut tasks = storage.read_tasks()?;
+    let mut did_change = false;
+    for id in ids {
+        let Some(item) = archived.iter_mut().find(|t| &t.id == id) else {
+            eprintln!("⚠️ No archived task found with id {id}");
+            continue;
+        };
+        item.status = Status::Todo;
+        item.active_date = None;
+        tasks.push(item.clone());
+        printer.print(format!("Moved archived task back to todo: {}", item.title).as_str());
+        did_change = true;
+    }
+    if did_change {
+        archived.retain(|i| !ids.contains(&i.id));
+        storage.write_tasks(tasks)?;
+        storage.write_archived(archived)?;
+    }
     Ok(())
 }
 
@@ -200,7 +247,7 @@ pub fn work(
     for id in ids {
         let Some(item) = tasks.iter_mut().find(|t| &t.id == id) else {
             eprintln!("⚠️ No task found with id {id}");
-            return Ok(());
+            continue;
         };
         if item.status == Status::InProgress {
             item.status = Status::Todo;
@@ -230,7 +277,7 @@ pub fn star(
     for id in ids {
         let Some(item) = tasks.iter_mut().find(|t| &t.id == id) else {
             eprintln!("⚠️ No task found with id {id}");
-            return Ok(());
+            continue;
         };
         if item.star.is_some_and(|v| v) {
             item.star = None;
@@ -258,7 +305,7 @@ pub fn done(
     for id in ids {
         let Some(item) = tasks.iter_mut().find(|t| &t.id == id) else {
             eprintln!("⚠️ No task found with id {id}");
-            return Ok(());
+            continue;
         };
         if item.status == Status::Done {
             item.status = Status::Todo;
@@ -299,7 +346,7 @@ pub fn archive(
     for id in ids {
         let Some(item) = tasks.iter_mut().find(|t| &t.id == id) else {
             eprintln!("⚠️ No task found with id {id}");
-            return Ok(());
+            continue;
         };
         if item.status == Status::Archived {
             eprintln!("Task already archived");

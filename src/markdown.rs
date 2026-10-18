@@ -47,12 +47,12 @@ where
 /// Transform archived tasks into archived format.
 pub fn archived_tasks_as_markdown<F>(mut items: Vec<TaskItem>, format: F) -> String
 where
-    F: Fn(&TaskItem) -> String,
+    F: Fn(&TaskItem, usize) -> String,
 {
     let mut outputs: Vec<String> = vec![];
     items.sort_by_key(|i| i.active_date);
     let mut current_date: NaiveDate = Default::default();
-    for item in items {
+    for (index, item) in items.iter().enumerate() {
         let Some(date) = item.active_date else {
             panic!(
                 "⚠️ Refusing to convert task to markdown because it has no date: {}",
@@ -63,7 +63,7 @@ where
             outputs.push(format!("\n## {}", date));
             current_date = date;
         }
-        outputs.push(format!("- {}", format(&item)));
+        outputs.push(format!("- {}", format(item, index)));
     }
     outputs.join("\n")
 }

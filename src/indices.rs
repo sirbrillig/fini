@@ -20,6 +20,17 @@ pub fn get_ids_for_indices(
         .collect())
 }
 
+pub fn get_ids_for_archived_indices(
+    storage: &dyn TaskStorage,
+    indices: Vec<usize>,
+) -> Result<Vec<usize>, Box<dyn std::error::Error>> {
+    let tasks = storage.read_archived()?;
+    Ok(indices
+        .iter()
+        .filter_map(|index| get_task_id_by_index_from_list(*index, &tasks))
+        .collect())
+}
+
 pub fn get_id_for_title(
     storage: &dyn TaskStorage,
     title: &str,

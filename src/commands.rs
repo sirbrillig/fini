@@ -9,7 +9,7 @@ use crate::task_item::{Status, TaskItemHtml};
 use crate::util::{
     add, archive, archived, clear, copy, delete, done, edit_task, get_checked_task_ids,
     get_task_for_id, get_task_ids_between, get_task_link_for_format, get_tasks_for_ids, list,
-    prompt_for_task_id, prompt_for_task_ids, star, work,
+    prompt_for_archived_task_ids, prompt_for_task_id, prompt_for_task_ids, star, unarchive, work,
 };
 use inquire::{DateSelect, Select};
 use serde::Deserialize;
@@ -116,6 +116,11 @@ pub enum Command {
     /// Mark a task as archived
     Archive {
         /// The ids of the tasks to archive (will prompt if missing)
+        ids: Option<Vec<usize>>,
+    },
+    /// Restore archived tasks
+    Unarchive {
+        /// The ids of the tasks to restore (will prompt if missing)
         ids: Option<Vec<usize>>,
     },
     /// Delete tasks entirely
@@ -246,11 +251,19 @@ pub fn execute_command(
                 &[Status::Done, Status::InProgress, Status::Archived],
             )?;
             let tasks = get_tasks_for_ids(tasks, &ids)?;
-            let text = archived_tasks_as_markdown(tasks, |i| get_task_link_for_format(i, format));
+            let text =
+                archived_tasks_as_markdown(tasks, |t, _| get_task_link_for_format(t, format));
             printer.print(&text);
         }
         Command::List { format } => list(storage, printer, format)?,
         Command::Archived { format } => archived(storage, printer, format)?,
+        Command::Unarchive { ids } => {
+            let ids = match ids {
+                Some(ids) => ids,
+                None => prompt_for_archived_task_ids(storage, "Select archived tasks to restore")?,
+            };
+            unarchive(storage, printer, &ids)?;
+        }
         Command::Open { id } => {
             let id_option = match id {
                 Some(id) => Some(id),

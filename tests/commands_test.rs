@@ -1,13 +1,13 @@
 #[cfg(test)]
 mod tests {
-    use chrono::{Duration, Local};
+    use chrono::{Duration, Local, NaiveDate};
     use fini::commands::{Command, LinkFormat, execute_command};
     use fini::copier::MockCopier;
-    use fini::indices::{get_id_for_index, get_id_for_title};
+    use fini::indices::{get_id_for_index, get_id_for_title, get_ids_for_archived_indices};
     use fini::printer::MockPrinter;
     use fini::prompter::MockPrompter;
     use fini::storage::{FileStorage, InMemoryStorage, TaskStorage};
-    use fini::task_item::Status;
+    use fini::task_item::{Status, TaskItem};
     use strip_ansi_escapes::strip_str;
 
     struct TestContext {
@@ -158,6 +158,43 @@ mod tests {
         assert_eq!(archived[0].title, title);
         assert_eq!(archived[0].status, Status::Archived);
         assert_eq!(archived[0].link, None);
+    }
+
+    #[test]
+    fn test_unarchive_command() {
+        let mut ctx = TestContext::new();
+        let title = "Test task";
+        ctx.add_task(title, None);
+
+        let id = get_id_for_index(&ctx.storage, 1).unwrap().unwrap();
+        let command = Command::Archive {
+            ids: Some(vec![id]),
+        };
+        let result = ctx.execute(command);
+
+        assert!(result.is_ok());
+        let tasks = ctx.storage.read_tasks().unwrap();
+        assert_eq!(tasks.len(), 0);
+
+        let archived = ctx.storage.read_archived().unwrap();
+        assert_eq!(archived.len(), 1);
+
+        let archived_ids = get_ids_for_archived_indices(&ctx.storage, vec![1]).unwrap();
+        let command = Command::Unarchive {
+            ids: Some(archived_ids),
+        };
+        let result = ctx.execute(command);
+
+        assert!(result.is_ok());
+        let tasks = ctx.storage.read_tasks().unwrap();
+        assert_eq!(tasks.len(), 1);
+
+        let archived = ctx.storage.read_archived().unwrap();
+        assert_eq!(archived.len(), 0);
+
+        assert_eq!(tasks[0].title, title);
+        assert_eq!(tasks[0].status, Status::Todo);
+        assert_eq!(tasks[0].link, None);
     }
 
     #[test]
@@ -450,7 +487,11 @@ mod tests {
         let result = ctx.execute(command);
 
         assert!(result.is_ok());
-        let expected = format!("\n## {}\n- {}\n", Local::now().format("%Y-%m-%d"), title1);
+        let expected = format!(
+            "\n## {}\n-  1. {}\n",
+            Local::now().format("%Y-%m-%d"),
+            title1
+        );
         assert_eq!(strip_str(ctx.printer.text), expected);
     }
 
@@ -866,6 +907,110 @@ mod tests {
         assert_eq!(tasks_b.len(), 1);
         assert_eq!(tasks_a[0].title, "Board A task");
         assert_eq!(tasks_b[0].title, "Board B task");
+        Ok(())
+    }
+
+    #[test]
+    fn test_unarchive_last_task_in_month_removes_it_from_archive()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let dir = tempfile::tempdir()?;
+        let mut storage = FileStorage::new(dir.path().to_path_buf())?;
+
+        let prompter = MockPrompter::new();
+        let mut copier = MockCopier::new();
+        let mut printer = MockPrinter::new();
+
+        execute_command(
+            &mut storage,
+            &prompter,
+            &mut copier,
+            &mut printer,
+            Command::Add {
+                title: Some("Test task 1".to_string()),
+                link: None,
+            },
+        )?;
+
+        let id = get_id_for_index(&storage, 1)?.unwrap();
+        let command = Command::Archive {
+            ids: Some(vec![id]),
+        };
+        execute_command(&mut storage, &prompter, &mut copier, &mut printer, command)?;
+
+        let tasks = storage.read_tasks()?;
+        let archived = storage.read_archived()?;
+
+        assert_eq!(tasks.len(), 0);
+        assert_eq!(archived.len(), 1);
+
+        let archived_ids = get_ids_for_archived_indices(&storage, vec![1])?;
+        let command = Command::Unarchive {
+            ids: Some(archived_ids),
+        };
+
+        execute_command(&mut storage, &prompter, &mut copier, &mut printer, command)?;
+
+        let tasks = storage.read_tasks()?;
+        let archived = storage.read_archived()?;
+
+        assert_eq!(tasks.len(), 1);
+        assert_eq!(archived.len(), 0);
+        Ok(())
+    }
+
+    #[test]
+    fn test_unarchive_last_task_in_month_keeps_other_months()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let dir = tempfile::tempdir()?;
+        let mut storage = FileStorage::new(dir.path().to_path_buf())?;
+
+        let prompter = MockPrompter::new();
+        let mut copier = MockCopier::new();
+        let mut printer = MockPrinter::new();
+
+        let date_a = NaiveDate::from_ymd_opt(2026, 5, 12).unwrap();
+        let task_month_a = TaskItem {
+            title: "Test task 1".to_string(),
+            status: Status::Archived,
+            active_date: Some(date_a),
+            ..Default::default()
+        };
+        let date_b = NaiveDate::from_ymd_opt(2026, 8, 12).unwrap();
+        let task_month_b_1 = TaskItem {
+            title: "Test task 2".to_string(),
+            status: Status::Archived,
+            active_date: Some(date_b),
+            ..Default::default()
+        };
+        let task_month_b_2 = TaskItem {
+            title: "Test task 3".to_string(),
+            status: Status::Archived,
+            active_date: Some(date_b),
+            ..Default::default()
+        };
+        storage.write_archived(vec![task_month_a, task_month_b_1, task_month_b_2])?;
+
+        let tasks = storage.read_tasks()?;
+        let archived = storage.read_archived()?;
+
+        assert_eq!(tasks.len(), 0);
+        assert_eq!(archived.len(), 3);
+
+        let archived_ids = get_ids_for_archived_indices(&storage, vec![1])?;
+        let command = Command::Unarchive {
+            ids: Some(archived_ids),
+        };
+
+        execute_command(&mut storage, &prompter, &mut copier, &mut printer, command)?;
+
+        let tasks = storage.read_tasks()?;
+        let archived = storage.read_archived()?;
+
+        assert_eq!(tasks.len(), 1);
+        assert_eq!(archived.len(), 2);
+        assert_eq!(tasks[0].title, "Test task 1");
+        assert_eq!(archived[0].title, "Test task 2");
+        assert_eq!(archived[1].title, "Test task 3");
         Ok(())
     }
 }

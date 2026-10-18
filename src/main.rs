@@ -3,7 +3,7 @@ use directories::BaseDirs;
 use fini::commands::{Command, LinkFormat, execute_command};
 use fini::config::{PrompterType, load_config};
 use fini::copier::ClipboardCopier;
-use fini::indices::{get_id_for_index, get_ids_for_indices};
+use fini::indices::{get_id_for_index, get_ids_for_archived_indices, get_ids_for_indices};
 use fini::printer::StdoutPrinter;
 use fini::prompter::{InquirePrompter, Prompter, VimPrompter};
 use fini::storage::{FileStorage, get_default_data_dir};
@@ -107,6 +107,11 @@ enum CliCommands {
         #[arg(long, value_enum)]
         format: Option<LinkFormat>,
     },
+    /// Restore an archived task back to the to do list
+    Unarchive {
+        /// The indices of the tasks to restore (based on archived command)
+        indices: Vec<usize>,
+    },
     /// List all archived tasks
     Archived {
         /// How to format links in the output
@@ -200,6 +205,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         CliCommands::Open { index } => {
             let id = get_id_for_index(&storage, index)?;
             Command::Open { id }
+        }
+        CliCommands::Unarchive { indices } => {
+            let ids = get_ids_for_archived_indices(&storage, indices)?;
+            Command::Unarchive {
+                ids: Some(ids).filter(|x| !x.is_empty()),
+            }
         }
         CliCommands::Begin { indices } => {
             let ids = get_ids_for_indices(&storage, indices)?;
